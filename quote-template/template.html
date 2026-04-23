@@ -86,10 +86,10 @@
       <article class="notes-panel">
         <div class="section-bar compact">
           <span>02</span>
-          <strong>Ghi chú thương mại</strong>
+          <strong>Lưu ý</strong>
         </div>
         <ul id="notes"></ul>
-        <p class="validity">Báo giá có hiệu lực trong vòng 15 ngày kể từ ngày phát hành.</p>
+        <p class="validity">Bảng báo giá này có hiệu lực trong vòng 15 ngày kể từ ngày phát hành, trừ khi được NCT Media gia hạn hoặc thay thế bằng văn bản.</p>
       </article>
       <article class="total-panel">
         <div class="total-line">
@@ -232,20 +232,20 @@
 
     function buildNotes(payload) {
       const notes = [
-        'Báo giá được tạm tính theo mô hình kinh doanh, diện tích, thời gian sử dụng và các lựa chọn dịch vụ đã nhập trong ứng dụng.',
-        'Giá trị báo giá chưa bao gồm các chi phí phát sinh ngoài phạm vi triển khai XMusic Station đã thể hiện trong bảng.',
-        'Thuế giá trị gia tăng được áp dụng theo mức thuế suất tại thời điểm phát hành báo giá.',
-        'Các khoản quyền tác giả, nếu có, có thể cần đối soát hoặc ký kết trực tiếp với đơn vị quản lý quyền theo yêu cầu thực tế.'
+        'Bảng báo giá này được lập trên cơ sở thông tin do khách hàng cung cấp và dữ liệu được ghi nhận tại thời điểm phát hành, bao gồm mô hình kinh doanh, diện tích, thời hạn sử dụng và các hạng mục dịch vụ lựa chọn.',
+        'Giá trị nêu trên chưa bao gồm các khoản phí hoặc chi phí phát sinh ngoài phạm vi dịch vụ thể hiện tại bảng báo giá này, trừ khi các bên có thỏa thuận khác bằng văn bản.',
+        'Thuế giá trị gia tăng (VAT) được áp dụng theo mức thuế suất theo quy định pháp luật hiện hành tại thời điểm xuất hóa đơn.',
+        'Đối với khoản quyền tác giả, việc thanh toán và đối soát với đơn vị quản lý quyền, nếu phát sinh, được thực hiện theo quy định và/hoặc thỏa thuận riêng giữa các bên liên quan.'
       ];
       const discounts = payload.globals.globalDiscounts || {};
       const activeDiscounts = Object.entries(discounts)
         .filter(([, value]) => Number(value) > 0)
         .map(([key, value]) => `${key.toUpperCase()} ${value}%`);
       if (activeDiscounts.length) {
-        notes.push(`Báo giá đã áp dụng chiết khấu: ${activeDiscounts.join(', ')}.`);
+        notes.push(`Bảng báo giá này đã ghi nhận mức chiết khấu: ${activeDiscounts.join(', ')}.`);
       }
       if (payload.globals.boxMode === 'buy') {
-        notes.push('Chi phí Box trong phương án mua là chi phí thiết bị một lần, không cộng vào tạm tính chu kỳ tiếp theo.');
+        notes.push('Chi phí Box theo phương án mua là chi phí thiết bị phát sinh một lần và không được cộng vào giá trị tạm tính cho chu kỳ tiếp theo.');
       }
       return notes.map((note) => `<li>${escapeHTML(note)}</li>`).join('');
     }

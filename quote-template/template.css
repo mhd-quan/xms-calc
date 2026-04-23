@@ -26,10 +26,10 @@
 }
 
 :root {
-  --page: #f2f2ef;
-  --panel: #fbfbf8;
-  --panel-alt: #e7e7e1;
-  --line: #bebeb7;
+  --page: #f8f8f6;
+  --panel: #ffffff;
+  --panel-alt: #efefec;
+  --line: #c8c8c1;
   --line-dark: #202020;
   --text: #111111;
   --muted: #777770;
@@ -77,6 +77,9 @@ body {
   height: 15mm;
   display: block;
   background: #000;
+  border-radius: 50%;
+  object-fit: cover;
+  overflow: hidden;
 }
 
 .brand-cell span,
@@ -275,7 +278,7 @@ dd {
   align-items: center;
   justify-content: center;
   border-right: 1px solid var(--line-dark);
-  background: #d8d8d2;
+  background: #e3e3df;
   color: var(--text);
   letter-spacing: 0;
 }
@@ -336,7 +339,7 @@ table {
 
 .pricing-table tr.group-row td {
   border-top: 1px solid var(--line-dark);
-  background: #deded8;
+  background: #e9e9e5;
   font-weight: 800;
 }
 
@@ -345,7 +348,7 @@ table {
 }
 
 .pricing-table tr.group-row td:first-child {
-  background: #d2d2cc;
+  background: #deded9;
   font-family: var(--title-font);
   font-weight: 900;
 }
