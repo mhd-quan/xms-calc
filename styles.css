@@ -258,12 +258,14 @@ input[type=number] { -moz-appearance: textfield; }
   width: 29px; height: 29px; padding: 0; justify-content: center;
 }
 .bulk-add-btn {
+  --bulk-action-accent: var(--picton);
+  --bulk-action-glow: rgba(68, 204, 255, 0.18);
   color: var(--text-secondary);
 }
 .bulk-add-btn:hover {
-  border-color: var(--pear);
-  color: var(--pear);
-  box-shadow: 0 0 0 1px var(--pear-dim), 0 0 10px rgba(207, 245, 51, 0.08);
+  border-color: var(--bulk-action-accent);
+  color: var(--bulk-action-accent);
+  box-shadow: 0 0 0 1px var(--bulk-action-glow), 0 0 12px var(--bulk-action-glow);
 }
 
 /* Content */
@@ -836,8 +838,25 @@ input[type=number] { -moz-appearance: textfield; }
   overflow-y: auto;
 }
 .bulk-row {
+  --bulk-row-color: var(--pear);
+  position: relative;
   min-height: 38px;
   border-bottom: 1px solid var(--border-subtle);
+}
+.bulk-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--bulk-row-color);
+  opacity: 0.75;
+}
+.bulk-row:focus-within::before {
+  width: 5px;
+  opacity: 1;
+  box-shadow: 0 0 8px color-mix(in srgb, var(--bulk-row-color) 35%, transparent);
 }
 .bulk-row:last-child {
   border-bottom: none;
@@ -846,11 +865,12 @@ input[type=number] { -moz-appearance: textfield; }
   display: flex;
   align-items: center;
   color: var(--text-dim);
-  background: rgba(255,255,255,0.015);
+  background: color-mix(in srgb, var(--bulk-row-color) 10%, rgba(255,255,255,0.015));
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
   font-variant-numeric: tabular-nums;
+  padding-left: 14px;
 }
 .bulk-area-wrap {
   position: relative;
@@ -870,8 +890,8 @@ input[type=number] { -moz-appearance: textfield; }
   font-variant-numeric: tabular-nums;
 }
 .bulk-area-input:focus {
-  background: rgba(207,245,51,0.045);
-  box-shadow: inset 2px 0 0 var(--pear);
+  background: color-mix(in srgb, var(--bulk-row-color) 9%, transparent);
+  box-shadow: inset 2px 0 0 var(--bulk-row-color);
 }
 .bulk-area-wrap::after {
   content: 'm²';

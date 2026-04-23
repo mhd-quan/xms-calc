@@ -181,14 +181,16 @@ function renderBulkRows(focusIndex = null) {
   if (!rowsEl) return;
   if (bulkAreas.length === 0) bulkAreas = [''];
   const startIndex = stores.length + 1;
-  rowsEl.innerHTML = bulkAreas.map((value, index) => `
-    <div class="bulk-row" data-index="${index}">
+  rowsEl.innerHTML = bulkAreas.map((value, index) => {
+    const color = STORE_COLORS[(startIndex + index - 1) % STORE_COLORS.length];
+    return `
+    <div class="bulk-row" data-index="${index}" style="--bulk-row-color: ${color}">
       <div class="bulk-index">${String(startIndex + index).padStart(2, '0')}</div>
       <div class="bulk-area-wrap">
         <input class="bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="Nhập diện tích">
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
   document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
   if (focusIndex !== null) {
     requestAnimationFrame(() => {
