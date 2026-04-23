@@ -9,9 +9,9 @@ const {
   BUSINESS_TYPES,
   calculateCoef,
   calculateDurationMonths,
-  calculateStoreBreakdown,
   calculateTotals,
 } = window.BDCalculator;
+const { buildQuotePayload } = window.BDQuotePayload;
 
 let baseSalary = 2340000;
 let vatRate = 0;
@@ -48,10 +48,6 @@ function getCalcOptions() {
     hasQLQ,
     globalDiscounts,
   };
-}
-
-function getStoreTotal(s) {
-  return calculateStoreBreakdown(s, getCalcOptions()).total;
 }
 
 const formatVND = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
@@ -117,6 +113,14 @@ function createStore(index) {
 
 function getActive() { return stores.find(s => s.id === activeTabId) || stores[0]; }
 
+const STORE_FIELD_RENDER_SCOPES = {
+  name: ['main', 'sidebar'],
+  area: ['main', 'sidebar', 'totals'],
+  type: ['main', 'sidebar', 'totals'],
+  startDate: ['main', 'sidebar', 'totals'],
+  endDate: ['main', 'sidebar', 'totals']
+};
+
 function addStore() {
   const active = getActive();
   const s = createStore(stores.length + 1);
@@ -146,7 +150,9 @@ function removeStore(id) {
 
 function updateActive(field, value) {
   const s = getActive();
-  if (s) { s[field] = value; render(); }
+  if (!s || s[field] === value) return;
+  s[field] = value;
+  render(STORE_FIELD_RENDER_SCOPES[field] || 'all');
 }
 
 // ─── BULK ADD ─────────────────────────────────────────────────────────────
@@ -246,7 +252,7 @@ const STORE_COLORS = [
   '#55E6C1', '#FD7272', '#9AECDB'
 ];
 
-function renderSidebar() {
+function renderSidebar(snapshot) {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const filtered = stores.filter(s => s.name.toLowerCase().includes(search));
   const list = document.getElementById('storeList');
@@ -258,11 +264,11 @@ function renderSidebar() {
   if (filtered.length === 0) {
     html = '<div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:32px;letter-spacing:0.04em">Không tìm thấy chi nhánh</div>';
   } else {
-    const maxTotal = Math.max(...stores.map(s => getStoreTotal(s)), 1);
+    const maxTotal = snapshot.maxStoreTotal;
     html = filtered.map(store => {
       const realIdx = stores.indexOf(store);
       const isActive = store.id === activeTabId;
-      const total = getStoreTotal(store);
+      const total = snapshot.breakdownsById.get(store.id)?.total || 0;
       const color = STORE_COLORS[realIdx % STORE_COLORS.length];
       const pct = Math.min(100, (total / maxTotal) * 100);
 
@@ -290,37 +296,18 @@ function renderSidebar() {
   
   if (list.innerHTML !== html) {
     list.innerHTML = html;
-    // Bind clicks
-    list.querySelectorAll('.store-item').forEach(el => {
-      el.addEventListener('click', (e) => {
-        if (e.target.closest('.store-item-remove')) return;
-        const newId = parseFloat(el.dataset.id);
-        if (newId !== activeTabId) {
-          activeTabId = newId;
-          gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.2 });
-          render();
-        }
-      });
-    });
-    list.querySelectorAll('.store-item-remove').forEach(el => {
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        removeStore(parseFloat(el.dataset.remove));
-      });
-    });
   }
 }
 
-function renderMain() {
-  const s = getActive();
+function renderMain(snapshot) {
+  const s = snapshot.activeStore;
   if (!s) return;
   const area = Number(s.area) || 0;
-  const duration = calculateDurationMonths(s.startDate, s.endDate);
-  const coef = calculateCoef(s.type, area);
-  const yearlyFee = coef * baseSalary;
-  const periodFee = (yearlyFee / 12) * duration;
-  const storeTotal = getStoreTotal(s);
-  const storeIdx = stores.indexOf(s);
+  const breakdown = snapshot.activeBreakdown || {};
+  const duration = breakdown.duration ?? calculateDurationMonths(s.startDate, s.endDate);
+  const coef = breakdown.coef ?? calculateCoef(s.type, area);
+  const storeTotal = breakdown.total || 0;
+  const storeIdx = snapshot.activeStoreIndex;
 
   // Location count and Active branch indicator
   document.getElementById('locationCount').textContent = `${stores.length} loc`;
@@ -407,7 +394,7 @@ function renderMain() {
     const qtgSlider = document.getElementById('discountQTG');
     if (document.activeElement !== qtgSlider) qtgSlider.value = globalDiscounts.qtg;
     qtgSlider.style.setProperty('--val', `${globalDiscounts.qtg}%`);
-    animateNumber('qtgAmount', periodFee * (1 - globalDiscounts.qtg / 100));
+    animateNumber('qtgAmount', breakdown.qtgAmount || 0);
   } else {
     qtgMid.classList.add('disabled');
     qtgRight.classList.add('disabled');
@@ -430,7 +417,7 @@ function renderMain() {
     const qlqSlider = document.getElementById('discountQLQ');
     if (document.activeElement !== qlqSlider) qlqSlider.value = globalDiscounts.qlq;
     qlqSlider.style.setProperty('--val', `${globalDiscounts.qlq}%`);
-    animateNumber('qlqAmount', periodFee * (1 - globalDiscounts.qlq / 100));
+    animateNumber('qlqAmount', breakdown.qlqAmount || 0);
   } else {
     qlqMid.classList.add('disabled');
     qlqRight.classList.add('disabled');
@@ -438,8 +425,8 @@ function renderMain() {
   }
 }
 
-function renderBottomBar() {
-  const { totals } = calculateTotals(stores, getCalcOptions());
+function renderBottomBar(snapshot) {
+  const { totals } = snapshot.quote;
 
   animateNumber('totalQTG', totals.subtotalQTG);
   animateNumber('totalQLQ', totals.subtotalQLQ);
@@ -458,22 +445,51 @@ function renderBottomBar() {
 let renderScheduled = false;
 let renderScope = new Set();
 
-function render(scope = 'all') {
+function createRenderSnapshot() {
+  const quote = calculateTotals(stores, getCalcOptions());
+  const breakdownsById = new Map();
+  quote.stores.forEach((breakdown, index) => {
+    if (stores[index]) breakdownsById.set(stores[index].id, breakdown);
+  });
+  const activeStore = getActive();
+  const activeStoreIndex = activeStore ? stores.indexOf(activeStore) : -1;
+  const activeBreakdown = activeStore ? breakdownsById.get(activeStore.id) : null;
+  const maxStoreTotal = Math.max(...quote.stores.map(row => row.total), 1);
+  return {
+    quote,
+    breakdownsById,
+    activeStore,
+    activeStoreIndex,
+    activeBreakdown,
+    maxStoreTotal
+  };
+}
+
+function addRenderScopes(scope) {
+  if (Array.isArray(scope)) {
+    scope.forEach(addRenderScopes);
+    return;
+  }
   if (scope === 'all') {
     renderScope.add('sidebar');
     renderScope.add('main');
     renderScope.add('totals');
-  } else {
-    renderScope.add(scope);
+    return;
   }
+  renderScope.add(scope);
+}
+
+function render(scope = 'all') {
+  addRenderScopes(scope);
   
   if (renderScheduled) return;
   renderScheduled = true;
   requestAnimationFrame(() => {
     renderScheduled = false;
-    if (renderScope.has('sidebar')) renderSidebar();
-    if (renderScope.has('main')) renderMain();
-    if (renderScope.has('totals')) renderBottomBar();
+    const snapshot = createRenderSnapshot();
+    if (renderScope.has('sidebar')) renderSidebar(snapshot);
+    if (renderScope.has('main')) renderMain(snapshot);
+    if (renderScope.has('totals')) renderBottomBar(snapshot);
     renderScope.clear();
   });
 }
@@ -527,10 +543,28 @@ function buildCalendar(dateStr, wrapperEl) {
 
 function bindEvents() {
   // Search
-  document.getElementById('searchInput').addEventListener('input', renderSidebar);
+  document.getElementById('searchInput').addEventListener('input', () => render('sidebar'));
   document.getElementById('searchClear').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
-    renderSidebar();
+    render('sidebar');
+  });
+
+  document.getElementById('storeList').addEventListener('click', (e) => {
+    const removeBtn = e.target.closest('.store-item-remove');
+    if (removeBtn) {
+      e.stopPropagation();
+      removeStore(parseFloat(removeBtn.dataset.remove));
+      return;
+    }
+
+    const item = e.target.closest('.store-item');
+    if (!item) return;
+    const newId = parseFloat(item.dataset.id);
+    if (newId !== activeTabId) {
+      activeTabId = newId;
+      gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.2 });
+      render(['main', 'sidebar']);
+    }
   });
 
   // Add store
@@ -756,7 +790,7 @@ function bindEvents() {
     document.querySelectorAll('#vatControl .seg-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     vatRate = newVatRate;
-    renderBottomBar();
+    render('totals');
   });
 
   // Scrubbable Inputs
@@ -854,27 +888,7 @@ function closeCustomerModal() {
 async function exportQuoteWithCustomer(customer) {
   if (!window.electronAPI) return;
   const settings = readSettings();
-  const quote = calculateTotals(stores, getCalcOptions());
-  const quoteDate = new Date();
-  const enrichedStores = quote.stores.map((store, index) => ({
-    ...store,
-    branchNo: index + 1,
-    typeLabel: store.type && BUSINESS_TYPES[store.type] ? BUSINESS_TYPES[store.type].label : '',
-    shortType: store.type && BUSINESS_TYPES[store.type] ? BUSINESS_TYPES[store.type].short : ''
-  }));
-
-  const payload = {
-    meta: {
-      quoteDate: quoteDate.toISOString(),
-      quoteNumber: `XMS-${quoteDate.toISOString().slice(2, 10).replace(/-/g, '')}`,
-      customerName: customer.companyName,
-      customer,
-      preparedBy: settings
-    },
-    stores: enrichedStores,
-    globals: { boxMode, globalBoxCount, hasAccountFee, hasQTG, hasQLQ, globalDiscounts, baseSalary },
-    totals: quote.totals
-  };
+  const payload = buildQuotePayload({ stores, calcOptions: getCalcOptions() }, customer, settings);
   
   const exportBtn = document.getElementById('exportBtn');
   exportBtn.style.opacity = '0.5';

@@ -20,8 +20,10 @@
     "appId": "com.xmusic.calculator",
     "files": [
       "main.js",
+      "quote-exporter.js",
       "preload.js",
       "calculator.js",
+      "quote-payload.js",
       "app.js",
       "index.html",
       "styles.css",

@@ -6,6 +6,7 @@ const {
   calculateStoreBreakdown,
   calculateTotals,
 } = require('../calculator');
+const { buildQuotePayload } = require('../quote-payload');
 
 const moneyEqual = (actual, expected) => {
   assert.equal(Math.round(actual), Math.round(expected));
@@ -88,4 +89,34 @@ test('VAT is derived from the shared subtotal', () => {
   moneyEqual(totals.subtotal, totals.subtotalQTG + totals.subtotalQLQ + totals.subtotalAccount + totals.subtotalBox);
   moneyEqual(totals.vat, totals.subtotal * 0.08);
   moneyEqual(totals.grand, totals.subtotal * 1.08);
+});
+
+test('buildQuotePayload creates export-safe metadata and enriched store rows', () => {
+  const payload = buildQuotePayload(
+    { stores: [cafeStore], calcOptions: baseOptions },
+    {
+      companyName: ' Công ty Test ',
+      contactName: ' Nguyễn Văn A ',
+      department: ' Purchasing ',
+      email: ' buyer@example.com ',
+      phone: ' 0900000000 '
+    },
+    {
+      name: ' Người lập ',
+      title: ' BD ',
+      department: ' Sales ',
+      email: ' bd@example.com ',
+      phone: ' 0911111111 '
+    },
+    new Date('2026-04-23T00:00:00.000Z')
+  );
+
+  assert.equal(payload.meta.quoteNumber, 'XMS-260423');
+  assert.equal(payload.meta.customer.companyName, 'Công ty Test');
+  assert.equal(payload.meta.preparedBy.name, 'Người lập');
+  assert.equal(payload.stores[0].branchNo, 1);
+  assert.equal(payload.stores[0].typeLabel, 'Quán cà phê - giải khát');
+  assert.equal(payload.stores[0].shortType, 'CAFÉ');
+  assert.equal(payload.globals.boxMode, 'none');
+  moneyEqual(payload.totals.grand, calculateTotals([cafeStore], baseOptions).totals.grand);
 });
