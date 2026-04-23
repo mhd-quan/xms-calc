@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Quotation</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="template.css">
+</head>
+<body>
+  <div class="page" id="page">
+    <div class="header">
+      <div class="logo-area">
+        <h1>BÁO GIÁ DỊCH VỤ</h1>
+        <h2>Bản quyền âm nhạc XMUSIC STATION</h2>
+      </div>
+      <div class="meta-area">
+        <p><strong>Ngày:</strong> <span id="valDate"></span></p>
+        <p><strong>Kính gửi:</strong> <span id="valCustomer"></span></p>
+        <p><strong>Người báo giá:</strong> <span id="valPreparedBy"></span></p>
+      </div>
+    </div>
+
+    <div class="content">
+      <table class="quote-table">
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>CHI NHÁNH</th>
+            <th>DIỆN TÍCH</th>
+            <th>THỜI GIAN</th>
+            <th class="right">QUYỀN TÁC GIẢ</th>
+            <th class="right">QUYỀN LIÊN QUAN</th>
+            <th class="right">TÀI KHOẢN</th>
+            <th class="right">BOX</th>
+            <th class="right">CỘNG</th>
+          </tr>
+        </thead>
+        <tbody id="valStores">
+        </tbody>
+      </table>
+
+      <div class="summary">
+        <div class="summary-row">
+          <span>Tổng tiền trước thuế (Subtotal)</span>
+          <span class="right" id="valSubtotal"></span>
+        </div>
+        <div class="summary-row">
+          <span>Thuế GTGT (<span id="valVatRate"></span>)</span>
+          <span class="right" id="valVat"></span>
+        </div>
+        <div class="summary-row grand">
+          <span>TỔNG THANH TOÁN (VND)</span>
+          <span class="right" id="valGrand"></span>
+        </div>
+      </div>
+      
+      <div class="notes">
+        <h3>Ghi chú:</h3>
+        <ul id="valNotes">
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <div class="sign-block">
+        <p><strong>ĐẠI DIỆN KHÁCH HÀNG</strong></p>
+      </div>
+      <div class="sign-block">
+        <p><strong>NGƯỜI LẬP BÁO GIÁ</strong></p>
+        <br><br><br>
+        <p id="valSignName"></p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const formatVND = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
+    const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char]));
+
+    window.renderQuote = function(payload) {
+      document.getElementById('valDate').textContent = new Date(payload.meta.quoteDate).toLocaleDateString('vi-VN');
+      document.getElementById('valCustomer').textContent = payload.meta.customerName || 'Khách hàng';
+      document.getElementById('valPreparedBy').textContent = payload.meta.preparedBy?.name || 'NCT Corp';
+      document.getElementById('valSignName').textContent = payload.meta.preparedBy?.name || '';
+      
+      const tbody = document.getElementById('valStores');
+      let html = '';
+      payload.stores.forEach((s, i) => {
+        html += `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${escapeHTML(s.name)}</td>
+            <td>${s.area} m²</td>
+            <td>${s.duration.toFixed(1)} tháng</td>
+            <td class="right">${formatVND(s.qtgAmount)}</td>
+            <td class="right">${formatVND(s.qlqAmount)}</td>
+            <td class="right">${formatVND(s.accountAmount)}</td>
+            <td class="right">${formatVND(s.boxAmount)}</td>
+            <td class="right">${formatVND(s.total)}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+
+      document.getElementById('valSubtotal').textContent = formatVND(payload.totals.subtotal);
+      document.getElementById('valVatRate').textContent = (payload.totals.vatRate * 100) + '%';
+      document.getElementById('valVat').textContent = formatVND(payload.totals.vat);
+      document.getElementById('valGrand').textContent = formatVND(payload.totals.grand);
+      
+      const notesEl = document.getElementById('valNotes');
+      let notesHtml = '<li>Báo giá có giá trị trong vòng 15 ngày.</li>';
+      if (payload.globals.boxMode === 'buy') {
+        notesHtml += `<li>Phí thiết bị Box mua đứt đã được tính trong từng chi nhánh: ${payload.globals.globalBoxCount} box/chi nhánh.</li>`;
+      } else if (payload.globals.boxMode === 'rent') {
+        notesHtml += `<li>Phí thuê thiết bị Box đã được prorate theo thời gian từng chi nhánh: ${payload.globals.globalBoxCount} box/chi nhánh.</li>`;
+      }
+      notesEl.innerHTML = notesHtml;
+
+      return true;
+    };
+  </script>
+</body>
+</html>
