@@ -6,167 +6,286 @@
   <link rel="stylesheet" href="template.css">
 </head>
 <body>
-  <div class="sheet">
-    <header class="company-header">
-      <div class="brand-block">
-        <div class="nct-mark">
-          <svg width="58" height="58" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="50" fill="#000"/>
-            <defs>
-              <linearGradient id="quoteGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#CFF533"/>
-                <stop offset="100%" stop-color="#44CCFF"/>
-              </linearGradient>
-            </defs>
-            <ellipse cx="26" cy="50" rx="3.2" ry="13" fill="#BBF0FF" opacity=".9"/>
-            <ellipse cx="38" cy="50" rx="3.2" ry="25" fill="url(#quoteGrad)"/>
-            <ellipse cx="50" cy="50" rx="3.2" ry="9" fill="#BBF0FF" opacity=".9"/>
-            <ellipse cx="62" cy="50" rx="3.2" ry="25" fill="url(#quoteGrad)"/>
-            <ellipse cx="74" cy="50" rx="3.2" ry="13" fill="#BBF0FF" opacity=".9"/>
-          </svg>
-          <div>NCT</div>
-        </div>
-        <div class="company-copy">
-          <h1>CÔNG TY TNHH TRUYỀN THÔNG NCT (“NCT MEDIA”)</h1>
-          <p>Địa chỉ: Tòa nhà 678, Tầng 19, 67 Hoàng Văn Thái, Phường Tân Mỹ, Thành phố Hồ Chí Minh, Việt Nam</p>
-          <p>Số điện thoại: 028 3868 7799</p>
-          <p>Mã số thuế: 0316217993</p>
-        </div>
+  <main class="sheet">
+    <section class="hero">
+      <div class="logo-tile">
+        <img src="./assets/nct-logo.png" alt="NCT">
       </div>
-      <div class="quote-meta">
-        <p><strong>Số báo giá:</strong> <span id="quoteNumber"></span></p>
-        <p><strong>TP. Hồ Chí Minh,</strong> <span id="quoteDate"></span></p>
+      <div class="hero-copy">
+        <p class="eyebrow">NCT Media Corporation / XMusic Station</p>
+        <h1>Bảng báo giá</h1>
+        <p class="hero-subtitle">Dịch vụ bản quyền & giải pháp phát nhạc thương mại</p>
       </div>
-    </header>
+      <div class="quote-stamp">
+        <span>Số báo giá</span>
+        <strong id="quoteNumber"></strong>
+        <small id="quoteDate"></small>
+      </div>
+      <div class="clip-strip" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span><span></span>
+      </div>
+    </section>
+
+    <section class="company-bar">
+      <div>
+        <strong>Công ty Cổ phần Truyền thông NCT (NCT Media Corporation)</strong>
+        <span>Tòa nhà 678, Tầng 19, 67 Hoàng Văn Thái, Phường Tân Mỹ, Thành phố Hồ Chí Minh, Việt Nam</span>
+      </div>
+      <div>
+        <span>MST: 0316217993</span>
+        <span>Tel: 028 3868 7799</span>
+      </div>
+    </section>
 
     <section class="party-grid">
-      <div class="party-card">
-        <div class="party-title">Khách hàng</div>
-        <table>
-          <tr><th>Công ty</th><td id="customerCompany"></td></tr>
-          <tr><th>Người phụ trách</th><td id="customerContact"></td></tr>
-          <tr><th>Phòng ban</th><td id="customerDepartment"></td></tr>
-          <tr><th>Email</th><td id="customerEmail"></td></tr>
-          <tr><th>Số điện thoại</th><td id="customerPhone"></td></tr>
-        </table>
-      </div>
-      <div class="party-card">
-        <div class="party-title">Nhân sự phụ trách</div>
-        <table>
-          <tr><th>Họ tên</th><td id="preparedName"></td></tr>
-          <tr><th>Chức vụ</th><td id="preparedTitle"></td></tr>
-          <tr><th>Phòng ban</th><td id="preparedDepartment"></td></tr>
-          <tr><th>Email</th><td id="preparedEmail"></td></tr>
-          <tr><th>Số điện thoại</th><td id="preparedPhone"></td></tr>
-        </table>
-      </div>
+      <article class="party-panel customer">
+        <div class="panel-label">Khách hàng</div>
+        <h2 id="customerCompany"></h2>
+        <dl>
+          <div><dt>Người phụ trách</dt><dd id="customerContact"></dd></div>
+          <div><dt>Phòng ban</dt><dd id="customerDepartment"></dd></div>
+          <div><dt>Email</dt><dd id="customerEmail"></dd></div>
+          <div><dt>Điện thoại</dt><dd id="customerPhone"></dd></div>
+        </dl>
+      </article>
+      <article class="party-panel prepared">
+        <div class="panel-label">Người lập báo giá</div>
+        <h2 id="preparedName"></h2>
+        <dl>
+          <div><dt>Chức vụ</dt><dd id="preparedTitle"></dd></div>
+          <div><dt>Phòng ban</dt><dd id="preparedDepartment"></dd></div>
+          <div><dt>Email</dt><dd id="preparedEmail"></dd></div>
+          <div><dt>Điện thoại</dt><dd id="preparedPhone"></dd></div>
+        </dl>
+      </article>
     </section>
 
-    <h2 class="quote-title">BẢNG BÁO GIÁ DỊCH VỤ BẢN QUYỀN & GIẢI PHÁP PHÁT NHẠC</h2>
+    <section class="scope-row">
+      <div class="scope-card">
+        <span>Số chi nhánh</span>
+        <strong id="branchCount"></strong>
+      </div>
+      <div class="scope-card">
+        <span>Tổng diện tích</span>
+        <strong id="totalArea"></strong>
+      </div>
+      <div class="scope-card">
+        <span>Chu kỳ tính phí</span>
+        <strong id="durationScope"></strong>
+      </div>
+      <div class="scope-card">
+        <span>VAT</span>
+        <strong id="vatRateBadge"></strong>
+      </div>
+    </section>
 
     <section class="section-block">
-      <div class="section-label">1. Đơn giá dịch vụ</div>
-      <table class="quote-table">
-        <thead>
-          <tr>
-            <th>STT</th>
-            <th>Chi nhánh</th>
-            <th>Nội dung</th>
-            <th>Số lượng</th>
-            <th>Chu kỳ</th>
-            <th>Đơn giá sau CK</th>
-            <th>Thành tiền đầu tiên</th>
-            <th>Thành tiền năm tiếp theo</th>
-            <th>Ghi chú</th>
-          </tr>
-        </thead>
-        <tbody id="serviceRows"></tbody>
-      </table>
-    </section>
-
-    <section class="section-block compact">
-      <div class="section-label">2. Bảng thống kê tạm tính phí dịch vụ</div>
-      <table class="summary-table">
-        <thead>
-          <tr>
-            <th>STT</th>
-            <th>Nội dung</th>
-            <th>Số lượng</th>
-            <th>Thành tiền đầu tiên</th>
-            <th>Thành tiền năm tiếp theo</th>
-          </tr>
-        </thead>
-        <tbody id="summaryRows"></tbody>
-      </table>
-    </section>
-
-    <section class="totals-grid">
-      <div class="notes">
-        <div class="notes-title">Lưu ý:</div>
-        <ul id="notes"></ul>
+      <div class="section-heading">
+        <span>01</span>
+        <h2>Chi tiết đầu mục chi phí</h2>
       </div>
-      <table class="totals-table">
-        <tbody>
-          <tr><th>Tổng tiền trước thuế</th><td id="subtotal"></td></tr>
-          <tr><th>Thuế GTGT (<span id="vatRate"></span>)</th><td id="vat"></td></tr>
-          <tr class="grand"><th>Tổng thanh toán</th><td id="grand"></td></tr>
-          <tr><th>Chi phí năm tiếp theo</th><td id="nextYearTotal"></td></tr>
-        </tbody>
+      <table class="pricing-table">
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Đầu mục chi phí</th>
+            <th>Nội dung</th>
+            <th>Phạm vi / Số lượng</th>
+            <th>Đơn vị tính</th>
+            <th>Thành tiền trước VAT</th>
+          </tr>
+        </thead>
+        <tbody id="pricingRows"></tbody>
       </table>
     </section>
-  </div>
+
+    <section class="summary-grid">
+      <article class="notes-panel">
+        <div class="section-heading tight">
+          <span>02</span>
+          <h2>Ghi chú thương mại</h2>
+        </div>
+        <ul id="notes"></ul>
+        <p class="validity">Báo giá có hiệu lực trong vòng 15 ngày kể từ ngày phát hành.</p>
+      </article>
+      <article class="total-panel">
+        <div class="total-line">
+          <span>Tổng tiền trước VAT</span>
+          <strong id="subtotal"></strong>
+        </div>
+        <div class="total-line">
+          <span>VAT <b id="vatRate"></b></span>
+          <strong id="vat"></strong>
+        </div>
+        <div class="total-line grand">
+          <span>Tổng thanh toán</span>
+          <strong id="grand"></strong>
+        </div>
+        <div class="total-line muted">
+          <span>Tạm tính chu kỳ tiếp theo</span>
+          <strong id="nextYearTotal"></strong>
+        </div>
+      </article>
+      <div class="signature-block">
+        <span>Người báo giá</span>
+        <img src="./assets/signature.png" alt="Chữ ký">
+        <strong>Doãn Hoàng Minh Quân</strong>
+        <small id="signatureTitle"></small>
+      </div>
+    </section>
+  </main>
 
   <script>
-    const formatVND = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
+    const formatVND = (n) => `${new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0))} VND`;
+    const formatNumber = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
     const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
       '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
     }[char]));
     const show = (value, fallback = '-') => escapeHTML(value || fallback);
 
-    function serviceLinesForStore(store, payload) {
-      const lines = [];
-      if (store.qlqAmount > 0) {
-        lines.push({
-          name: 'Quyền Liên quan (NCT MEDIA)',
-          amount: store.qlqAmount,
-          next: store.qlqAmount,
-          note: 'Bản quyền liên quan theo mô hình, diện tích và chu kỳ sử dụng.'
+    function durationScope(stores) {
+      const values = stores
+        .map((store) => Number(store.duration) || 0)
+        .filter((duration) => duration > 0);
+      if (!values.length) return '-';
+      const min = Math.min(...values);
+      const max = Math.max(...values);
+      const format = (value) => Number.isInteger(value) ? String(value) : value.toFixed(1);
+      return min === max ? `${format(min)} tháng` : `${format(min)}-${format(max)} tháng`;
+    }
+
+    function addRow(rows, { index, group, title, detail, scope, unit, amount, accent }) {
+      rows.push(`
+        <tr class="${group ? 'group-row' : ''}" style="--row-accent: ${accent || '#44CCFF'}">
+          <td class="center">${index}</td>
+          <td class="item-name">${show(title)}</td>
+          <td>${show(detail)}</td>
+          <td>${show(scope)}</td>
+          <td>${show(unit)}</td>
+          <td class="money">${formatVND(amount)}</td>
+        </tr>
+      `);
+    }
+
+    function buildPricingRows(payload) {
+      const rows = [];
+      const branchCount = payload.stores.length;
+      const totalArea = payload.stores.reduce((sum, store) => sum + (Number(store.area) || 0), 0);
+      const scope = `${branchCount} chi nhánh · ${formatNumber(totalArea)} m²`;
+      const duration = durationScope(payload.stores);
+      let index = 1;
+
+      if (payload.totals.subtotalQLQ > 0 || payload.totals.subtotalQTG > 0) {
+        addRow(rows, {
+          index: index++,
+          group: true,
+          title: 'Chi phí bản quyền',
+          detail: 'Tổng phí bản quyền sử dụng âm nhạc tại địa điểm kinh doanh',
+          scope,
+          unit: duration,
+          amount: payload.totals.subtotalQLQ + payload.totals.subtotalQTG,
+          accent: '#CFF533'
+        });
+        if (payload.totals.subtotalQLQ > 0) {
+          addRow(rows, {
+            index: '',
+            title: 'Quyền liên quan',
+            detail: 'Quyền liên quan bản ghi, bản thu âm do NCT Media cung cấp',
+            scope,
+            unit: duration,
+            amount: payload.totals.subtotalQLQ,
+            accent: '#44CCFF'
+          });
+        }
+        if (payload.totals.subtotalQTG > 0) {
+          addRow(rows, {
+            index: '',
+            title: 'Quyền tác giả',
+            detail: 'Phí quyền tác giả âm nhạc, áp dụng khi khách hàng yêu cầu tính kèm trong báo giá',
+            scope,
+            unit: duration,
+            amount: payload.totals.subtotalQTG,
+            accent: '#FFD300'
+          });
+        }
+      }
+
+      if (payload.totals.subtotalAccount > 0) {
+        addRow(rows, {
+          index: index++,
+          group: true,
+          title: 'Phí sử dụng tài khoản',
+          detail: 'Tài khoản quản trị, phân phối và vận hành danh sách phát XMusic Station',
+          scope: `${branchCount} tài khoản / ${branchCount} chi nhánh`,
+          unit: duration,
+          amount: payload.totals.subtotalAccount,
+          accent: '#FF8B00'
         });
       }
-      if (store.qtgAmount > 0) {
-        lines.push({
-          name: 'Quyền Tác giả (VCPMC)',
-          amount: store.qtgAmount,
-          next: store.qtgAmount,
-          note: 'Quyền tác giả thanh toán/đối soát theo quy định hiện hành.'
-        });
-      }
-      if (store.accountAmount > 0) {
-        lines.push({
-          name: 'Phí sử dụng tài khoản NCT',
-          amount: store.accountAmount,
-          next: store.accountAmount,
-          note: 'Phí tài khoản được prorate theo thời gian sử dụng.'
-        });
-      }
-      if (store.boxAmount > 0) {
+
+      if (payload.totals.subtotalBox > 0 && payload.globals.boxMode !== 'none') {
+        const totalBoxes = branchCount * (Number(payload.globals.globalBoxCount) || 1);
         const isBuy = payload.globals.boxMode === 'buy';
-        lines.push({
-          name: isBuy ? 'Thiết bị phát nhạc Box' : 'Thuê thiết bị phát nhạc Box',
-          amount: store.boxAmount,
-          next: isBuy ? 0 : store.boxAmount,
-          note: isBuy ? 'Chi phí thiết bị một lần.' : 'Phí thuê thiết bị được prorate theo chu kỳ.'
+        addRow(rows, {
+          index: index++,
+          group: true,
+          title: 'Box phát nhạc',
+          detail: isBuy ? 'Thiết bị phát nhạc cấu hình sẵn cho từng địa điểm' : 'Thuê thiết bị phát nhạc cấu hình sẵn cho từng địa điểm',
+          scope: `${totalBoxes} box · ${branchCount} chi nhánh`,
+          unit: isBuy ? 'Một lần' : duration,
+          amount: payload.totals.subtotalBox,
+          accent: '#FF4F8B'
         });
       }
-      return lines;
+
+      if (!rows.length) {
+        addRow(rows, {
+          index: '-',
+          title: 'Chưa có chi phí',
+          detail: 'Chưa có hạng mục đủ điều kiện tính phí từ dữ liệu đầu vào',
+          scope: '-',
+          unit: '-',
+          amount: 0,
+          accent: '#c8c8c8'
+        });
+      }
+
+      return rows.join('');
+    }
+
+    function buildNotes(payload) {
+      const notes = [
+        'Báo giá được tạm tính theo mô hình kinh doanh, diện tích, thời gian sử dụng và các lựa chọn dịch vụ đã nhập trong ứng dụng.',
+        'Giá trị báo giá chưa bao gồm các chi phí phát sinh ngoài phạm vi triển khai XMusic Station đã thể hiện trong bảng.',
+        'Thuế giá trị gia tăng được áp dụng theo mức thuế suất tại thời điểm phát hành báo giá.',
+        'Các khoản quyền tác giả, nếu có, có thể cần đối soát hoặc ký kết trực tiếp với đơn vị quản lý quyền theo yêu cầu thực tế.'
+      ];
+      const discounts = payload.globals.globalDiscounts || {};
+      const activeDiscounts = Object.entries(discounts)
+        .filter(([, value]) => Number(value) > 0)
+        .map(([key, value]) => `${key.toUpperCase()} ${value}%`);
+      if (activeDiscounts.length) {
+        notes.push(`Báo giá đã áp dụng chiết khấu: ${activeDiscounts.join(', ')}.`);
+      }
+      if (payload.globals.boxMode === 'buy') {
+        notes.push('Chi phí Box trong phương án mua là chi phí thiết bị một lần, không cộng vào tạm tính chu kỳ tiếp theo.');
+      }
+      return notes.map((note) => `<li>${escapeHTML(note)}</li>`).join('');
     }
 
     window.renderQuote = function(payload) {
       const customer = payload.meta.customer || {};
       const prepared = payload.meta.preparedBy || {};
       const date = new Date(payload.meta.quoteDate);
+      const branchCount = payload.stores.length;
+      const totalArea = payload.stores.reduce((sum, store) => sum + (Number(store.area) || 0), 0);
+      const nextCycle = payload.totals.subtotalQTG
+        + payload.totals.subtotalQLQ
+        + payload.totals.subtotalAccount
+        + (payload.globals.boxMode === 'rent' ? payload.totals.subtotalBox : 0);
+
       document.getElementById('quoteNumber').textContent = payload.meta.quoteNumber || '';
-      document.getElementById('quoteDate').textContent = date.toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' });
+      document.getElementById('quoteDate').textContent = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
       document.getElementById('customerCompany').innerHTML = show(customer.companyName || payload.meta.customerName);
       document.getElementById('customerContact').innerHTML = show(customer.contactName);
@@ -174,71 +293,25 @@
       document.getElementById('customerEmail').innerHTML = show(customer.email);
       document.getElementById('customerPhone').innerHTML = show(customer.phone);
 
-      document.getElementById('preparedName').innerHTML = show(prepared.name, 'NCT Media');
+      document.getElementById('preparedName').innerHTML = show(prepared.name, 'Doãn Hoàng Minh Quân');
       document.getElementById('preparedTitle').innerHTML = show(prepared.title);
       document.getElementById('preparedDepartment').innerHTML = show(prepared.department);
       document.getElementById('preparedEmail').innerHTML = show(prepared.email);
       document.getElementById('preparedPhone').innerHTML = show(prepared.phone);
+      document.getElementById('signatureTitle').innerHTML = show(prepared.title || prepared.department, 'NCT Media Corporation');
 
-      const serviceRows = [];
-      const aggregate = new Map();
-      let nextYearTotal = 0;
+      document.getElementById('branchCount').textContent = `${branchCount} chi nhánh`;
+      document.getElementById('totalArea').textContent = `${formatNumber(totalArea)} m²`;
+      document.getElementById('durationScope').textContent = durationScope(payload.stores);
+      document.getElementById('vatRateBadge').textContent = `${payload.totals.vatRate * 100}%`;
 
-      payload.stores.forEach((store, storeIndex) => {
-        const lines = serviceLinesForStore(store, payload);
-        lines.forEach((line, lineIndex) => {
-          nextYearTotal += line.next;
-          const key = line.name;
-          const current = aggregate.get(key) || { name: line.name, qty: 0, amount: 0, next: 0 };
-          current.qty += 1;
-          current.amount += line.amount;
-          current.next += line.next;
-          aggregate.set(key, current);
-
-          serviceRows.push(`
-            <tr>
-              ${lineIndex === 0 ? `<td class="center" rowspan="${lines.length}">${storeIndex + 1}</td>` : ''}
-              ${lineIndex === 0 ? `<td rowspan="${lines.length}"><strong>${show(store.name)}</strong><br><span>${show(store.typeLabel)} · ${formatVND(store.area)} m²</span></td>` : ''}
-              <td>${show(line.name)}</td>
-              <td class="center">${payload.globals.boxMode !== 'none' && line.name.includes('Box') ? payload.globals.globalBoxCount : 1}</td>
-              <td class="center">${store.duration.toFixed(1)} tháng</td>
-              <td class="money">${formatVND(line.amount)}</td>
-              <td class="money strong">${formatVND(line.amount)}</td>
-              <td class="money">${line.next ? formatVND(line.next) : '-'}</td>
-              <td>${show(line.note)}</td>
-            </tr>
-          `);
-        });
-      });
-      document.getElementById('serviceRows').innerHTML = serviceRows.join('');
-
-      const summaryRows = Array.from(aggregate.values()).map((item, index) => `
-        <tr>
-          <td class="center">${index + 1}</td>
-          <td>${show(item.name)}</td>
-          <td class="center">${item.qty}</td>
-          <td class="money strong">${formatVND(item.amount)}</td>
-          <td class="money">${item.next ? formatVND(item.next) : '-'}</td>
-        </tr>
-      `);
-      summaryRows.push(`
-        <tr class="total-row"><td colspan="3">TỔNG TIỀN</td><td class="money">${formatVND(payload.totals.subtotal)}</td><td class="money">${formatVND(nextYearTotal)}</td></tr>
-        <tr><td colspan="3">Chi phí cho ${payload.stores.length} chi nhánh</td><td class="money">${formatVND(payload.totals.subtotal)}</td><td class="money">${formatVND(nextYearTotal)}</td></tr>
-      `);
-      document.getElementById('summaryRows').innerHTML = summaryRows.join('');
-
+      document.getElementById('pricingRows').innerHTML = buildPricingRows(payload);
       document.getElementById('subtotal').textContent = formatVND(payload.totals.subtotal);
       document.getElementById('vatRate').textContent = `${payload.totals.vatRate * 100}%`;
       document.getElementById('vat').textContent = formatVND(payload.totals.vat);
       document.getElementById('grand').textContent = formatVND(payload.totals.grand);
-      document.getElementById('nextYearTotal').textContent = formatVND(nextYearTotal);
-
-      document.getElementById('notes').innerHTML = [
-        'Thuế giá trị gia tăng được áp dụng theo mức thuế suất tuân thủ quy định pháp luật tại thời điểm phát sinh dịch vụ.',
-        'Báo giá có hiệu lực trong vòng 15 ngày kể từ ngày báo giá.',
-        'Báo giá chưa bao gồm các hạng mục phát sinh ngoài phạm vi đã thống nhất.',
-        'Đối với phí Quyền Tác giả, khách hàng sẽ làm việc và ký hợp đồng trực tiếp với VCPMC nếu có yêu cầu đối soát riêng.'
-      ].map((note) => `<li>${escapeHTML(note)}</li>`).join('');
+      document.getElementById('nextYearTotal').textContent = formatVND(nextCycle);
+      document.getElementById('notes').innerHTML = buildNotes(payload);
       return true;
     };
   </script>

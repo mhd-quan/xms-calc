@@ -46,7 +46,7 @@ app.whenReady().then(() => {
           await printWin.webContents.executeJavaScript(`window.renderQuote(${JSON.stringify(payload)})`);
           const pdfData = await printWin.webContents.printToPDF({
             pageSize: 'A4',
-            landscape: true,
+            landscape: false,
             printBackground: true
           });
           
