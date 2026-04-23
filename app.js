@@ -809,30 +809,70 @@ function setupScrubbableInput(inputId, baseStep = 1, min = -Infinity, max = Infi
 }
 
 // ─── EXPORT PDF ───────────────────────────────────────────────────────────
-const performExport = async () => {
-  if (!window.electronAPI) return;
-  
-  let settings = { name: '' };
-  try { settings = JSON.parse(localStorage.getItem('bdSettings')) || { name: '' }; } catch (e) {}
-  
-  if (!settings.name) {
-    document.getElementById('settingsModal').classList.remove('hidden');
-    return;
+function readSettings() {
+  try {
+    const settings = JSON.parse(localStorage.getItem('bdSettings')) || {};
+    return {
+      name: settings.name || '',
+      title: settings.title || '',
+      department: settings.department || '',
+      email: settings.email || '',
+      phone: settings.phone || ''
+    };
+  } catch (e) {
+    return { name: '', title: '', department: '', email: '', phone: '' };
   }
+}
 
-  const customerName = prompt("Nhập tên khách hàng (để lưu tên file):", "KhachHang");
-  if (customerName === null) return;
-  
+function setSettingsFields(settings) {
+  document.getElementById('settingName').value = settings.name || '';
+  document.getElementById('settingTitle').value = settings.title || '';
+  document.getElementById('settingDepartment').value = settings.department || '';
+  document.getElementById('settingEmail').value = settings.email || '';
+  document.getElementById('settingPhone').value = settings.phone || '';
+}
+
+function readCustomerFields() {
+  return {
+    companyName: document.getElementById('customerCompany').value.trim(),
+    contactName: document.getElementById('customerContactName').value.trim(),
+    department: document.getElementById('customerDepartment').value.trim(),
+    email: document.getElementById('customerEmail').value.trim(),
+    phone: document.getElementById('customerPhone').value.trim()
+  };
+}
+
+function openCustomerModal() {
+  document.getElementById('customerModal').classList.remove('hidden');
+  requestAnimationFrame(() => document.getElementById('customerCompany').focus());
+}
+
+function closeCustomerModal() {
+  document.getElementById('customerModal').classList.add('hidden');
+}
+
+async function exportQuoteWithCustomer(customer) {
+  if (!window.electronAPI) return;
+  const settings = readSettings();
   const quote = calculateTotals(stores, getCalcOptions());
+  const quoteDate = new Date();
+  const enrichedStores = quote.stores.map((store, index) => ({
+    ...store,
+    branchNo: index + 1,
+    typeLabel: store.type && BUSINESS_TYPES[store.type] ? BUSINESS_TYPES[store.type].label : '',
+    shortType: store.type && BUSINESS_TYPES[store.type] ? BUSINESS_TYPES[store.type].short : ''
+  }));
 
   const payload = {
     meta: {
-      quoteDate: new Date().toISOString(),
-      customerName: customerName,
+      quoteDate: quoteDate.toISOString(),
+      quoteNumber: `XMS-${quoteDate.toISOString().slice(2, 10).replace(/-/g, '')}`,
+      customerName: customer.companyName,
+      customer,
       preparedBy: settings
     },
-    stores: quote.stores,
-    globals: { boxMode, globalBoxCount, hasAccountFee, hasQTG, hasQLQ, globalDiscounts },
+    stores: enrichedStores,
+    globals: { boxMode, globalBoxCount, hasAccountFee, hasQTG, hasQLQ, globalDiscounts, baseSalary },
     totals: quote.totals
   };
   
@@ -849,6 +889,20 @@ const performExport = async () => {
     exportBtn.style.opacity = '1';
     exportBtn.style.pointerEvents = 'auto';
   }
+}
+
+const performExport = async () => {
+  if (!window.electronAPI) return;
+  
+  const settings = readSettings();
+  
+  if (!settings.name) {
+    document.getElementById('settingsModal').classList.remove('hidden');
+    setSettingsFields(settings);
+    return;
+  }
+
+  openCustomerModal();
 };
 
 // ─── INIT ─────────────────────────────────────────────────────────────────
@@ -868,19 +922,46 @@ function init() {
 
   // Settings
   document.getElementById('settingsBtn').addEventListener('click', () => {
-    try {
-      const settings = JSON.parse(localStorage.getItem('bdSettings')) || { name: '' };
-      document.getElementById('settingName').value = settings.name;
-    } catch(e){}
+    setSettingsFields(readSettings());
     document.getElementById('settingsModal').classList.remove('hidden');
   });
   document.getElementById('closeSettings').addEventListener('click', () => {
     document.getElementById('settingsModal').classList.add('hidden');
   });
-  document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-    const name = document.getElementById('settingName').value;
-    localStorage.setItem('bdSettings', JSON.stringify({ name }));
+  document.getElementById('settingsModal').querySelector('.modal-overlay').addEventListener('click', () => {
     document.getElementById('settingsModal').classList.add('hidden');
+  });
+  document.getElementById('saveSettingsBtn').addEventListener('click', () => {
+    const settings = {
+      name: document.getElementById('settingName').value.trim(),
+      title: document.getElementById('settingTitle').value.trim(),
+      department: document.getElementById('settingDepartment').value.trim(),
+      email: document.getElementById('settingEmail').value.trim(),
+      phone: document.getElementById('settingPhone').value.trim()
+    };
+    localStorage.setItem('bdSettings', JSON.stringify(settings));
+    document.getElementById('settingsModal').classList.add('hidden');
+  });
+
+  // Customer export profile
+  document.getElementById('closeCustomerModal').addEventListener('click', closeCustomerModal);
+  document.getElementById('cancelCustomerModal').addEventListener('click', closeCustomerModal);
+  document.getElementById('customerModal').querySelector('.modal-overlay').addEventListener('click', closeCustomerModal);
+  const confirmCustomerExport = async () => {
+    const customer = readCustomerFields();
+    if (!customer.companyName) {
+      document.getElementById('customerCompany').focus();
+      return;
+    }
+    closeCustomerModal();
+    await exportQuoteWithCustomer(customer);
+  };
+  document.getElementById('confirmCustomerExport').addEventListener('click', confirmCustomerExport);
+  document.getElementById('customerModal').addEventListener('keydown', async (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      await confirmCustomerExport();
+    }
   });
 
   render();
