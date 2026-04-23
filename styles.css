@@ -252,8 +252,8 @@ input[type=number] { -moz-appearance: textfield; }
   font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em;
   border-radius: 3px; cursor: pointer; transition: all 150ms;
 }
-.export-btn:hover { background: var(--bg-hover); border-color: var(--picton); color: var(--picton); }
-.export-btn.settings-btn-hover:hover { border-color: var(--daw-orange); color: var(--daw-orange); }
+.export-btn:hover { background: var(--bg-hover); border-color: var(--daw-orange); color: var(--daw-orange); }
+.export-btn.settings-btn-hover:hover { border-color: var(--daw-yellow); color: var(--daw-yellow); }
 .icon-action-btn {
   width: 29px; height: 29px; padding: 0; justify-content: center;
 }
