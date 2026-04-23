@@ -6,36 +6,34 @@
   <link rel="stylesheet" href="template.css">
 </head>
 <body>
-  <main class="sheet">
-    <section class="hero">
-      <div class="logo-tile">
+  <main class="quote-page">
+    <header class="top-rack">
+      <div class="brand-cell">
         <img src="./assets/nct-logo.png" alt="NCT">
+        <div>
+          <span>NCT Media Corporation</span>
+          <strong>XMusic Station</strong>
+        </div>
       </div>
-      <div class="hero-copy">
-        <p class="eyebrow">NCT Media Corporation / XMusic Station</p>
-        <h1>Bảng báo giá</h1>
-        <p class="hero-subtitle">Dịch vụ bản quyền & giải pháp phát nhạc thương mại</p>
+      <div class="meta-cell">
+        <div><span>Số báo giá</span><strong id="quoteNumber"></strong></div>
+        <div><span>Ngày phát hành</span><strong id="quoteDate"></strong></div>
       </div>
-      <div class="quote-stamp">
-        <span>Số báo giá</span>
-        <strong id="quoteNumber"></strong>
-        <small id="quoteDate"></small>
-      </div>
+    </header>
+
+    <section class="company-line">
+      <strong>Công ty Cổ phần Truyền thông NCT (NCT Media Corporation)</strong>
+      <span>Tòa nhà 678, Tầng 19, 67 Hoàng Văn Thái, Phường Tân Mỹ, Thành phố Hồ Chí Minh, Việt Nam</span>
+      <span>MST: 0316217993 · Tel: 028 3868 7799</span>
     </section>
 
-    <section class="company-bar">
-      <div>
-        <strong>Công ty Cổ phần Truyền thông NCT (NCT Media Corporation)</strong>
-        <span>Tòa nhà 678, Tầng 19, 67 Hoàng Văn Thái, Phường Tân Mỹ, Thành phố Hồ Chí Minh, Việt Nam</span>
-      </div>
-      <div>
-        <span>MST: 0316217993</span>
-        <span>Tel: 028 3868 7799</span>
-      </div>
+    <section class="title-block">
+      <p>Dịch vụ bản quyền & giải pháp phát nhạc thương mại</p>
+      <h1>Bảng báo giá</h1>
     </section>
 
-    <section class="party-grid">
-      <article class="party-panel customer">
+    <section class="info-rack">
+      <article class="info-panel">
         <div class="panel-label">Khách hàng</div>
         <h2 id="customerCompany"></h2>
         <dl>
@@ -45,7 +43,7 @@
           <div><dt>Điện thoại</dt><dd id="customerPhone"></dd></div>
         </dl>
       </article>
-      <article class="party-panel prepared">
+      <article class="info-panel">
         <div class="panel-label">Người lập báo giá</div>
         <h2 id="preparedName"></h2>
         <dl>
@@ -57,29 +55,17 @@
       </article>
     </section>
 
-    <section class="scope-row">
-      <div class="scope-card">
-        <span>Số chi nhánh</span>
-        <strong id="branchCount"></strong>
-      </div>
-      <div class="scope-card">
-        <span>Tổng diện tích</span>
-        <strong id="totalArea"></strong>
-      </div>
-      <div class="scope-card">
-        <span>Chu kỳ tính phí</span>
-        <strong id="durationScope"></strong>
-      </div>
-      <div class="scope-card">
-        <span>VAT</span>
-        <strong id="vatRateBadge"></strong>
-      </div>
+    <section class="scope-rack">
+      <div><span>Số chi nhánh</span><strong id="branchCount"></strong></div>
+      <div><span>Tổng diện tích</span><strong id="totalArea"></strong></div>
+      <div><span>Chu kỳ tính phí</span><strong id="durationScope"></strong></div>
+      <div><span>VAT</span><strong id="vatRateBadge"></strong></div>
     </section>
 
     <section class="section-block">
-      <div class="section-heading">
+      <div class="section-bar">
         <span>01</span>
-        <h2>Chi tiết đầu mục chi phí</h2>
+        <strong>Chi tiết đầu mục chi phí</strong>
       </div>
       <table class="pricing-table">
         <thead>
@@ -96,11 +82,11 @@
       </table>
     </section>
 
-    <section class="summary-grid">
+    <section class="closing-rack">
       <article class="notes-panel">
-        <div class="section-heading tight">
+        <div class="section-bar compact">
           <span>02</span>
-          <h2>Ghi chú thương mại</h2>
+          <strong>Ghi chú thương mại</strong>
         </div>
         <ul id="notes"></ul>
         <p class="validity">Báo giá có hiệu lực trong vòng 15 ngày kể từ ngày phát hành.</p>
@@ -118,17 +104,17 @@
           <span>Tổng thanh toán</span>
           <strong id="grand"></strong>
         </div>
-        <div class="total-line muted">
+        <div class="total-line">
           <span>Tạm tính chu kỳ tiếp theo</span>
           <strong id="nextYearTotal"></strong>
         </div>
       </article>
-      <div class="signature-block">
+      <article class="signature-panel">
         <span>Người báo giá</span>
         <img src="./assets/signature.png" alt="Chữ ký">
         <strong>Doãn Hoàng Minh Quân</strong>
         <small id="signatureTitle"></small>
-      </div>
+      </article>
     </section>
   </main>
 
@@ -153,7 +139,7 @@
 
     function addRow(rows, { index, group, title, detail, scope, unit, amount }) {
       rows.push(`
-        <tr class="${group ? 'group-row' : ''}">
+        <tr class="${group ? 'group-row' : 'child-row'}">
           <td class="center">${index}</td>
           <td class="item-name">${show(title)}</td>
           <td>${show(detail)}</td>
