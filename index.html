@@ -453,20 +453,85 @@
     </div>
   </div>
 
+  <!-- CUSTOMER EXPORT MODAL -->
+  <div id="customerModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content quote-modal-content">
+      <div class="modal-header">
+        <div>
+          <h3>Thông tin khách hàng</h3>
+          <div class="modal-kicker">Quotation export profile</div>
+        </div>
+        <button id="closeCustomerModal" class="close-btn">×</button>
+      </div>
+      <div class="modal-body quote-form-body">
+        <div class="settings-grid">
+          <label class="settings-field settings-field-wide">
+            <span class="field-label">Tên Công ty</span>
+            <input id="customerCompany" type="text" class="field-input" placeholder="VD: Công ty TNHH ABC">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Người phụ trách</span>
+            <input id="customerContactName" type="text" class="field-input" placeholder="VD: Trần Minh Anh">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Phòng ban</span>
+            <input id="customerDepartment" type="text" class="field-input" placeholder="VD: Purchasing">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Email</span>
+            <input id="customerEmail" type="email" class="field-input" placeholder="name@company.com">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Số điện thoại</span>
+            <input id="customerPhone" type="tel" class="field-input" placeholder="090 000 0000">
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer settings-footer">
+        <button id="cancelCustomerModal" class="secondary-btn">Hủy</button>
+        <button id="confirmCustomerExport" class="primary-btn">Xuất PDF</button>
+      </div>
+    </div>
+  </div>
+
   <!-- SETTINGS MODAL -->
   <div id="settingsModal" class="modal hidden">
     <div class="modal-overlay"></div>
-    <div class="modal-content">
+    <div class="modal-content settings-modal-content">
       <div class="modal-header">
-        <h3>Cài đặt</h3>
+        <div>
+          <h3>Cài đặt</h3>
+          <div class="modal-kicker">Quotation owner profile</div>
+        </div>
         <button id="closeSettings" class="close-btn">×</button>
       </div>
-      <div class="modal-body" style="padding: 20px;">
-        <div class="field-label">Người báo giá (Tên / Chức vụ)</div>
-        <input id="settingName" type="text" class="field-input" placeholder="VD: Nguyễn Văn A - BD Executive">
+      <div class="modal-body quote-form-body">
+        <div class="settings-grid">
+          <label class="settings-field">
+            <span class="field-label">Tên người lập</span>
+            <input id="settingName" type="text" class="field-input" placeholder="VD: Nguyễn Văn A">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Chức vụ</span>
+            <input id="settingTitle" type="text" class="field-input" placeholder="VD: BD Executive">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Phòng ban</span>
+            <input id="settingDepartment" type="text" class="field-input" placeholder="VD: Business Development">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Email</span>
+            <input id="settingEmail" type="email" class="field-input" placeholder="name@nct.vn">
+          </label>
+          <label class="settings-field settings-field-wide">
+            <span class="field-label">Số điện thoại</span>
+            <input id="settingPhone" type="tel" class="field-input" placeholder="090 000 0000">
+          </label>
+        </div>
       </div>
-      <div class="modal-footer" style="padding: 16px 20px; border-top: 1px solid var(--border-subtle); display: flex; justify-content: flex-end;">
-        <button id="saveSettingsBtn" class="primary-btn" style="padding: 8px 16px; background: var(--pear); color: #000; border: none; border-radius: 3px; font-weight: 600; cursor: pointer;">Lưu cài đặt</button>
+      <div class="modal-footer settings-footer">
+        <button id="saveSettingsBtn" class="primary-btn">Lưu cài đặt</button>
       </div>
     </div>
   </div>

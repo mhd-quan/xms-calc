@@ -46,10 +46,11 @@ app.whenReady().then(() => {
           await printWin.webContents.executeJavaScript(`window.renderQuote(${JSON.stringify(payload)})`);
           const pdfData = await printWin.webContents.printToPDF({
             pageSize: 'A4',
+            landscape: false,
             printBackground: true
           });
           
-          const customerFileName = safeFilePart(payload.meta.customerName, 'KhachHang');
+          const customerFileName = safeFilePart(payload.meta.customer?.companyName || payload.meta.customerName, 'KhachHang');
           const defaultPath = path.join(app.getPath('documents'), `BaoGia_NCT_${customerFileName}_${new Date().toISOString().slice(2,10).replace(/-/g,'')}.pdf`);
           
           const { filePath } = await dialog.showSaveDialog({
