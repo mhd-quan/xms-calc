@@ -21,9 +21,6 @@
         <strong id="quoteNumber"></strong>
         <small id="quoteDate"></small>
       </div>
-      <div class="clip-strip" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
-      </div>
     </section>
 
     <section class="company-bar">
@@ -154,9 +151,9 @@
       return min === max ? `${format(min)} tháng` : `${format(min)}-${format(max)} tháng`;
     }
 
-    function addRow(rows, { index, group, title, detail, scope, unit, amount, accent }) {
+    function addRow(rows, { index, group, title, detail, scope, unit, amount }) {
       rows.push(`
-        <tr class="${group ? 'group-row' : ''}" style="--row-accent: ${accent || '#44CCFF'}">
+        <tr class="${group ? 'group-row' : ''}">
           <td class="center">${index}</td>
           <td class="item-name">${show(title)}</td>
           <td>${show(detail)}</td>
@@ -183,8 +180,7 @@
           detail: 'Tổng phí bản quyền sử dụng âm nhạc tại địa điểm kinh doanh',
           scope,
           unit: duration,
-          amount: payload.totals.subtotalQLQ + payload.totals.subtotalQTG,
-          accent: '#CFF533'
+          amount: payload.totals.subtotalQLQ + payload.totals.subtotalQTG
         });
         if (payload.totals.subtotalQLQ > 0) {
           addRow(rows, {
@@ -193,8 +189,7 @@
             detail: 'Quyền liên quan bản ghi, bản thu âm do NCT Media cung cấp',
             scope,
             unit: duration,
-            amount: payload.totals.subtotalQLQ,
-            accent: '#44CCFF'
+            amount: payload.totals.subtotalQLQ
           });
         }
         if (payload.totals.subtotalQTG > 0) {
@@ -204,8 +199,7 @@
             detail: 'Phí quyền tác giả âm nhạc, áp dụng khi khách hàng yêu cầu tính kèm trong báo giá',
             scope,
             unit: duration,
-            amount: payload.totals.subtotalQTG,
-            accent: '#FFD300'
+            amount: payload.totals.subtotalQTG
           });
         }
       }
@@ -218,8 +212,7 @@
           detail: 'Tài khoản quản trị, phân phối và vận hành danh sách phát XMusic Station',
           scope: `${branchCount} tài khoản / ${branchCount} chi nhánh`,
           unit: duration,
-          amount: payload.totals.subtotalAccount,
-          accent: '#FF8B00'
+          amount: payload.totals.subtotalAccount
         });
       }
 
@@ -233,8 +226,7 @@
           detail: isBuy ? 'Thiết bị phát nhạc cấu hình sẵn cho từng địa điểm' : 'Thuê thiết bị phát nhạc cấu hình sẵn cho từng địa điểm',
           scope: `${totalBoxes} box · ${branchCount} chi nhánh`,
           unit: isBuy ? 'Một lần' : duration,
-          amount: payload.totals.subtotalBox,
-          accent: '#FF4F8B'
+          amount: payload.totals.subtotalBox
         });
       }
 
@@ -245,8 +237,7 @@
           detail: 'Chưa có hạng mục đủ điều kiện tính phí từ dữ liệu đầu vào',
           scope: '-',
           unit: '-',
-          amount: 0,
-          accent: '#c8c8c8'
+          amount: 0
         });
       }
 
