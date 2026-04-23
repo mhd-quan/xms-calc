@@ -94,6 +94,11 @@
           <input id="salaryInput" type="number" class="salary-input hidden" value="2340000">
           <div class="bc-sep" style="margin: 0 8px;"></div>
           <div style="display: flex; gap: 6px;">
+            <button id="bulkAddBtn" class="export-btn icon-action-btn bulk-add-btn" title="Bulk add chi nhánh">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
             <button id="settingsBtn" class="export-btn settings-btn-hover" title="Cài đặt">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
             </button>
@@ -397,6 +402,55 @@
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- BULK ADD MODAL -->
+  <div id="bulkAddModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content bulk-modal-content">
+      <div class="modal-header bulk-modal-header">
+        <div>
+          <h3>Bulk Add</h3>
+          <div class="modal-kicker">Branch input grid</div>
+        </div>
+        <button id="closeBulkAdd" class="close-btn">×</button>
+      </div>
+      <div class="bulk-modal-body">
+        <div class="bulk-toolbar">
+          <div id="bulkBusinessType" class="ableton-dropdown bulk-dropdown" data-value="" tabindex="0">
+            <div class="dropdown-display">
+              <span class="dropdown-text" id="bulkBusinessTypeText">Chọn mô hình...</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-menu">
+              <div class="dropdown-item" data-value="cafe">Quán cà phê - giải khát</div>
+              <div class="dropdown-item" data-value="restaurant">Nhà hàng, phòng hội thảo, hội nghị</div>
+              <div class="dropdown-item" data-value="store">Cửa hàng, showroom</div>
+              <div class="dropdown-item" data-value="gym">CLB thể dục, chăm sóc sức khỏe - thẩm mỹ</div>
+              <div class="dropdown-item" data-value="entertainment">Khu vui chơi, giải trí</div>
+              <div class="dropdown-item" data-value="mall">Trung tâm thương mại, cao ốc văn phòng</div>
+              <div class="dropdown-item" data-value="supermarket">Siêu thị</div>
+            </div>
+          </div>
+          <div class="bulk-meter">
+            <span class="signal-dot"></span>
+            <span id="bulkRowCount">0 rows</span>
+          </div>
+        </div>
+
+        <div class="bulk-grid-shell">
+          <div class="bulk-grid-head">
+            <span>STT</span>
+            <span>Diện tích phát nhạc</span>
+          </div>
+          <div id="bulkRows" class="bulk-rows"></div>
+        </div>
+      </div>
+      <div class="bulk-modal-footer">
+        <button id="cancelBulkAdd" class="secondary-btn">Hủy</button>
+        <button id="applyBulkAdd" class="primary-btn">Thêm chi nhánh</button>
+      </div>
+    </div>
   </div>
 
   <!-- SETTINGS MODAL -->

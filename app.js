@@ -34,6 +34,9 @@ let globalDiscounts = {
   qlq: 0
 };
 
+let bulkType = '';
+let bulkAreas = [''];
+
 function getCalcOptions() {
   return {
     baseSalary,
@@ -52,6 +55,13 @@ function getStoreTotal(s) {
 }
 
 const formatVND = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
+const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}[char]));
 
 // GSAP animate number helper
 function animateNumber(elementId, newValue) {
@@ -137,6 +147,93 @@ function removeStore(id) {
 function updateActive(field, value) {
   const s = getActive();
   if (s) { s[field] = value; render(); }
+}
+
+// ─── BULK ADD ─────────────────────────────────────────────────────────────
+function sanitizeAreaValue(value) {
+  return String(value || '').trim().replace(',', '.');
+}
+
+function parseBulkAreaLine(line) {
+  const cells = String(line).split('\t').map(sanitizeAreaValue).filter(Boolean);
+  return cells.length ? cells[cells.length - 1] : sanitizeAreaValue(line);
+}
+
+function getFilledBulkRows() {
+  return bulkAreas
+    .map(sanitizeAreaValue)
+    .filter((value) => value !== '' && Number(value) > 0);
+}
+
+function renderBulkType() {
+  const text = document.getElementById('bulkBusinessTypeText');
+  const dd = document.getElementById('bulkBusinessType');
+  if (!text || !dd) return;
+  text.textContent = bulkType && BUSINESS_TYPES[bulkType] ? BUSINESS_TYPES[bulkType].label : 'Chọn mô hình...';
+  dd.dataset.value = bulkType;
+  dd.querySelectorAll('.dropdown-item').forEach((el) => {
+    el.classList.toggle('active', el.dataset.value === bulkType);
+  });
+}
+
+function renderBulkRows(focusIndex = null) {
+  const rowsEl = document.getElementById('bulkRows');
+  if (!rowsEl) return;
+  if (bulkAreas.length === 0) bulkAreas = [''];
+  const startIndex = stores.length + 1;
+  rowsEl.innerHTML = bulkAreas.map((value, index) => `
+    <div class="bulk-row" data-index="${index}">
+      <div class="bulk-index">${String(startIndex + index).padStart(2, '0')}</div>
+      <div class="bulk-area-wrap">
+        <input class="bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="Nhập diện tích">
+      </div>
+    </div>
+  `).join('');
+  document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
+  if (focusIndex !== null) {
+    requestAnimationFrame(() => {
+      const input = rowsEl.querySelector(`.bulk-area-input[data-index="${focusIndex}"]`);
+      if (input) {
+        input.focus();
+        input.select();
+      }
+    });
+  }
+}
+
+function openBulkAddModal() {
+  const active = getActive();
+  bulkType = active && active.type ? active.type : '';
+  bulkAreas = [''];
+  renderBulkType();
+  renderBulkRows(0);
+  document.getElementById('bulkAddModal').classList.remove('hidden');
+}
+
+function closeBulkAddModal() {
+  document.getElementById('bulkAddModal').classList.add('hidden');
+  document.getElementById('bulkBusinessType').classList.remove('open');
+}
+
+function addBulkRows() {
+  const areas = getFilledBulkRows();
+  if (areas.length === 0) {
+    renderBulkRows(0);
+    return;
+  }
+
+  let firstCreatedId = null;
+  areas.forEach((areaValue) => {
+    const s = createStore(stores.length + 1);
+    s.type = bulkType;
+    s.area = areaValue;
+    stores.push(s);
+    if (!firstCreatedId) firstCreatedId = s.id;
+  });
+
+  activeTabId = firstCreatedId || activeTabId;
+  closeBulkAddModal();
+  render();
 }
 
 // ─── RENDER ───────────────────────────────────────────────────────────────
@@ -437,6 +534,66 @@ function bindEvents() {
   // Add store
   document.getElementById('addStoreBtn').addEventListener('click', addStore);
 
+  // Bulk add
+  const bulkAddModal = document.getElementById('bulkAddModal');
+  const bulkDd = document.getElementById('bulkBusinessType');
+  const bulkMenu = bulkDd.querySelector('.dropdown-menu');
+  const bulkRowsEl = document.getElementById('bulkRows');
+
+  document.getElementById('bulkAddBtn').addEventListener('click', openBulkAddModal);
+  document.getElementById('closeBulkAdd').addEventListener('click', closeBulkAddModal);
+  document.getElementById('cancelBulkAdd').addEventListener('click', closeBulkAddModal);
+  document.getElementById('applyBulkAdd').addEventListener('click', addBulkRows);
+  bulkAddModal.querySelector('.modal-overlay').addEventListener('click', closeBulkAddModal);
+
+  bulkDd.addEventListener('click', (e) => {
+    const item = e.target.closest('.dropdown-item');
+    if (item) {
+      bulkType = item.dataset.value;
+      renderBulkType();
+    }
+    const isOpen = bulkDd.classList.contains('open');
+    if (!isOpen) {
+      bulkDd.classList.add('open');
+      gsap.fromTo(bulkMenu, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.2 });
+    } else {
+      gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
+    }
+  });
+
+  bulkRowsEl.addEventListener('input', (e) => {
+    const input = e.target.closest('.bulk-area-input');
+    if (!input) return;
+    bulkAreas[Number(input.dataset.index)] = input.value;
+    document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
+  });
+
+  bulkRowsEl.addEventListener('keydown', (e) => {
+    const input = e.target.closest('.bulk-area-input');
+    if (!input || e.key !== 'Enter') return;
+    e.preventDefault();
+    const index = Number(input.dataset.index);
+    bulkAreas[index] = input.value;
+    if (index === bulkAreas.length - 1) bulkAreas.push('');
+    renderBulkRows(index + 1);
+  });
+
+  bulkRowsEl.addEventListener('paste', (e) => {
+    const input = e.target.closest('.bulk-area-input');
+    if (!input) return;
+    const text = e.clipboardData.getData('text');
+    const lines = text.split(/\r?\n/).map(parseBulkAreaLine).filter(Boolean);
+    if (lines.length <= 1) return;
+    e.preventDefault();
+    const index = Number(input.dataset.index);
+    lines.forEach((line, offset) => {
+      bulkAreas[index + offset] = line;
+    });
+    const nextIndex = index + lines.length;
+    bulkAreas[nextIndex] = bulkAreas[nextIndex] || '';
+    renderBulkRows(nextIndex);
+  });
+
   // Salary toggle
   const salaryDisplay = document.getElementById('salaryDisplay');
   const salaryInput = document.getElementById('salaryInput');
@@ -509,6 +666,9 @@ function bindEvents() {
   document.addEventListener('click', (e) => {
     if (!dd.contains(e.target) && dd.classList.contains('open')) {
       gsap.to(menu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => dd.classList.remove('open') });
+    }
+    if (!bulkDd.contains(e.target) && bulkDd.classList.contains('open')) {
+      gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
     }
     ['startDatePicker', 'endDatePicker'].forEach(id => {
       const pk = document.getElementById(id);
