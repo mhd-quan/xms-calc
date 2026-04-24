@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XMusic Station — Royalty Calculator</title>
+  <meta name="description" content="Bảng tính phí bản quyền âm nhạc theo Nghị định 17/2023/NĐ-CP">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles/styles.css">
+  <script src="vendor/gsap-lite.js"></script>
+  <script src="../shared/calculator.js"></script>
+  <script src="../services/quote-identity-service.js"></script>
+  <script src="../services/quote-payload.js"></script>
+</head>
+
+<body>
+  <div id="app" class="app-shell">
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-row">
+          <svg class="brand-mark" width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="50" fill="#000" />
+            <defs>
+              <linearGradient id="nctG" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#CFF533" />
+                <stop offset="100%" stop-color="#44CCFF" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="26" cy="50" rx="3.2" ry="13" fill="#BBF0FF" opacity=".9" />
+            <ellipse cx="38" cy="50" rx="3.2" ry="25" fill="url(#nctG)" />
+            <ellipse cx="50" cy="50" rx="3.2" ry="9" fill="#BBF0FF" opacity=".9" />
+            <ellipse cx="62" cy="50" rx="3.2" ry="25" fill="url(#nctG)" />
+            <ellipse cx="74" cy="50" rx="3.2" ry="13" fill="#BBF0FF" opacity=".9" />
+          </svg>
+          <div class="brand-text">
+            <div class="brand-name">XMUSIC STATION</div>
+            <div class="brand-sub">ROYALTY CALCULATOR</div>
+          </div>
+        </div>
+        <div class="brand-decree">
+          <span class="signal-dot"></span>
+          <span>ND 17/2023 · Phụ lục 2</span>
+        </div>
+      </div>
+
+      <section class="quote-history-panel">
+        <div class="quote-history-head">
+          <div>
+            <div class="panel-label">Quote Chain</div>
+            <strong id="historyQuoteCode">-</strong>
+          </div>
+          <span id="historyStatusChip" class="status-chip">Draft</span>
+        </div>
+        <div class="quote-history-meta">
+          <span id="historyDisplayQuoteNumber">-</span>
+          <span id="historyRevisionLabel">Base</span>
+        </div>
+        <div id="revisionList" class="revision-list"></div>
+      </section>
+
+      <div class="sidebar-search">
+        <div class="search-wrap">
+          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="1.8">
+            <circle cx="11" cy="11" r="8" />
+            <path d="m21 21-4.35-4.35" />
+          </svg>
+          <input id="searchInput" type="text" placeholder="Tìm cửa hàng" autocomplete="off">
+          <button id="searchClear" class="search-clear hidden">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="storeList" class="sidebar-list"></div>
+
+      <div class="sidebar-add">
+        <button id="addStoreBtn" class="add-store-btn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <span>Thêm chi nhánh</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main" id="mainContent">
+      <header class="topbar">
+        <div class="topbar-breadcrumb">
+          <span class="bc-dim">BD Tool</span>
+          <span class="bc-sep">/</span>
+          <span class="bc-active">Quotation Builder</span>
+          <span class="bc-sep">/</span>
+          <span id="activeQuoteNumber" class="bc-active">XMS-000000-000</span>
+          <span class="bc-sep">·</span>
+          <span id="activeRevisionBadge" class="bc-dim">Base</span>
+          <span class="bc-sep">·</span>
+          <span id="activeRevisionStatusText" class="bc-dim">Draft</span>
+          <span class="bc-sep">/</span>
+          <span class="bc-active" style="display: flex; align-items: center; gap: 6px;">
+            <span id="activeBranchColor" style="width: 8px; height: 8px; background: var(--pear); border-radius: 2px;"></span>
+            <span id="activeBranchName">Chi nhánh 1</span>
+          </span>
+          <span class="bc-sep" style="margin: 0 4px;">·</span>
+          <span id="locationCount" class="bc-dim tnum">1 loc</span>
+        </div>
+        <div class="topbar-controls">
+          <div class="topbar-salary">
+            <span class="salary-label">Lương cơ sở</span>
+            <span id="salaryDisplay" class="salary-value">2.340.000 ₫</span>
+            <input id="salaryInput" type="number" class="salary-input hidden" value="2340000">
+          </div>
+          <div class="topbar-actions">
+            <div id="quoteActionsMenu" class="quote-actions-menu">
+              <button id="quoteActionsBtn" class="export-btn icon-action-btn quote-actions-trigger" title="Quote actions">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+              <div class="quote-actions-dropdown">
+                <button id="newQuoteBtn" class="quote-menu-item" title="Tạo quote mới">
+                  <span class="quote-menu-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                  </span>
+                  <span>New Quote</span>
+                </button>
+                <button id="newRevisionBtn" class="quote-menu-item" title="Tạo revision mới">
+                  <span class="quote-menu-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4Z" />
+                    </svg>
+                  </span>
+                  <span>New Revision</span>
+                </button>
+                <button id="importPdfBtn" class="quote-menu-item" title="Import PDF">
+                  <span class="quote-menu-icon">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <path d="M14 2v6h6" />
+                      <path d="M12 18v-6" />
+                      <path d="m9.5 14.5 2.5-2.5 2.5 2.5" />
+                    </svg>
+                  </span>
+                  <span>Import PDF</span>
+                </button>
+              </div>
+            </div>
+            <div class="primary-actions">
+              <button id="bulkAddBtn" class="export-btn icon-action-btn bulk-add-btn" title="Bulk add chi nhánh">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z" />
+                  <path d="M14 2v5h5" />
+                  <path d="M9 13h6" />
+                  <path d="M9 17h6" />
+                </svg>
+              </button>
+              <button id="settingsBtn" class="export-btn icon-action-btn settings-btn-hover" title="Cài đặt">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+              </button>
+              <button id="exportBtn" class="export-btn icon-action-btn" title="Xuất PDF (Cmd+E)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 16V4" />
+                  <path d="m8 8 4-4 4 4" />
+                  <path d="M5 14v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div class="content-scroll">
+        <div class="content-inner">
+          <!-- STORE HEADLINE -->
+          <div class="store-headline">
+            <div class="headline-eyebrow" id="storeIndex">Chi nhánh 01 / 01</div>
+            <div class="headline-row">
+              <input id="storeName" type="text" class="headline-name" value="Chi nhánh 1">
+              <div class="headline-stats">
+                <div class="stat-block">
+                  <div class="stat-label">Chu kỳ</div>
+                  <div class="stat-value"><span id="statDuration" class="value-box tnum">12.0</span><span class="stat-unit">tháng</span></div>
+                </div>
+                <div class="stat-block">
+                  <div class="stat-label">Hệ số</div>
+                  <div class="stat-value"><span id="statCoef" class="value-box tnum">1.75</span></div>
+                </div>
+                <div class="stat-block stat-hero">
+                  <div class="stat-label">Tổng (pre-VAT)</div>
+                  <div class="stat-value pear tnum" id="statStoreTotal">0 <span class="stat-unit">₫</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 01 — FACILITY -->
+          <section class="section" id="section01">
+            <div class="section-header">
+              <button class="fold-toggle">▼</button>
+              <span class="section-idx">01</span>
+              <span class="section-title">Cơ sở vật chất</span>
+              <span class="section-line"></span>
+              <span class="section-sub">Facility Profile</span>
+            </div>
+            <div class="section-body">
+              <div class="grid-12">
+                <div class="col-7">
+                  <div class="field-label">Mô hình kinh doanh</div>
+                  <div id="businessType" class="ableton-dropdown" data-value="" tabindex="0">
+                    <div class="dropdown-display">
+                      <span class="dropdown-text" id="businessTypeText">Chọn mô hình kinh doanh...</span>
+                      <span class="dropdown-arrow">▼</span>
+                    </div>
+                    <div class="dropdown-menu">
+                      <div class="dropdown-item" data-value="cafe">Quán cà phê - giải khát</div>
+                      <div class="dropdown-item" data-value="restaurant">Nhà hàng, phòng hội thảo, hội nghị</div>
+                      <div class="dropdown-item" data-value="store">Cửa hàng, showroom</div>
+                      <div class="dropdown-item" data-value="gym">CLB thể dục, chăm sóc sức khỏe - thẩm mỹ</div>
+                      <div class="dropdown-item" data-value="entertainment">Khu vui chơi, giải trí</div>
+                      <div class="dropdown-item" data-value="mall">Trung tâm thương mại, cao ốc văn phòng</div>
+                      <div class="dropdown-item" data-value="supermarket">Siêu thị</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-5">
+                  <div class="field-label">Diện tích phát nhạc</div>
+                  <div class="field-suffix-wrap">
+                    <input id="areaInput" type="number" min="1" class="field-input" value="">
+                    <span class="field-suffix">m²</span>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="field-label">Bắt đầu</div>
+                  <div class="ableton-datepicker" id="startDatePicker" tabindex="0">
+                    <div class="datepicker-display">
+                      <span class="datepicker-value tnum" id="startDateText"></span>
+                      <span class="datepicker-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                      </span>
+                    </div>
+                    <div class="datepicker-popup">
+                      <div class="datepicker-header">
+                        <button class="datepicker-nav" data-dir="-1">◀</button>
+                        <span class="datepicker-month-year"></span>
+                        <button class="datepicker-nav" data-dir="1">▶</button>
+                      </div>
+                      <div class="datepicker-weekdays"><span>CN</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span></div>
+                      <div class="datepicker-grid"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-6">
+                  <div class="field-label">Kết thúc</div>
+                  <div class="ableton-datepicker" id="endDatePicker" tabindex="0">
+                    <div class="datepicker-display">
+                      <span class="datepicker-value tnum" id="endDateText"></span>
+                      <span class="datepicker-icon">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                      </span>
+                    </div>
+                    <div class="datepicker-popup">
+                      <div class="datepicker-header">
+                        <button class="datepicker-nav" data-dir="-1">◀</button>
+                        <span class="datepicker-month-year"></span>
+                        <button class="datepicker-nav" data-dir="1">▶</button>
+                      </div>
+                      <div class="datepicker-weekdays"><span>CN</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span></div>
+                      <div class="datepicker-grid"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 02 — PLATFORM -->
+          <section class="section" id="section02">
+            <div class="section-header">
+              <button class="fold-toggle">▼</button>
+              <span class="section-idx">02</span>
+              <span class="section-title">Nền tảng & Thiết bị</span>
+              <span class="section-line"></span>
+              <span class="section-sub">Platform</span>
+            </div>
+            <div class="section-body">
+              <!-- Account Fee -->
+              <div class="platform-row">
+                <div class="platform-left">
+                  <button class="toggle-btn on" id="accountToggle">BẬT</button>
+                  <div class="platform-info">
+                    <div class="platform-name">Phí tài khoản NCT</div>
+                    <div class="platform-desc">600.000 ₫ / năm · prorated theo chu kỳ</div>
+                  </div>
+                </div>
+                <div class="platform-right" id="accountFeeRight">
+                  <div class="fader-header">
+                    <span class="field-label">Chiết khấu (chung)</span>
+                    <div class="fader-val"><span id="discountAccountVal" class="value-box value-box-picton">0</span><span class="fader-pct">%</span></div>
+                  </div>
+                  <input id="discountAccount" type="range" min="0" max="100" step="5" value="0" class="fader fader-picton">
+                </div>
+              </div>
+
+              <!-- Box Fee (Global) -->
+              <div class="platform-row">
+                <div class="platform-left">
+                  <div class="platform-info">
+                    <div class="platform-name">Box phát nhạc (streaming device)</div>
+                    <div class="platform-desc" id="boxPriceDesc">Chọn hình thức trang bị cho mỗi chi nhánh</div>
+                  </div>
+                </div>
+                <div class="platform-right">
+                  <div class="fader-header">
+                    <span class="field-label">Hình thức</span>
+                  </div>
+                  <div class="segmented-control" id="boxModeControl">
+                    <button class="seg-btn active" data-mode="none"><span>KHÔNG</span></button>
+                    <button class="seg-btn" data-mode="buy"><span>MUA</span></button>
+                    <button class="seg-btn" data-mode="rent"><span>THUÊ</span></button>
+                  </div>
+                  
+                  <div id="boxQuantityRow" class="box-quantity-row hidden">
+                    <div class="fader-header" style="margin-top:14px">
+                      <span class="field-label">Số lượng</span>
+                      <div class="box-counter">
+                        <button id="boxMinus" class="counter-btn">−</button>
+                        <input id="boxCount" type="number" min="1" value="1" class="counter-input tnum">
+                        <button id="boxPlus" class="counter-btn">+</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="boxDiscountRow" class="hidden" style="margin-top: 14px;">
+                    <div class="fader-header">
+                      <span class="field-label">Chiết khấu (chung)</span>
+                      <div class="fader-val"><span id="discountBoxVal" class="value-box value-box-picton">0</span><span class="fader-pct">%</span></div>
+                    </div>
+                    <input id="discountBox" type="range" min="0" max="100" step="5" value="0" class="fader fader-picton">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- SECTION 03 — COPYRIGHT -->
+          <section class="section section-last" id="section03">
+            <div class="section-header">
+              <button class="fold-toggle">▼</button>
+              <span class="section-idx">03</span>
+              <span class="section-title">Bản quyền</span>
+              <span class="section-line"></span>
+              <span class="section-sub">Nhà nước</span>
+            </div>
+            
+            <div class="section-body">
+              <!-- QTG -->
+              <div class="copyright-row">
+                <div class="copyright-left">
+                  <button class="toggle-btn on" id="qtgToggle">BẬT</button>
+                  <div class="copyright-info">
+                    <div class="copyright-name">Quyền Tác giả</div>
+                    <div class="copyright-meta">
+                      <span>VCPMC</span><span class="dot">·</span>
+                      <span class="tnum" id="qtgCoef">Hệ số 1.75</span><span class="dot">·</span>
+                      <span class="tnum" id="qtgDur">12.0m</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="copyright-mid">
+                  <div class="fader-header">
+                    <span class="field-label">Chiết khấu (chung)</span>
+                    <div class="fader-val"><span id="discountQTGVal" class="value-box value-box-pear">0</span><span
+                        class="fader-pct">%</span></div>
+                  </div>
+                  <input id="discountQTG" type="range" min="0" max="100" step="5" value="0" class="fader fader-pear">
+                </div>
+                <div class="copyright-right">
+                  <div class="field-label">Thành tiền</div>
+                  <div class="copyright-amount tnum" id="qtgAmount">0 <span class="currency">₫</span></div>
+                </div>
+              </div>
+
+              <div class="divider"></div>
+
+              <!-- QLQ -->
+              <div class="copyright-row">
+                <div class="copyright-left">
+                  <button class="toggle-btn on" id="qlqToggle">BẬT</button>
+                  <div class="copyright-info">
+                    <div class="copyright-name">Quyền Liên quan</div>
+                    <div class="copyright-meta">
+                      <span>NCT</span><span class="dot">·</span>
+                      <span class="tnum" id="qlqCoef">Hệ số 1.75</span><span class="dot">·</span>
+                      <span class="tnum" id="qlqDur">12.0m</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="copyright-mid">
+                  <div class="fader-header">
+                    <span class="field-label">Chiết khấu (chung)</span>
+                    <div class="fader-val"><span id="discountQLQVal" class="value-box value-box-pear">0</span><span
+                        class="fader-pct">%</span></div>
+                  </div>
+                  <input id="discountQLQ" type="range" min="0" max="100" step="5" value="0" class="fader fader-pear">
+                </div>
+                <div class="copyright-right">
+                  <div class="field-label">Thành tiền</div>
+                  <div class="copyright-amount tnum" id="qlqAmount">0 <span class="currency">₫</span></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <!-- BOTTOM BAR -->
+      <div class="bottombar">
+        <div class="bottombar-inner">
+          <div class="bottom-breakdown">
+            <div class="bottom-item">
+              <div class="bottom-label">Q. Tác Giả</div>
+              <div class="bottom-val tnum" id="totalQTG">0</div>
+            </div>
+            <div class="bottom-item">
+              <div class="bottom-label">Q. Liên Quan</div>
+              <div class="bottom-val tnum" id="totalQLQ">0</div>
+            </div>
+            <div class="bottom-item">
+              <div class="bottom-label">Tài khoản</div>
+              <div class="bottom-val tnum" id="totalAccount">0</div>
+            </div>
+            <div class="bottom-item">
+              <div class="bottom-label">Box</div>
+              <div class="bottom-val tnum" id="totalBox">0</div>
+            </div>
+          </div>
+          <div class="bottom-subtotal">
+            <div class="bottom-sub-row" style="margin-bottom: 6px;">
+              <span class="bottom-label">Subtotal</span>
+              <span class="bottom-val tnum" id="subtotalVal">0</span>
+            </div>
+            <div class="bottom-sub-row">
+              <div class="segmented-control" id="vatControl">
+                <button class="seg-btn active" data-vat="0"><span>KHÔNG</span></button>
+                <button class="seg-btn" data-vat="0.08"><span>8%</span></button>
+                <button class="seg-btn" data-vat="0.1"><span>10%</span></button>
+              </div>
+              <span class="bottom-val tnum dim" id="vatVal">+0</span>
+            </div>
+          </div>
+          <div class="bottom-grand">
+            <div class="bottom-label">Tổng thanh toán</div>
+            <div class="grand-total">
+              <span class="grand-number tnum" id="grandTotal">0</span>
+              <span class="grand-currency">₫</span>
+            </div>
+            <div class="grand-vu-meter">
+              <div id="grandVuFill" style="position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--pear); transition: width 400ms var(--ease-spring);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- BULK ADD MODAL -->
+  <div id="bulkAddModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content bulk-modal-content">
+      <div class="modal-header bulk-modal-header">
+        <div>
+          <h3>Bulk Add</h3>
+          <div class="modal-kicker">Branch input grid</div>
+        </div>
+        <button id="closeBulkAdd" class="close-btn">×</button>
+      </div>
+      <div class="bulk-modal-body">
+        <div class="bulk-toolbar">
+          <div id="bulkBusinessType" class="ableton-dropdown bulk-dropdown" data-value="" tabindex="0">
+            <div class="dropdown-display">
+              <span class="dropdown-text" id="bulkBusinessTypeText">Chọn mô hình...</span>
+              <span class="dropdown-arrow">▼</span>
+            </div>
+            <div class="dropdown-menu">
+              <div class="dropdown-item" data-value="cafe">Quán cà phê - giải khát</div>
+              <div class="dropdown-item" data-value="restaurant">Nhà hàng, phòng hội thảo, hội nghị</div>
+              <div class="dropdown-item" data-value="store">Cửa hàng, showroom</div>
+              <div class="dropdown-item" data-value="gym">CLB thể dục, chăm sóc sức khỏe - thẩm mỹ</div>
+              <div class="dropdown-item" data-value="entertainment">Khu vui chơi, giải trí</div>
+              <div class="dropdown-item" data-value="mall">Trung tâm thương mại, cao ốc văn phòng</div>
+              <div class="dropdown-item" data-value="supermarket">Siêu thị</div>
+            </div>
+          </div>
+          <div class="bulk-meter">
+            <span class="signal-dot"></span>
+            <span id="bulkRowCount">0 rows</span>
+          </div>
+        </div>
+
+        <div class="bulk-grid-shell">
+          <div class="bulk-grid-head">
+            <span>STT</span>
+            <span>Diện tích phát nhạc</span>
+          </div>
+          <div id="bulkRows" class="bulk-rows"></div>
+        </div>
+      </div>
+      <div class="bulk-modal-footer">
+        <button id="cancelBulkAdd" class="secondary-btn">Hủy</button>
+        <button id="applyBulkAdd" class="primary-btn">Thêm chi nhánh</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOMER EXPORT MODAL -->
+  <div id="customerModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content quote-modal-content">
+      <div class="modal-header">
+        <div>
+          <h3>Thông tin khách hàng</h3>
+          <div class="modal-kicker">Quotation export profile</div>
+        </div>
+        <button id="closeCustomerModal" class="close-btn">×</button>
+      </div>
+      <div class="modal-body quote-form-body">
+        <div class="settings-grid">
+          <label class="settings-field settings-field-wide">
+            <span class="field-label">Tên Công ty</span>
+            <input id="customerCompany" type="text" class="field-input" placeholder="VD: Công ty TNHH ABC">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Người phụ trách</span>
+            <input id="customerContactName" type="text" class="field-input" placeholder="VD: Trần Minh Anh">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Phòng ban</span>
+            <input id="customerDepartment" type="text" class="field-input" placeholder="VD: Purchasing">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Email</span>
+            <input id="customerEmail" type="email" class="field-input" placeholder="name@company.com">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Số điện thoại</span>
+            <input id="customerPhone" type="tel" class="field-input" placeholder="090 000 0000">
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer settings-footer">
+        <button id="cancelCustomerModal" class="secondary-btn">Hủy</button>
+        <button id="confirmCustomerExport" class="primary-btn">Lưu & Xuất PDF</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IMPORT PREVIEW MODAL -->
+  <div id="importPreviewModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content import-modal-content">
+      <div class="modal-header">
+        <div>
+          <h3>Import báo giá từ PDF</h3>
+          <div class="modal-kicker">Preview before attach</div>
+        </div>
+        <button id="closeImportPreviewModal" class="close-btn">×</button>
+      </div>
+      <div class="modal-body quote-form-body">
+        <div class="import-preview-grid">
+          <div class="import-preview-item">
+            <span class="field-label">File</span>
+            <strong id="importPreviewFileName">-</strong>
+          </div>
+          <div class="import-preview-item">
+            <span class="field-label">Quote</span>
+            <strong id="importPreviewQuoteNumber">-</strong>
+          </div>
+          <div class="import-preview-item">
+            <span class="field-label">Khách hàng</span>
+            <strong id="importPreviewCustomer">-</strong>
+          </div>
+          <div class="import-preview-item">
+            <span class="field-label">Chi nhánh</span>
+            <strong id="importPreviewBranchCount">0</strong>
+          </div>
+          <div class="import-preview-item">
+            <span class="field-label">Grand Total</span>
+            <strong id="importPreviewGrandTotal">0</strong>
+          </div>
+          <div class="import-preview-item">
+            <span class="field-label">Compatibility</span>
+            <strong id="importPreviewCompatibility">-</strong>
+          </div>
+        </div>
+        <div class="import-preview-summary">
+          <span class="field-label">Conflict status</span>
+          <p id="importPreviewSummary">-</p>
+        </div>
+        <div>
+          <span class="field-label">Action</span>
+          <div id="importActionOptions" class="import-action-options"></div>
+        </div>
+      </div>
+      <div class="modal-footer settings-footer">
+        <button id="cancelImportPreview" class="secondary-btn">Hủy</button>
+        <button id="confirmImportPreview" class="primary-btn">Confirm Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS MODAL -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-overlay"></div>
+    <div class="modal-content settings-modal-content">
+      <div class="modal-header">
+        <div>
+          <h3>Cài đặt</h3>
+          <div class="modal-kicker">Quotation owner profile</div>
+        </div>
+        <button id="closeSettings" class="close-btn">×</button>
+      </div>
+      <div class="modal-body quote-form-body">
+        <div class="settings-grid">
+          <label class="settings-field">
+            <span class="field-label">Tên người lập</span>
+            <input id="settingName" type="text" class="field-input" placeholder="VD: Nguyễn Văn A">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Chức vụ</span>
+            <input id="settingTitle" type="text" class="field-input" placeholder="VD: BD Executive">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Phòng ban</span>
+            <input id="settingDepartment" type="text" class="field-input" placeholder="VD: Business Development">
+          </label>
+          <label class="settings-field">
+            <span class="field-label">Email</span>
+            <input id="settingEmail" type="email" class="field-input" placeholder="name@nct.vn">
+          </label>
+          <label class="settings-field settings-field-wide">
+            <span class="field-label">Số điện thoại</span>
+            <input id="settingPhone" type="tel" class="field-input" placeholder="090 000 0000">
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer settings-footer">
+        <button id="saveSettingsBtn" class="primary-btn">Lưu cài đặt</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
