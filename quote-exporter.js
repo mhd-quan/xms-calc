@@ -1,8 +1,12 @@
 const fs = require('fs/promises');
 const path = require('path');
 const { performance } = require('perf_hooks');
+const { embedManifestInPdf, createPdfFingerprint } = require('./pdf-import-service');
 
 const EXPORT_TIMEOUT_MS = 30000;
+let cachedPrintWindow = null;
+let cachedTemplatePath = null;
+let cachedTemplateReady = false;
 
 function safeFilePart(value, fallback) {
   const normalized = String(value || fallback)
@@ -32,15 +36,21 @@ function validateQuotePayload(payload) {
   if (!payload.globals || typeof payload.globals !== 'object') {
     throw new Error('Invalid quote payload: missing globals');
   }
+  if (!payload.quoteIdentity || typeof payload.quoteIdentity !== 'object') {
+    throw new Error('Invalid quote payload: missing quote identity');
+  }
 }
 
 function getDefaultPath(app, payload) {
   const customerFileName = safeFilePart(
-    payload.meta.customer.companyName || payload.meta.customerName,
+    payload.customer?.companyName || payload.meta.customer.companyName || payload.meta.customerName,
     'KhachHang'
   );
-  const datePart = new Date().toISOString().slice(2, 10).replace(/-/g, '');
-  return path.join(app.getPath('documents'), `BaoGia_NCT_${customerFileName}_${datePart}.pdf`);
+  const quoteNumber = safeFilePart(
+    payload.quoteIdentity.displayQuoteNumber || payload.meta.displayQuoteNumber,
+    'BaoGia'
+  );
+  return path.join(app.getPath('documents'), `${quoteNumber}_${customerFileName}.pdf`);
 }
 
 async function getMemorySnapshot() {
@@ -94,34 +104,76 @@ async function loadFileWithFailureHandling(browserWindow, filePath) {
   }
 }
 
+function createPrintWindow(BrowserWindow) {
+  const browserWindow = new BrowserWindow({
+    show: false,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true
+    }
+  });
+  browserWindow.on('closed', () => {
+    cachedPrintWindow = null;
+    cachedTemplatePath = null;
+    cachedTemplateReady = false;
+  });
+  return browserWindow;
+}
+
+async function getPrintWindow(BrowserWindow, templatePath) {
+  if (!cachedPrintWindow || cachedPrintWindow.isDestroyed()) {
+    cachedPrintWindow = createPrintWindow(BrowserWindow);
+    cachedTemplateReady = false;
+    cachedTemplatePath = null;
+  }
+
+  if (!cachedTemplateReady || cachedTemplatePath !== templatePath) {
+    await loadFileWithFailureHandling(cachedPrintWindow, templatePath);
+    cachedTemplateReady = true;
+    cachedTemplatePath = templatePath;
+  }
+
+  return cachedPrintWindow;
+}
+
 async function exportQuote({
   BrowserWindow,
   app,
   dialog,
   payload,
+  manifest,
   parentWindow = null,
   templatePath = path.join(__dirname, 'quote-template', 'template.html')
 }) {
   validateQuotePayload(payload);
+  if (!manifest || typeof manifest !== 'object') {
+    throw new Error('Invalid export manifest');
+  }
 
   let printWin;
   const timings = {};
   const memoryBefore = await getMemorySnapshot();
   const exportStart = performance.now();
 
+  const dialogOptions = {
+    title: 'Lưu báo giá PDF',
+    defaultPath: getDefaultPath(app, payload),
+    filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+  };
+  const { filePath } = parentWindow
+    ? await dialog.showSaveDialog(parentWindow, dialogOptions)
+    : await dialog.showSaveDialog(dialogOptions);
+
+  if (!filePath) {
+    return null;
+  }
+
   const renderAndPrint = (async () => {
     const createStart = performance.now();
-    printWin = new BrowserWindow({
-      show: false,
-      webPreferences: {
-        nodeIntegration: false,
-        contextIsolation: true
-      }
-    });
+    printWin = await getPrintWindow(BrowserWindow, templatePath);
     timings.createWindow = performance.now() - createStart;
 
     const renderStart = performance.now();
-    await loadFileWithFailureHandling(printWin, templatePath);
     await printWin.webContents.executeJavaScript(`window.renderQuote(${JSON.stringify(payload)})`, true);
     timings.renderTemplate = performance.now() - renderStart;
 
@@ -137,38 +189,28 @@ async function exportQuote({
 
   try {
     const pdfData = await raceTimeout(renderAndPrint, EXPORT_TIMEOUT_MS);
-    const dialogOptions = {
-      title: 'Lưu báo giá PDF',
-      defaultPath: getDefaultPath(app, payload),
-      filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
-    };
-    const { filePath } = parentWindow
-      ? await dialog.showSaveDialog(parentWindow, dialogOptions)
-      : await dialog.showSaveDialog(dialogOptions);
-
-    if (!filePath) {
-      timings.total = performance.now() - exportStart;
-      logExportPerf(app, timings, {
-        pdfBytes: pdfData.length,
-        memoryBefore,
-        memoryAfter: await getMemorySnapshot()
-      });
-      return null;
-    }
+    const embedStart = performance.now();
+    const finalPdfData = await embedManifestInPdf(pdfData, manifest);
+    timings.embedManifest = performance.now() - embedStart;
 
     const writeStart = performance.now();
-    await fs.writeFile(filePath, pdfData);
+    await fs.writeFile(filePath, finalPdfData);
     timings.writeFile = performance.now() - writeStart;
     timings.total = performance.now() - exportStart;
     logExportPerf(app, timings, {
-      pdfBytes: pdfData.length,
+      pdfBytes: finalPdfData.length,
       memoryBefore,
       memoryAfter: await getMemorySnapshot()
     });
-    return filePath;
+    return {
+      filePath,
+      fingerprint: createPdfFingerprint(finalPdfData)
+    };
   } finally {
-    if (printWin && !printWin.isDestroyed()) {
-      printWin.destroy();
+    if (printWin && printWin.isDestroyed()) {
+      cachedPrintWindow = null;
+      cachedTemplateReady = false;
+      cachedTemplatePath = null;
     }
   }
 }

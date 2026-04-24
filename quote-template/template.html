@@ -30,6 +30,7 @@
     <section class="title-block">
       <p>Dịch vụ bản quyền & giải pháp phát nhạc thương mại</p>
       <h1>Bảng báo giá</h1>
+      <div id="revisionBadge" class="revision-badge"></div>
     </section>
 
     <section class="info-rack">
@@ -152,10 +153,11 @@
 
     function buildPricingRows(payload) {
       const rows = [];
-      const branchCount = payload.stores.length;
-      const totalArea = payload.stores.reduce((sum, store) => sum + (Number(store.area) || 0), 0);
+      const stores = payload.computedStores || [];
+      const branchCount = stores.length;
+      const totalArea = stores.reduce((sum, store) => sum + (Number(store.area) || 0), 0);
       const scope = `${branchCount} chi nhánh · ${formatNumber(totalArea)} m²`;
-      const duration = durationScope(payload.stores);
+      const duration = durationScope(stores);
       let index = 1;
 
       if (payload.totals.subtotalQLQ > 0 || payload.totals.subtotalQTG > 0) {
@@ -251,18 +253,23 @@
     }
 
     window.renderQuote = function(payload) {
-      const customer = payload.meta.customer || {};
-      const prepared = payload.meta.preparedBy || {};
+      const customer = payload.customer || payload.meta.customer || {};
+      const prepared = payload.preparedBy || payload.meta.preparedBy || {};
+      const stores = payload.computedStores || [];
       const date = new Date(payload.meta.quoteDate);
-      const branchCount = payload.stores.length;
-      const totalArea = payload.stores.reduce((sum, store) => sum + (Number(store.area) || 0), 0);
+      const branchCount = stores.length;
+      const totalArea = stores.reduce((sum, store) => sum + (Number(store.area) || 0), 0);
       const nextCycle = payload.totals.subtotalQTG
         + payload.totals.subtotalQLQ
         + payload.totals.subtotalAccount
         + (payload.globals.boxMode === 'rent' ? payload.totals.subtotalBox : 0);
+      const revisionBadge = document.getElementById('revisionBadge');
 
-      document.getElementById('quoteNumber').textContent = payload.meta.quoteNumber || '';
+      document.getElementById('quoteNumber').textContent = payload.quoteIdentity.displayQuoteNumber || payload.meta.quoteNumber || '';
       document.getElementById('quoteDate').textContent = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      revisionBadge.textContent = payload.quoteIdentity.revisionLabel || '';
+      revisionBadge.style.display = payload.quoteIdentity.revisionNumber > 0 ? 'inline-flex' : 'none';
 
       document.getElementById('customerCompany').innerHTML = show(customer.companyName || payload.meta.customerName);
       document.getElementById('customerContact').innerHTML = show(customer.contactName);
@@ -279,7 +286,7 @@
 
       document.getElementById('branchCount').textContent = `${branchCount} chi nhánh`;
       document.getElementById('totalArea').textContent = `${formatNumber(totalArea)} m²`;
-      document.getElementById('durationScope').textContent = durationScope(payload.stores);
+      document.getElementById('durationScope').textContent = durationScope(stores);
       document.getElementById('vatRateBadge').textContent = `${payload.totals.vatRate * 100}%`;
 
       document.getElementById('pricingRows').innerHTML = buildPricingRows(payload);

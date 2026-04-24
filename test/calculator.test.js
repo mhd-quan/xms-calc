@@ -4,9 +4,16 @@ const {
   calculateCoef,
   calculateDurationMonths,
   calculateStoreBreakdown,
-  calculateTotals,
+  calculateTotals
 } = require('../calculator');
-const { buildQuotePayload } = require('../quote-payload');
+const {
+  buildDraftSnapshotFromManifest,
+  buildEmbeddedManifest,
+  buildQuotePayload
+} = require('../quote-payload');
+const {
+  buildQuoteIdentity
+} = require('../quote-identity-service');
 
 const moneyEqual = (actual, expected) => {
   assert.equal(Math.round(actual), Math.round(expected));
@@ -20,7 +27,7 @@ const baseOptions = {
   hasAccountFee: true,
   hasQTG: true,
   hasQLQ: true,
-  globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
+  globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 }
 };
 
 const cafeStore = {
@@ -28,7 +35,7 @@ const cafeStore = {
   type: 'cafe',
   area: '100',
   startDate: '2026-01-01',
-  endDate: '2026-12-31',
+  endDate: '2026-12-31'
 };
 
 test('calculates current cafe coefficient and 12-month duration', () => {
@@ -61,7 +68,7 @@ test('box buy is charged per branch using the global count per branch', () => {
   const { stores: rows, totals } = calculateTotals(stores, {
     ...baseOptions,
     boxMode: 'buy',
-    globalBoxCount: 2,
+    globalBoxCount: 2
   });
 
   rows.forEach((row) => moneyEqual(row.boxAmount, 4000000));
@@ -71,12 +78,12 @@ test('box buy is charged per branch using the global count per branch', () => {
 test('box rent is prorated per branch duration', () => {
   const stores = [
     cafeStore,
-    { ...cafeStore, name: 'Chi nhánh 2', endDate: '2026-06-30' },
+    { ...cafeStore, name: 'Chi nhánh 2', endDate: '2026-06-30' }
   ];
   const { stores: rows, totals } = calculateTotals(stores, {
     ...baseOptions,
     boxMode: 'rent',
-    globalBoxCount: 2,
+    globalBoxCount: 2
   });
 
   moneyEqual(rows[0].boxAmount, 2000000);
@@ -108,15 +115,42 @@ test('buildQuotePayload creates export-safe metadata and enriched store rows', (
       email: ' bd@example.com ',
       phone: ' 0911111111 '
     },
-    new Date('2026-04-23T00:00:00.000Z')
+    {
+      quoteDateInput: new Date('2026-04-23T00:00:00.000Z'),
+      quoteIdentity: buildQuoteIdentity('XMS-260423-001', 1)
+    }
   );
 
-  assert.equal(payload.meta.quoteNumber, 'XMS-260423');
-  assert.equal(payload.meta.customer.companyName, 'Công ty Test');
-  assert.equal(payload.meta.preparedBy.name, 'Người lập');
-  assert.equal(payload.stores[0].branchNo, 1);
-  assert.equal(payload.stores[0].typeLabel, 'Quán cà phê - giải khát');
-  assert.equal(payload.stores[0].shortType, 'CAFÉ');
+  assert.equal(payload.meta.quoteNumber, 'XMS-260423-001-R1');
+  assert.equal(payload.quoteIdentity.quoteCode, 'XMS-260423-001');
+  assert.equal(payload.customer.companyName, 'Công ty Test');
+  assert.equal(payload.preparedBy.name, 'Người lập');
+  assert.equal(payload.computedStores[0].branchNo, 1);
+  assert.equal(payload.computedStores[0].typeLabel, 'Quán cà phê - giải khát');
+  assert.equal(payload.computedStores[0].shortType, 'CAFÉ');
   assert.equal(payload.globals.boxMode, 'none');
   moneyEqual(payload.totals.grand, calculateTotals([cafeStore], baseOptions).totals.grand);
+});
+
+test('embedded manifest restores full editable draft snapshot', () => {
+  const payload = buildQuotePayload(
+    { stores: [cafeStore], calcOptions: { ...baseOptions, vatRate: 0.08 } },
+    { companyName: 'Công ty B' },
+    { name: 'BD User' },
+    {
+      quoteDateInput: new Date('2026-04-23T00:00:00.000Z'),
+      quoteIdentity: buildQuoteIdentity('XMS-260423-002', 0)
+    }
+  );
+  const manifest = buildEmbeddedManifest(payload, {
+    appVersion: '1.6.5',
+    exportedAt: '2026-04-23T10:00:00.000Z'
+  });
+  const snapshot = buildDraftSnapshotFromManifest(manifest);
+
+  assert.equal(manifest.schemaVersion, '1.6');
+  assert.equal(snapshot.customer.companyName, 'Công ty B');
+  assert.equal(snapshot.preparedBy.name, 'BD User');
+  assert.equal(snapshot.calcOptions.vatRate, 0.08);
+  assert.equal(snapshot.stores[0].name, 'Chi nhánh 1');
 });

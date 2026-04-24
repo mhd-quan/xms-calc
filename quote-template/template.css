@@ -178,6 +178,22 @@ body {
   text-transform: uppercase;
 }
 
+.revision-badge {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2.5mm;
+  padding: 1.2mm 2.2mm;
+  border: 1px solid var(--line-dark);
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
 .info-rack {
   display: grid;
   grid-template-columns: 1fr 1fr;

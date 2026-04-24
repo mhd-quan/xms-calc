@@ -1,28 +1,26 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   XMusic Station — Royalty Calculator · Application Logic
-   ND 17/2023 Phụ lục 2 stepped coefficients preserved from MVP.
-   Ableton v3 Features: Global Box State, GSAP micro-animations, custom inputs.
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* XMusic Station — Quote Workflow v1.6 */
 
-// ─── CONSTANTS ────────────────────────────────────────────────────────────
 const {
   BUSINESS_TYPES,
   calculateCoef,
   calculateDurationMonths,
-  calculateTotals,
+  calculateTotals
 } = window.BDCalculator;
-const { buildQuotePayload } = window.BDQuotePayload;
+const {
+  buildQuotePayload,
+  normalizeCalcOptions,
+  normalizePreparedBy,
+  normalizeProfile,
+  normalizeStores
+} = window.BDQuotePayload;
 
 let baseSalary = 2340000;
 let vatRate = 0;
 let stores = [];
 let activeTabId = null;
 
-// GLOBAL BOX STATE (Phase 5)
-let boxMode = 'none'; // 'none' | 'buy' | 'rent'
+let boxMode = 'none';
 let globalBoxCount = 1;
-
-// GLOBAL ACCOUNT & DISCOUNTS
 let hasAccountFee = true;
 let hasQTG = true;
 let hasQLQ = true;
@@ -37,6 +35,73 @@ let globalDiscounts = {
 let bulkType = '';
 let bulkAreas = [''];
 
+let customerProfile = blankCustomer();
+let preparedByProfile = blankPreparedBy();
+
+let activeQuoteId = null;
+let activeQuoteCode = '';
+let activeRevisionId = null;
+let activeRevisionNumber = 0;
+let activeDisplayQuoteNumber = '';
+let activeRevisionStatus = 'draft';
+let revisionsForQuote = [];
+
+let activeImportPreview = null;
+let selectedImportAction = null;
+
+let isHydratingRevision = false;
+let renderScheduled = false;
+let renderScope = new Set();
+let chromeDirty = true;
+let computedQuoteDirty = true;
+let computedQuoteCache = null;
+let draftSnapshotDirty = true;
+let draftSnapshotCache = null;
+
+let lastPersistedSnapshot = '';
+let pendingPersistSerialized = null;
+let persistTimer = null;
+let persistPromise = Promise.resolve();
+
+const formatVND = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
+const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  '"': '&quot;',
+  "'": '&#39;'
+}[char]));
+
+function blankCustomer() {
+  return {
+    companyName: '',
+    contactName: '',
+    department: '',
+    email: '',
+    phone: ''
+  };
+}
+
+function blankPreparedBy() {
+  return {
+    name: '',
+    title: '',
+    department: '',
+    email: '',
+    phone: ''
+  };
+}
+
+function statusLabel(status) {
+  if (status === 'exported') return 'Exported';
+  if (status === 'imported') return 'Imported';
+  return 'Draft';
+}
+
+function revisionLabel(revisionNumber) {
+  return Number(revisionNumber) > 0 ? `R${revisionNumber}` : 'Base';
+}
+
 function getCalcOptions() {
   return {
     baseSalary,
@@ -46,45 +111,400 @@ function getCalcOptions() {
     hasAccountFee,
     hasQTG,
     hasQLQ,
-    globalDiscounts,
+    globalDiscounts: { ...globalDiscounts }
   };
 }
 
-const formatVND = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(n));
-const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  '"': '&quot;',
-  "'": '&#39;'
-}[char]));
+function getDefaultPreparedBy() {
+  try {
+    return normalizePreparedBy(JSON.parse(localStorage.getItem('bdSettings')) || {});
+  } catch (_error) {
+    return blankPreparedBy();
+  }
+}
 
-// GSAP animate number helper
-function animateNumber(elementId, newValue) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  const cached = el._lastValue ?? (parseFloat(el.textContent.replace(/\./g, '').replace(/,/g, '')) || 0);
-  if (Math.abs(cached - newValue) < 0.5) return; // skip if no meaningful change
-  
-  el._lastValue = newValue;
-  if (el._tweenObj) gsap.killTweensOf(el._tweenObj);
-  el._tweenObj = { val: cached };
-  
-  gsap.to(el._tweenObj, {
-    val: newValue, duration: 0.4, ease: "power2.out",
-    onUpdate: () => { el.textContent = formatVND(el._tweenObj.val); }
+function buildInitialDraftSnapshot() {
+  return {
+    customer: blankCustomer(),
+    preparedBy: getDefaultPreparedBy(),
+    calcOptions: normalizeCalcOptions({
+      baseSalary: 2340000,
+      vatRate: 0,
+      boxMode: 'none',
+      globalBoxCount: 1,
+      hasAccountFee: true,
+      hasQTG: true,
+      hasQLQ: true,
+      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 }
+    }),
+    stores: [createStore(1)],
+    totals: {}
+  };
+}
+
+function setPreparedByDefaults(preparedBy) {
+  localStorage.setItem('bdSettings', JSON.stringify(normalizePreparedBy(preparedBy)));
+}
+
+function snapshotString(snapshot) {
+  return JSON.stringify(snapshot);
+}
+
+function invalidateComputedQuote() {
+  computedQuoteDirty = true;
+  draftSnapshotDirty = true;
+}
+
+function invalidateDraftSnapshot() {
+  draftSnapshotDirty = true;
+}
+
+function markChromeDirty() {
+  chromeDirty = true;
+}
+
+function getCurrentComputedQuote() {
+  if (!computedQuoteDirty && computedQuoteCache) {
+    return computedQuoteCache;
+  }
+  computedQuoteCache = calculateTotals(stores, getCalcOptions());
+  computedQuoteDirty = false;
+  return computedQuoteCache;
+}
+
+function buildDraftSnapshot() {
+  if (!draftSnapshotDirty && draftSnapshotCache) {
+    return draftSnapshotCache;
+  }
+  const calcOptions = getCalcOptions();
+  const normalizedStores = normalizeStores(stores);
+  draftSnapshotCache = {
+    customer: normalizeProfile(customerProfile),
+    preparedBy: normalizePreparedBy(preparedByProfile),
+    calcOptions,
+    stores: normalizedStores,
+    totals: getCurrentComputedQuote().totals
+  };
+  draftSnapshotDirty = false;
+  return draftSnapshotCache;
+}
+
+async function persistDraftSerialized(serialized) {
+  if (!serialized || !window.electronAPI || !activeRevisionId) return null;
+  if (serialized === lastPersistedSnapshot) {
+    pendingPersistSerialized = null;
+    return null;
+  }
+
+  const snapshot = JSON.parse(serialized);
+  try {
+    await window.electronAPI.saveQuoteDraft({
+      revisionId: activeRevisionId,
+      snapshot
+    });
+    lastPersistedSnapshot = serialized;
+    return true;
+  } catch (error) {
+    console.error(error);
+    return null;
+  } finally {
+    if (pendingPersistSerialized === serialized) {
+      pendingPersistSerialized = null;
+    }
+  }
+}
+
+function scheduleDraftPersist() {
+  if (isHydratingRevision || !activeRevisionId || !window.electronAPI) return;
+  if (persistTimer) clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    const serialized = snapshotString(buildDraftSnapshot());
+    if (serialized === lastPersistedSnapshot || serialized === pendingPersistSerialized) return;
+    pendingPersistSerialized = serialized;
+    persistPromise = persistDraftSerialized(serialized);
+  }, 450);
+}
+
+async function flushDraftPersist() {
+  if (!activeRevisionId) return;
+  if (persistTimer) {
+    clearTimeout(persistTimer);
+    persistTimer = null;
+    persistPromise = persistDraftSerialized(
+      pendingPersistSerialized || snapshotString(buildDraftSnapshot())
+    );
+    await persistPromise;
+    return;
+  }
+  if (pendingPersistSerialized) {
+    persistPromise = persistDraftSerialized(pendingPersistSerialized);
+    await persistPromise;
+    return;
+  }
+  await persistPromise;
+}
+
+function syncBundleMetadata(bundle) {
+  if (!bundle || !bundle.activeRevision) return;
+  activeQuoteId = bundle.quote?.id || bundle.activeRevision.quoteId;
+  activeQuoteCode = bundle.activeRevision.quoteCode;
+  activeRevisionId = bundle.activeRevision.id;
+  activeRevisionNumber = bundle.activeRevision.revisionNumber;
+  activeDisplayQuoteNumber = bundle.activeRevision.displayQuoteNumber;
+  activeRevisionStatus = bundle.activeRevision.status;
+  revisionsForQuote = Array.isArray(bundle.revisions) ? bundle.revisions : [];
+  markChromeDirty();
+}
+
+function hydrateEditorFromRevision(revision) {
+  isHydratingRevision = true;
+
+  const snapshot = {
+    customer: normalizeProfile(revision.customer),
+    preparedBy: normalizePreparedBy(revision.preparedBy),
+    calcOptions: normalizeCalcOptions(revision.calcOptions),
+    stores: normalizeStores(revision.stores)
+  };
+
+  customerProfile = snapshot.customer;
+  preparedByProfile = snapshot.preparedBy;
+  setCustomerFields(customerProfile);
+  setSettingsFields(preparedByProfile);
+
+  baseSalary = snapshot.calcOptions.baseSalary;
+  vatRate = snapshot.calcOptions.vatRate;
+  boxMode = snapshot.calcOptions.boxMode;
+  globalBoxCount = snapshot.calcOptions.globalBoxCount;
+  hasAccountFee = snapshot.calcOptions.hasAccountFee;
+  hasQTG = snapshot.calcOptions.hasQTG;
+  hasQLQ = snapshot.calcOptions.hasQLQ;
+  globalDiscounts = { ...snapshot.calcOptions.globalDiscounts };
+
+  stores = snapshot.stores.length ? snapshot.stores : [createStore(1)];
+  activeTabId = stores[0]?.id || null;
+  document.getElementById('searchInput').value = '';
+
+  invalidateComputedQuote();
+  draftSnapshotCache = null;
+  const serialized = snapshotString(buildDraftSnapshot());
+  lastPersistedSnapshot = serialized;
+  pendingPersistSerialized = null;
+
+  isHydratingRevision = false;
+  render();
+}
+
+function applyRevisionBundle(bundle) {
+  if (!bundle || !bundle.activeRevision) return;
+  syncBundleMetadata(bundle);
+  hydrateEditorFromRevision(bundle.activeRevision);
+}
+
+function setCustomerFields(customer) {
+  document.getElementById('customerCompany').value = customer.companyName || '';
+  document.getElementById('customerContactName').value = customer.contactName || '';
+  document.getElementById('customerDepartment').value = customer.department || '';
+  document.getElementById('customerEmail').value = customer.email || '';
+  document.getElementById('customerPhone').value = customer.phone || '';
+}
+
+function setSettingsFields(settings) {
+  document.getElementById('settingName').value = settings.name || '';
+  document.getElementById('settingTitle').value = settings.title || '';
+  document.getElementById('settingDepartment').value = settings.department || '';
+  document.getElementById('settingEmail').value = settings.email || '';
+  document.getElementById('settingPhone').value = settings.phone || '';
+}
+
+function readCustomerFields() {
+  return normalizeProfile({
+    companyName: document.getElementById('customerCompany').value.trim(),
+    contactName: document.getElementById('customerContactName').value.trim(),
+    department: document.getElementById('customerDepartment').value.trim(),
+    email: document.getElementById('customerEmail').value.trim(),
+    phone: document.getElementById('customerPhone').value.trim()
   });
 }
 
-function setNumberImmediate(elementId, newValue, options = {}) {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  el._lastValue = newValue;
-  if (el._tweenObj) gsap.killTweensOf(el._tweenObj);
-  el.textContent = `${options.prefix || ''}${formatVND(newValue)}`;
+function readPreparedByFields() {
+  return normalizePreparedBy({
+    name: document.getElementById('settingName').value.trim(),
+    title: document.getElementById('settingTitle').value.trim(),
+    department: document.getElementById('settingDepartment').value.trim(),
+    email: document.getElementById('settingEmail').value.trim(),
+    phone: document.getElementById('settingPhone').value.trim()
+  });
 }
 
-// ─── DATE HELPERS ─────────────────────────────────────────────────────────
+function renderQuoteChrome() {
+  document.getElementById('historyQuoteCode').textContent = activeQuoteCode || '-';
+  document.getElementById('historyDisplayQuoteNumber').textContent = activeDisplayQuoteNumber || '-';
+  document.getElementById('historyRevisionLabel').textContent = revisionLabel(activeRevisionNumber);
+  document.getElementById('historyStatusChip').textContent = statusLabel(activeRevisionStatus);
+
+  document.getElementById('activeQuoteNumber').textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
+  document.getElementById('activeRevisionBadge').textContent = revisionLabel(activeRevisionNumber);
+  document.getElementById('activeRevisionStatusText').textContent = statusLabel(activeRevisionStatus);
+
+  const revisionList = document.getElementById('revisionList');
+  revisionList.innerHTML = revisionsForQuote.map((revision) => `
+    <button class="revision-item${revision.id === activeRevisionId ? ' active' : ''}" data-revision-id="${revision.id}">
+      <div class="revision-item-main">
+        <strong>${escapeHTML(revision.displayQuoteNumber)}</strong>
+        <span>${escapeHTML(revisionLabel(revision.revisionNumber))}</span>
+      </div>
+      <span class="status-chip">${escapeHTML(statusLabel(revision.status))}</span>
+    </button>
+  `).join('');
+}
+
+function openCustomerModal() {
+  setCustomerFields(customerProfile);
+  document.getElementById('customerModal').classList.remove('hidden');
+  requestAnimationFrame(() => document.getElementById('customerCompany').focus());
+}
+
+function closeCustomerModal() {
+  document.getElementById('customerModal').classList.add('hidden');
+}
+
+function openSettingsModal() {
+  setSettingsFields(preparedByProfile);
+  document.getElementById('settingsModal').classList.remove('hidden');
+}
+
+function closeSettingsModal() {
+  document.getElementById('settingsModal').classList.add('hidden');
+}
+
+function closeImportPreviewModal() {
+  activeImportPreview = null;
+  selectedImportAction = null;
+  document.getElementById('importPreviewModal').classList.add('hidden');
+}
+
+function closeQuoteActionsMenu() {
+  document.getElementById('quoteActionsMenu')?.classList.remove('open');
+}
+
+function renderImportActionOptions(preview) {
+  const container = document.getElementById('importActionOptions');
+  container.innerHTML = preview.actions.map((action) => `
+    <button class="import-action-option${action.key === selectedImportAction ? ' active' : ''}" data-action="${action.key}">
+      <strong>${escapeHTML(action.label)}</strong>
+    </button>
+  `).join('');
+}
+
+function openImportPreviewModal(preview) {
+  activeImportPreview = preview;
+  selectedImportAction = preview.recommendedAction;
+
+  document.getElementById('importPreviewFileName').textContent = preview.fileName || '-';
+  document.getElementById('importPreviewQuoteNumber').textContent = preview.preview.displayQuoteNumber;
+  document.getElementById('importPreviewCustomer').textContent = preview.preview.customerName || '-';
+  document.getElementById('importPreviewBranchCount').textContent = `${preview.preview.branchCount} branches`;
+  document.getElementById('importPreviewGrandTotal').textContent = `${formatVND(preview.preview.grandTotal)} ₫`;
+  document.getElementById('importPreviewCompatibility').textContent = preview.preview.manifestCompatibility;
+  document.getElementById('importPreviewSummary').textContent = preview.summary;
+  renderImportActionOptions(preview);
+  document.getElementById('importPreviewModal').classList.remove('hidden');
+}
+
+async function loadRevisionById(revisionId) {
+  if (!window.electronAPI) return;
+  const bundle = await window.electronAPI.loadQuoteRevision(revisionId);
+  applyRevisionBundle(bundle);
+}
+
+async function createNewQuote() {
+  if (!window.electronAPI) return;
+  await flushDraftPersist();
+  const bundle = await window.electronAPI.createNewQuote(buildInitialDraftSnapshot());
+  applyRevisionBundle(bundle);
+}
+
+async function createNewRevision() {
+  if (!window.electronAPI || !activeRevisionId) return;
+  await flushDraftPersist();
+  const bundle = await window.electronAPI.createNewRevision({
+    revisionId: activeRevisionId,
+    snapshot: buildDraftSnapshot()
+  });
+  applyRevisionBundle(bundle);
+}
+
+async function importQuoteFromPdf() {
+  if (!window.electronAPI) return;
+  try {
+    const preview = await window.electronAPI.importQuotePdfPreview();
+    if (!preview) return;
+    openImportPreviewModal(preview);
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'Không thể import PDF.');
+  }
+}
+
+async function confirmImportPreview() {
+  if (!window.electronAPI || !activeImportPreview) return;
+  try {
+    const bundle = await window.electronAPI.confirmImportQuotePdf({
+      preview: activeImportPreview,
+      action: selectedImportAction
+    });
+    closeImportPreviewModal();
+    applyRevisionBundle(bundle);
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'Không thể hoàn tất import.');
+  }
+}
+
+async function exportActiveQuote() {
+  if (!window.electronAPI || !activeRevisionId) return;
+  customerProfile = readCustomerFields();
+  invalidateDraftSnapshot();
+  if (!customerProfile.companyName) {
+    document.getElementById('customerCompany').focus();
+    return;
+  }
+
+  closeCustomerModal();
+  scheduleDraftPersist();
+  await flushDraftPersist();
+
+  const exportBtn = document.getElementById('exportBtn');
+  exportBtn.style.opacity = '0.5';
+  exportBtn.style.pointerEvents = 'none';
+
+  try {
+    const result = await window.electronAPI.exportQuote({
+      revisionId: activeRevisionId,
+      snapshot: buildDraftSnapshot()
+    });
+    if (result?.bundle) {
+      syncBundleMetadata(result.bundle);
+      render();
+    }
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'Error exporting PDF');
+  } finally {
+    exportBtn.style.opacity = '1';
+    exportBtn.style.pointerEvents = 'auto';
+  }
+}
+
+function performExport() {
+  if (!preparedByProfile.name) {
+    openSettingsModal();
+    return;
+  }
+  openCustomerModal();
+}
+
 function toLocalYMD(date) {
   return [
     date.getFullYear(),
@@ -92,14 +512,22 @@ function toLocalYMD(date) {
     String(date.getDate()).padStart(2, '0')
   ].join('-');
 }
-function todayStr() { return toLocalYMD(new Date()); }
-function oneYearLater() { const d = new Date(); d.setFullYear(d.getFullYear() + 1); return toLocalYMD(d); }
-function formatDateStr(ymd) {
-  const [y, m, d] = ymd.split('-');
-  return `${d}/${m}/${y}`;
+
+function todayStr() {
+  return toLocalYMD(new Date());
 }
 
-// ─── STORE MANAGEMENT ─────────────────────────────────────────────────────
+function oneYearLater() {
+  const d = new Date();
+  d.setFullYear(d.getFullYear() + 1);
+  return toLocalYMD(d);
+}
+
+function formatDateStr(ymd) {
+  const [year, month, day] = ymd.split('-');
+  return `${day}/${month}/${year}`;
+}
+
 function createStore(index) {
   return {
     id: Date.now() + Math.random(),
@@ -111,7 +539,9 @@ function createStore(index) {
   };
 }
 
-function getActive() { return stores.find(s => s.id === activeTabId) || stores[0]; }
+function getActive() {
+  return stores.find((store) => store.id === activeTabId) || stores[0];
+}
 
 const STORE_FIELD_RENDER_SCOPES = {
   name: ['main', 'sidebar'],
@@ -123,15 +553,15 @@ const STORE_FIELD_RENDER_SCOPES = {
 
 function addStore() {
   const active = getActive();
-  const s = createStore(stores.length + 1);
+  const store = createStore(stores.length + 1);
   if (active) {
-    s.type = active.type;
+    store.type = active.type;
   }
-  stores.push(s);
-  activeTabId = s.id;
+  stores.push(store);
+  activeTabId = store.id;
   document.getElementById('searchInput').value = '';
-  render();
-  gsap.fromTo(`[data-id="${s.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.25 });
+  commitQuoteMutation();
+  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.25 });
 }
 
 function removeStore(id) {
@@ -139,23 +569,35 @@ function removeStore(id) {
   const el = document.querySelector(`[data-id="${id}"]`);
   if (el) gsap.killTweensOf(el);
   gsap.to(el, {
-    x: -20, opacity: 0, height: 0, padding: 0, margin: 0, duration: 0.2,
+    x: -20,
+    opacity: 0,
+    height: 0,
+    padding: 0,
+    margin: 0,
+    duration: 0.2,
     onComplete: () => {
-      stores = stores.filter(s => s.id !== id);
+      stores = stores.filter((store) => store.id !== id);
       if (activeTabId === id) activeTabId = stores[0].id;
-      render();
+      commitQuoteMutation();
     }
   });
 }
 
 function updateActive(field, value) {
-  const s = getActive();
-  if (!s || s[field] === value) return;
-  s[field] = value;
+  const store = getActive();
+  if (!store || store[field] === value) return;
+  store[field] = value;
+  invalidateComputedQuote();
   render(STORE_FIELD_RENDER_SCOPES[field] || 'all');
+  scheduleDraftPersist();
 }
 
-// ─── BULK ADD ─────────────────────────────────────────────────────────────
+function commitQuoteMutation(scope = 'all') {
+  invalidateComputedQuote();
+  render(scope);
+  scheduleDraftPersist();
+}
+
 function sanitizeAreaValue(value) {
   return String(value || '').trim().replace(',', '.');
 }
@@ -190,12 +632,12 @@ function renderBulkRows(focusIndex = null) {
   rowsEl.innerHTML = bulkAreas.map((value, index) => {
     const color = STORE_COLORS[(startIndex + index - 1) % STORE_COLORS.length];
     return `
-    <div class="bulk-row" data-index="${index}" style="--bulk-row-color: ${color}">
-      <div class="bulk-index">${String(startIndex + index).padStart(2, '0')}</div>
-      <div class="bulk-area-wrap">
-        <input class="bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="Nhập diện tích">
-      </div>
-    </div>`;
+      <div class="bulk-row" data-index="${index}" style="--bulk-row-color: ${color}">
+        <div class="bulk-index">${String(startIndex + index).padStart(2, '0')}</div>
+        <div class="bulk-area-wrap">
+          <input class="bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="Nhập diện tích">
+        </div>
+      </div>`;
   }).join('');
   document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
   if (focusIndex !== null) {
@@ -232,19 +674,18 @@ function addBulkRows() {
 
   let firstCreatedId = null;
   areas.forEach((areaValue) => {
-    const s = createStore(stores.length + 1);
-    s.type = bulkType;
-    s.area = areaValue;
-    stores.push(s);
-    if (!firstCreatedId) firstCreatedId = s.id;
+    const store = createStore(stores.length + 1);
+    store.type = bulkType;
+    store.area = areaValue;
+    stores.push(store);
+    if (!firstCreatedId) firstCreatedId = store.id;
   });
 
   activeTabId = firstCreatedId || activeTabId;
   closeBulkAddModal();
-  render();
+  commitQuoteMutation();
 }
 
-// ─── RENDER ───────────────────────────────────────────────────────────────
 const STORE_COLORS = [
   '#CFF533', '#44CCFF', '#FF9F43', '#FF4757', '#2ED573', '#A55EEA', '#70A1FF',
   '#FF7F50', '#FFD32A', '#17C0EB', '#FFCCCC', '#C56CF0', '#32FF7E', '#FF3838',
@@ -252,25 +693,52 @@ const STORE_COLORS = [
   '#55E6C1', '#FD7272', '#9AECDB'
 ];
 
+function animateNumber(elementId, newValue) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  const cached = el._lastValue ?? (parseFloat(el.textContent.replace(/\./g, '').replace(/,/g, '')) || 0);
+  if (Math.abs(cached - newValue) < 0.5) return;
+
+  el._lastValue = newValue;
+  if (el._tweenObj) gsap.killTweensOf(el._tweenObj);
+  el._tweenObj = { val: cached };
+
+  gsap.to(el._tweenObj, {
+    val: newValue,
+    duration: 0.4,
+    ease: 'power2.out',
+    onUpdate: () => {
+      el.textContent = formatVND(el._tweenObj.val);
+    }
+  });
+}
+
+function setNumberImmediate(elementId, newValue, options = {}) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el._lastValue = newValue;
+  if (el._tweenObj) gsap.killTweensOf(el._tweenObj);
+  el.textContent = `${options.prefix || ''}${formatVND(newValue)}`;
+}
+
 function renderSidebar(snapshot) {
   const search = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = stores.filter(s => s.name.toLowerCase().includes(search));
+  const filtered = stores.filter((store) => store.name.toLowerCase().includes(search));
   const list = document.getElementById('storeList');
   const clearBtn = document.getElementById('searchClear');
   clearBtn.classList.toggle('hidden', !search);
 
-  // Use a stable re-render to allow GSAP
   let html = '';
   if (filtered.length === 0) {
     html = '<div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:32px;letter-spacing:0.04em">Không tìm thấy chi nhánh</div>';
   } else {
     const maxTotal = snapshot.maxStoreTotal;
-    html = filtered.map(store => {
+    html = filtered.map((store) => {
       const realIdx = stores.indexOf(store);
       const isActive = store.id === activeTabId;
       const total = snapshot.breakdownsById.get(store.id)?.total || 0;
       const color = STORE_COLORS[realIdx % STORE_COLORS.length];
-      const pct = Math.min(100, (total / maxTotal) * 100);
+      const pct = Math.min(100, maxTotal ? (total / maxTotal) * 100 : 0);
 
       return `<div class="store-item${isActive ? ' active' : ''}" data-id="${store.id}" data-name="${store.name}">
         <div class="store-item-color" style="background-color: ${color}"></div>
@@ -293,56 +761,53 @@ function renderSidebar(snapshot) {
       </div>`;
     }).join('');
   }
-  
+
   if (list.innerHTML !== html) {
     list.innerHTML = html;
   }
 }
 
 function renderMain(snapshot) {
-  const s = snapshot.activeStore;
-  if (!s) return;
-  const area = Number(s.area) || 0;
+  const store = snapshot.activeStore;
+  if (!store) return;
+  const area = Number(store.area) || 0;
   const breakdown = snapshot.activeBreakdown || {};
-  const duration = breakdown.duration ?? calculateDurationMonths(s.startDate, s.endDate);
-  const coef = breakdown.coef ?? calculateCoef(s.type, area);
+  const duration = breakdown.duration ?? calculateDurationMonths(store.startDate, store.endDate);
+  const coef = breakdown.coef ?? calculateCoef(store.type, area);
   const storeTotal = breakdown.total || 0;
   const storeIdx = snapshot.activeStoreIndex;
 
-  // Location count and Active branch indicator
+  document.getElementById('salaryDisplay').textContent = `${formatVND(baseSalary)} ₫`;
   document.getElementById('locationCount').textContent = `${stores.length} loc`;
   const color = STORE_COLORS[storeIdx % STORE_COLORS.length];
   document.getElementById('activeBranchColor').style.backgroundColor = color;
-  document.getElementById('activeBranchName').textContent = s.name;
+  document.getElementById('activeBranchName').textContent = store.name;
 
-  // Headline
   document.getElementById('storeIndex').textContent = `Chi nhánh ${String(storeIdx + 1).padStart(2, '0')} / ${String(stores.length).padStart(2, '0')}`;
   const nameInput = document.getElementById('storeName');
-  if (document.activeElement !== nameInput) nameInput.value = s.name;
-  
+  if (document.activeElement !== nameInput) nameInput.value = store.name;
+
   document.getElementById('statDuration').textContent = duration.toFixed(1);
   document.getElementById('statCoef').textContent = coef.toFixed(2);
   animateNumber('statStoreTotal', storeTotal);
 
-  // Section 01
   const typeText = document.getElementById('businessTypeText');
-  typeText.textContent = s.type && BUSINESS_TYPES[s.type] ? BUSINESS_TYPES[s.type].label : 'Chọn mô hình kinh doanh...';
-  document.querySelectorAll('#businessType .dropdown-item').forEach(el => {
-    el.classList.toggle('active', el.dataset.value === s.type);
+  typeText.textContent = store.type && BUSINESS_TYPES[store.type] ? BUSINESS_TYPES[store.type].label : 'Chọn mô hình kinh doanh...';
+  document.querySelectorAll('#businessType .dropdown-item').forEach((el) => {
+    el.classList.toggle('active', el.dataset.value === store.type);
   });
-  
+
   const areaInput = document.getElementById('areaInput');
-  if (document.activeElement !== areaInput) areaInput.value = s.area;
+  if (document.activeElement !== areaInput) areaInput.value = store.area;
 
-  document.getElementById('startDateText').textContent = formatDateStr(s.startDate);
-  document.getElementById('endDateText').textContent = formatDateStr(s.endDate);
+  document.getElementById('startDateText').textContent = formatDateStr(store.startDate);
+  document.getElementById('endDateText').textContent = formatDateStr(store.endDate);
 
-  // Section 02 - Account Fee
   const accToggle = document.getElementById('accountToggle');
   accToggle.classList.toggle('on', hasAccountFee);
   accToggle.textContent = hasAccountFee ? 'BẬT' : 'TẮT';
   const accRight = document.getElementById('accountFeeRight');
-  
+
   if (hasAccountFee) {
     accRight.classList.remove('disabled');
     document.getElementById('discountAccountVal').textContent = globalDiscounts.account;
@@ -353,14 +818,13 @@ function renderMain(snapshot) {
     accRight.classList.add('disabled');
   }
 
-  // Global Box Mode update
-  document.querySelectorAll('#boxModeControl .seg-btn').forEach(btn => {
+  document.querySelectorAll('#boxModeControl .seg-btn').forEach((btn) => {
     btn.classList.toggle('active', btn.dataset.mode === boxMode);
   });
   document.getElementById('boxQuantityRow').classList.toggle('hidden', boxMode === 'none');
   const boxInput = document.getElementById('boxCount');
   if (document.activeElement !== boxInput) boxInput.value = globalBoxCount;
-  
+
   const boxDiscountRow = document.getElementById('boxDiscountRow');
   if (boxMode === 'buy') {
     boxDiscountRow.classList.remove('hidden');
@@ -371,22 +835,21 @@ function renderMain(snapshot) {
   } else {
     boxDiscountRow.classList.add('hidden');
   }
-  
+
   const boxPriceDesc = document.getElementById('boxPriceDesc');
   if (boxMode === 'buy') boxPriceDesc.textContent = '2.000.000 ₫ / thiết bị · chi phí một lần · cấp mỗi chi nhánh';
   else if (boxMode === 'rent') boxPriceDesc.textContent = '1.000.000 ₫ / thiết bị / năm · prorated · cấp mỗi chi nhánh';
   else boxPriceDesc.textContent = 'Chọn hình thức trang bị cho mỗi chi nhánh';
 
-  // Section 03
   document.getElementById('qtgCoef').textContent = `Hệ số ${coef.toFixed(2)}`;
   document.getElementById('qtgDur').textContent = `${duration.toFixed(1)}m`;
-  
+
   const qtgToggle = document.getElementById('qtgToggle');
   qtgToggle.classList.toggle('on', hasQTG);
   qtgToggle.textContent = hasQTG ? 'BẬT' : 'TẮT';
   const qtgMid = qtgToggle.closest('.copyright-row').querySelector('.copyright-mid');
   const qtgRight = qtgToggle.closest('.copyright-row').querySelector('.copyright-right');
-  
+
   if (hasQTG) {
     qtgMid.classList.remove('disabled');
     qtgRight.classList.remove('disabled');
@@ -403,13 +866,13 @@ function renderMain(snapshot) {
 
   document.getElementById('qlqCoef').textContent = `Hệ số ${coef.toFixed(2)}`;
   document.getElementById('qlqDur').textContent = `${duration.toFixed(1)}m`;
-  
+
   const qlqToggle = document.getElementById('qlqToggle');
   qlqToggle.classList.toggle('on', hasQLQ);
   qlqToggle.textContent = hasQLQ ? 'BẬT' : 'TẮT';
   const qlqMid = qlqToggle.closest('.copyright-row').querySelector('.copyright-mid');
   const qlqRight = qlqToggle.closest('.copyright-row').querySelector('.copyright-right');
-  
+
   if (hasQLQ) {
     qlqMid.classList.remove('disabled');
     qlqRight.classList.remove('disabled');
@@ -436,17 +899,17 @@ function renderBottomBar(snapshot) {
   setNumberImmediate('vatVal', totals.vat, { prefix: '+' });
   animateNumber('grandTotal', totals.grand);
 
-  // VU Meter for Grand Total
-  const ceiling = 50000000; // 50M assumed ceiling
+  document.querySelectorAll('#vatControl .seg-btn').forEach((btn) => {
+    btn.classList.toggle('active', Number(btn.dataset.vat) === vatRate);
+  });
+
+  const ceiling = 50000000;
   const fillPct = Math.min(100, (totals.grand / ceiling) * 100);
   document.getElementById('grandVuFill').style.width = `${fillPct}%`;
 }
 
-let renderScheduled = false;
-let renderScope = new Set();
-
 function createRenderSnapshot() {
-  const quote = calculateTotals(stores, getCalcOptions());
+  const quote = getCurrentComputedQuote();
   const breakdownsById = new Map();
   quote.stores.forEach((breakdown, index) => {
     if (stores[index]) breakdownsById.set(stores[index].id, breakdown);
@@ -454,7 +917,7 @@ function createRenderSnapshot() {
   const activeStore = getActive();
   const activeStoreIndex = activeStore ? stores.indexOf(activeStore) : -1;
   const activeBreakdown = activeStore ? breakdownsById.get(activeStore.id) : null;
-  const maxStoreTotal = Math.max(...quote.stores.map(row => row.total), 1);
+  const maxStoreTotal = Math.max(1, ...quote.stores.map((row) => row.total || 0));
   return {
     quote,
     breakdownsById,
@@ -481,11 +944,14 @@ function addRenderScopes(scope) {
 
 function render(scope = 'all') {
   addRenderScopes(scope);
-  
   if (renderScheduled) return;
   renderScheduled = true;
   requestAnimationFrame(() => {
     renderScheduled = false;
+    if (chromeDirty) {
+      renderQuoteChrome();
+      chromeDirty = false;
+    }
     const snapshot = createRenderSnapshot();
     if (renderScope.has('sidebar')) renderSidebar(snapshot);
     if (renderScope.has('main')) renderMain(snapshot);
@@ -494,70 +960,113 @@ function render(scope = 'all') {
   });
 }
 
-// ─── CUSTOM COMPONENTS & EVENTS ──────────────────────────────────────────
 function buildCalendar(dateStr, wrapperEl) {
-  const d = new Date(dateStr);
-  let curYear = d.getFullYear();
-  let curMonth = d.getMonth(); // 0-11
-  
-  const monthNames = ['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6','Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12'];
-  
+  const date = new Date(dateStr);
+  let curYear = date.getFullYear();
+  let curMonth = date.getMonth();
+  const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+
   const headTitle = wrapperEl.querySelector('.datepicker-month-year');
   const grid = wrapperEl.querySelector('.datepicker-grid');
-  
+
   const refreshGrid = () => {
     headTitle.textContent = `${monthNames[curMonth]}, ${curYear}`;
     grid.innerHTML = '';
-    
+
     const firstDay = new Date(curYear, curMonth, 1).getDay();
     const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-    
+
     let html = '';
-    for(let i = 0; i < firstDay; i++) html += `<div class="datepicker-cell dim"></div>`;
-    
+    for (let i = 0; i < firstDay; i += 1) html += '<div class="datepicker-cell dim"></div>';
+
     const today = new Date();
-    for(let i = 1; i <= daysInMonth; i++) {
-      const isToday = today.getDate()===i && today.getMonth()===curMonth && today.getFullYear()===curYear;
-      const isSelected = d.getDate()===i && d.getMonth()===curMonth && d.getFullYear()===curYear;
-      const cellDateStr = `${curYear}-${String(curMonth+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
-      html += `<div class="datepicker-cell ${isToday?'today':''} ${isSelected?'selected':''}" data-date="${cellDateStr}">${i}</div>`;
+    for (let i = 1; i <= daysInMonth; i += 1) {
+      const isToday = today.getDate() === i && today.getMonth() === curMonth && today.getFullYear() === curYear;
+      const isSelected = date.getDate() === i && date.getMonth() === curMonth && date.getFullYear() === curYear;
+      const cellDateStr = `${curYear}-${String(curMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
+      html += `<div class="datepicker-cell ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-date="${cellDateStr}">${i}</div>`;
     }
     grid.innerHTML = html;
   };
   refreshGrid();
-  
-  // Attach nav handlers only once
+
   if (!wrapperEl.dataset.bound) {
-    wrapperEl.querySelectorAll('.datepicker-nav').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        curMonth += parseInt(btn.dataset.dir);
-        if(curMonth < 0) { curMonth = 11; curYear--; }
-        else if (curMonth > 11) { curMonth = 0; curYear++; }
+    wrapperEl.querySelectorAll('.datepicker-nav').forEach((btn) => {
+      btn.addEventListener('click', (event) => {
+        event.stopPropagation();
+        curMonth += parseInt(btn.dataset.dir, 10);
+        if (curMonth < 0) {
+          curMonth = 11;
+          curYear -= 1;
+        } else if (curMonth > 11) {
+          curMonth = 0;
+          curYear += 1;
+        }
         refreshGrid();
       });
     });
-    wrapperEl.dataset.bound = "true";
+    wrapperEl.dataset.bound = 'true';
   }
 }
 
+function setupScrubbableInput(inputId, baseStep = 1, min = -Infinity, max = Infinity) {
+  const el = document.getElementById(inputId);
+  if (!el) return;
+  el.style.cursor = 'ew-resize';
+  let isDragging = false;
+  let startX = 0;
+  let startVal = 0;
+
+  el.addEventListener('mousedown', (event) => {
+    isDragging = true;
+    startX = event.clientX;
+    startVal = Number(el.value) || 0;
+    document.body.style.cursor = 'ew-resize';
+  });
+
+  const onMouseMove = (event) => {
+    if (!isDragging) return;
+    const dx = event.clientX - startX;
+    let step = baseStep;
+    if (event.shiftKey) step *= 10;
+    if (event.ctrlKey || event.metaKey) step /= 10;
+
+    let newVal = startVal + dx * step;
+    newVal = Math.round(newVal / step) * step;
+    newVal = Math.max(min, Math.min(max, newVal));
+
+    if (Number(el.value) !== newVal) {
+      el.value = newVal;
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  };
+
+  const onMouseUp = () => {
+    if (!isDragging) return;
+    isDragging = false;
+    document.body.style.cursor = '';
+  };
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('mouseup', onMouseUp);
+}
+
 function bindEvents() {
-  // Search
   document.getElementById('searchInput').addEventListener('input', () => render('sidebar'));
   document.getElementById('searchClear').addEventListener('click', () => {
     document.getElementById('searchInput').value = '';
     render('sidebar');
   });
 
-  document.getElementById('storeList').addEventListener('click', (e) => {
-    const removeBtn = e.target.closest('.store-item-remove');
+  document.getElementById('storeList').addEventListener('click', (event) => {
+    const removeBtn = event.target.closest('.store-item-remove');
     if (removeBtn) {
-      e.stopPropagation();
+      event.stopPropagation();
       removeStore(parseFloat(removeBtn.dataset.remove));
       return;
     }
 
-    const item = e.target.closest('.store-item');
+    const item = event.target.closest('.store-item');
     if (!item) return;
     const newId = parseFloat(item.dataset.id);
     if (newId !== activeTabId) {
@@ -567,10 +1076,26 @@ function bindEvents() {
     }
   });
 
-  // Add store
-  document.getElementById('addStoreBtn').addEventListener('click', addStore);
+  document.getElementById('revisionList').addEventListener('click', async (event) => {
+    const item = event.target.closest('[data-revision-id]');
+    if (!item) return;
+    const revisionId = Number(item.dataset.revisionId);
+    if (!revisionId || revisionId === activeRevisionId) return;
+    await flushDraftPersist();
+    await loadRevisionById(revisionId);
+  });
 
-  // Bulk add
+  document.getElementById('addStoreBtn').addEventListener('click', addStore);
+  const quoteActionsMenu = document.getElementById('quoteActionsMenu');
+  const quoteActionsBtn = document.getElementById('quoteActionsBtn');
+  quoteActionsBtn.addEventListener('click', (event) => {
+    event.stopPropagation();
+    quoteActionsMenu.classList.toggle('open');
+  });
+  quoteActionsMenu.querySelector('.quote-actions-dropdown').addEventListener('click', (event) => {
+    event.stopPropagation();
+  });
+
   const bulkAddModal = document.getElementById('bulkAddModal');
   const bulkDd = document.getElementById('bulkBusinessType');
   const bulkMenu = bulkDd.querySelector('.dropdown-menu');
@@ -582,8 +1107,8 @@ function bindEvents() {
   document.getElementById('applyBulkAdd').addEventListener('click', addBulkRows);
   bulkAddModal.querySelector('.modal-overlay').addEventListener('click', closeBulkAddModal);
 
-  bulkDd.addEventListener('click', (e) => {
-    const item = e.target.closest('.dropdown-item');
+  bulkDd.addEventListener('click', (event) => {
+    const item = event.target.closest('.dropdown-item');
     if (item) {
       bulkType = item.dataset.value;
       renderBulkType();
@@ -597,30 +1122,30 @@ function bindEvents() {
     }
   });
 
-  bulkRowsEl.addEventListener('input', (e) => {
-    const input = e.target.closest('.bulk-area-input');
+  bulkRowsEl.addEventListener('input', (event) => {
+    const input = event.target.closest('.bulk-area-input');
     if (!input) return;
     bulkAreas[Number(input.dataset.index)] = input.value;
     document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
   });
 
-  bulkRowsEl.addEventListener('keydown', (e) => {
-    const input = e.target.closest('.bulk-area-input');
-    if (!input || e.key !== 'Enter') return;
-    e.preventDefault();
+  bulkRowsEl.addEventListener('keydown', (event) => {
+    const input = event.target.closest('.bulk-area-input');
+    if (!input || event.key !== 'Enter') return;
+    event.preventDefault();
     const index = Number(input.dataset.index);
     bulkAreas[index] = input.value;
     if (index === bulkAreas.length - 1) bulkAreas.push('');
     renderBulkRows(index + 1);
   });
 
-  bulkRowsEl.addEventListener('paste', (e) => {
-    const input = e.target.closest('.bulk-area-input');
+  bulkRowsEl.addEventListener('paste', (event) => {
+    const input = event.target.closest('.bulk-area-input');
     if (!input) return;
-    const text = e.clipboardData.getData('text');
+    const text = event.clipboardData.getData('text');
     const lines = text.split(/\r?\n/).map(parseBulkAreaLine).filter(Boolean);
     if (lines.length <= 1) return;
-    e.preventDefault();
+    event.preventDefault();
     const index = Number(input.dataset.index);
     lines.forEach((line, offset) => {
       bulkAreas[index + offset] = line;
@@ -630,7 +1155,6 @@ function bindEvents() {
     renderBulkRows(nextIndex);
   });
 
-  // Salary toggle
   const salaryDisplay = document.getElementById('salaryDisplay');
   const salaryInput = document.getElementById('salaryInput');
   salaryDisplay.addEventListener('click', () => {
@@ -645,20 +1169,20 @@ function bindEvents() {
     salaryDisplay.textContent = `${formatVND(baseSalary)} ₫`;
     salaryInput.classList.add('hidden');
     salaryDisplay.classList.remove('hidden');
-    render();
+    commitQuoteMutation();
   };
   salaryInput.addEventListener('blur', closeSalary);
-  salaryInput.addEventListener('keydown', e => { if (e.key === 'Enter') closeSalary(); });
+  salaryInput.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') closeSalary();
+  });
 
-  // Store name
-  document.getElementById('storeName').addEventListener('input', e => updateActive('name', e.target.value));
-  document.getElementById('areaInput').addEventListener('input', e => updateActive('area', e.target.value));
+  document.getElementById('storeName').addEventListener('input', (event) => updateActive('name', event.target.value));
+  document.getElementById('areaInput').addEventListener('input', (event) => updateActive('area', event.target.value));
 
-  // Custom Dropdown (Mô hình kinh doanh)
   const dd = document.getElementById('businessType');
   const menu = dd.querySelector('.dropdown-menu');
-  dd.addEventListener('click', (e) => {
-    const item = e.target.closest('.dropdown-item');
+  dd.addEventListener('click', (event) => {
+    const item = event.target.closest('.dropdown-item');
     if (item) {
       updateActive('type', item.dataset.value);
     }
@@ -671,23 +1195,22 @@ function bindEvents() {
     }
   });
 
-  // Custom Datepickers
   const setupDatePicker = (pickerId, field) => {
     const pk = document.getElementById(pickerId);
     const popup = pk.querySelector('.datepicker-popup');
-    pk.addEventListener('click', (e) => {
-      const cell = e.target.closest('.datepicker-cell:not(.dim)');
+    pk.addEventListener('click', (event) => {
+      const cell = event.target.closest('.datepicker-cell:not(.dim)');
       if (cell) {
         updateActive(field, cell.dataset.date);
         gsap.to(popup, { opacity: 0, duration: 0.15, onComplete: () => pk.classList.remove('open') });
         return;
       }
-      if (e.target.closest('.datepicker-nav')) return; // handled in buildCalendar
-      
+      if (event.target.closest('.datepicker-nav')) return;
+
       const isOpen = pk.classList.contains('open');
       if (!isOpen) {
-        const s = getActive();
-        buildCalendar(s[field], pk);
+        const active = getActive();
+        buildCalendar(active[field], pk);
         pk.classList.add('open');
         gsap.fromTo(popup, { opacity: 0, y: -5 }, { opacity: 1, y: 0, duration: 0.2 });
       } else {
@@ -698,29 +1221,34 @@ function bindEvents() {
   setupDatePicker('startDatePicker', 'startDate');
   setupDatePicker('endDatePicker', 'endDate');
 
-  // Close dropdowns when clicking outside
-  document.addEventListener('click', (e) => {
-    if (!dd.contains(e.target) && dd.classList.contains('open')) {
+  document.addEventListener('click', (event) => {
+    if (!quoteActionsMenu.contains(event.target)) {
+      closeQuoteActionsMenu();
+    }
+    if (!dd.contains(event.target) && dd.classList.contains('open')) {
       gsap.to(menu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => dd.classList.remove('open') });
     }
-    if (!bulkDd.contains(e.target) && bulkDd.classList.contains('open')) {
+    if (!bulkDd.contains(event.target) && bulkDd.classList.contains('open')) {
       gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
     }
-    ['startDatePicker', 'endDatePicker'].forEach(id => {
+    ['startDatePicker', 'endDatePicker'].forEach((id) => {
       const pk = document.getElementById(id);
-      if (!pk.contains(e.target) && pk.classList.contains('open')) {
-        gsap.to(pk.querySelector('.datepicker-popup'), { opacity: 0, duration: 0.15, onComplete: () => pk.classList.remove('open') });
+      if (!pk.contains(event.target) && pk.classList.contains('open')) {
+        gsap.to(pk.querySelector('.datepicker-popup'), {
+          opacity: 0,
+          duration: 0.15,
+          onComplete: () => pk.classList.remove('open')
+        });
       }
     });
   });
 
-  // Section Folds
-  document.querySelectorAll('.section-header').forEach(header => {
+  document.querySelectorAll('.section-header').forEach((header) => {
     header.addEventListener('click', () => {
       const section = header.closest('.section');
       const body = section.querySelector('.section-body');
       const isCollapsed = section.classList.contains('collapsed');
-      
+
       if (isCollapsed) {
         section.classList.remove('collapsed');
         gsap.fromTo(body, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.3, ease: 'power2.out' });
@@ -730,255 +1258,156 @@ function bindEvents() {
     });
   });
 
-  // Account toggle
   document.getElementById('accountToggle').addEventListener('click', () => {
     hasAccountFee = !hasAccountFee;
-    render();
+    commitQuoteMutation();
   });
-  
-  // QTG / QLQ toggles
   document.getElementById('qtgToggle').addEventListener('click', () => {
     hasQTG = !hasQTG;
-    render();
+    commitQuoteMutation();
   });
   document.getElementById('qlqToggle').addEventListener('click', () => {
     hasQLQ = !hasQLQ;
-    render();
+    commitQuoteMutation();
   });
 
-  // Box segmented control
-  document.getElementById('boxModeControl').addEventListener('click', (e) => {
-    const btn = e.target.closest('.seg-btn');
+  document.getElementById('boxModeControl').addEventListener('click', (event) => {
+    const btn = event.target.closest('.seg-btn');
     if (!btn) return;
     boxMode = btn.dataset.mode;
-    render();
+    commitQuoteMutation();
   });
 
-  // Global Box count
   document.getElementById('boxMinus').addEventListener('click', () => {
-    globalBoxCount = Math.max(1, globalBoxCount - 1); render();
+    globalBoxCount = Math.max(1, globalBoxCount - 1);
+    commitQuoteMutation();
   });
   document.getElementById('boxPlus').addEventListener('click', () => {
-    globalBoxCount++; render();
+    globalBoxCount += 1;
+    commitQuoteMutation();
   });
-  document.getElementById('boxCount').addEventListener('input', e => {
-    globalBoxCount = Math.max(1, Number(e.target.value) || 1); render();
+  document.getElementById('boxCount').addEventListener('input', (event) => {
+    globalBoxCount = Math.max(1, Number(event.target.value) || 1);
+    commitQuoteMutation();
   });
 
-  // Sliders with scale animation during drag
-  ['discountAccount', 'discountBox', 'discountQTG', 'discountQLQ'].forEach(id => {
+  ['discountAccount', 'discountBox', 'discountQTG', 'discountQLQ'].forEach((id) => {
     const sl = document.getElementById(id);
     if (!sl) return;
     const valText = document.getElementById(`${id}Val`);
-    sl.addEventListener('input', e => {
+    sl.addEventListener('input', (event) => {
       const map = { discountAccount: 'account', discountBox: 'box', discountQTG: 'qtg', discountQLQ: 'qlq' };
-      globalDiscounts[map[id]] = Number(e.target.value);
-      render();
+      globalDiscounts[map[id]] = Number(event.target.value);
+      commitQuoteMutation();
       if (valText) gsap.to(valText, { scale: 1.1, duration: 0.1 });
     });
     sl.addEventListener('change', () => {
-      if (valText) gsap.to(valText, { scale: 1, duration: 0.2, ease: "back.out(2)" });
+      if (valText) gsap.to(valText, { scale: 1, duration: 0.2, ease: 'back.out(2)' });
     });
   });
 
-  // VAT Segmented Control
-  document.getElementById('vatControl').addEventListener('click', (e) => {
-    const btn = e.target.closest('.seg-btn');
+  document.getElementById('vatControl').addEventListener('click', (event) => {
+    const btn = event.target.closest('.seg-btn');
     if (!btn) return;
-    const newVatRate = Number(btn.dataset.vat);
-    if (btn.classList.contains('active') && vatRate === newVatRate) return;
-    document.querySelectorAll('#vatControl .seg-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    vatRate = newVatRate;
-    render('totals');
+    vatRate = Number(btn.dataset.vat);
+    commitQuoteMutation('totals');
   });
 
-  // Scrubbable Inputs
   setupScrubbableInput('areaInput', 1, 1, 10000);
   setupScrubbableInput('boxCount', 1, 1, 1000);
   setupScrubbableInput('salaryInput', 10000, 1000000, 50000000);
-}
 
-function setupScrubbableInput(inputId, baseStep = 1, min = -Infinity, max = Infinity) {
-  const el = document.getElementById(inputId);
-  if (!el) return;
-  el.style.cursor = 'ew-resize';
-  let isDragging = false;
-  let startX = 0;
-  let startVal = 0;
-
-  el.addEventListener('mousedown', e => {
-    isDragging = true;
-    startX = e.clientX;
-    startVal = Number(el.value) || 0;
-    document.body.style.cursor = 'ew-resize';
+  document.getElementById('newQuoteBtn').addEventListener('click', async () => {
+    closeQuoteActionsMenu();
+    await createNewQuote();
   });
-
-  const onMouseMove = e => {
-    if (!isDragging) return;
-    const dx = e.clientX - startX;
-    let step = baseStep;
-    if (e.shiftKey) step *= 10;
-    if (e.ctrlKey || e.metaKey) step /= 10;
-    
-    let newVal = startVal + dx * step;
-    newVal = Math.round(newVal / step) * step;
-    newVal = Math.max(min, Math.min(max, newVal));
-    
-    if (Number(el.value) !== newVal) {
-      el.value = newVal;
-      el.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-  };
-
-  const onMouseUp = () => {
-    if (isDragging) {
-      isDragging = false;
-      document.body.style.cursor = '';
-    }
-  };
-
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
-}
-
-// ─── EXPORT PDF ───────────────────────────────────────────────────────────
-function readSettings() {
-  try {
-    const settings = JSON.parse(localStorage.getItem('bdSettings')) || {};
-    return {
-      name: settings.name || '',
-      title: settings.title || '',
-      department: settings.department || '',
-      email: settings.email || '',
-      phone: settings.phone || ''
-    };
-  } catch (e) {
-    return { name: '', title: '', department: '', email: '', phone: '' };
-  }
-}
-
-function setSettingsFields(settings) {
-  document.getElementById('settingName').value = settings.name || '';
-  document.getElementById('settingTitle').value = settings.title || '';
-  document.getElementById('settingDepartment').value = settings.department || '';
-  document.getElementById('settingEmail').value = settings.email || '';
-  document.getElementById('settingPhone').value = settings.phone || '';
-}
-
-function readCustomerFields() {
-  return {
-    companyName: document.getElementById('customerCompany').value.trim(),
-    contactName: document.getElementById('customerContactName').value.trim(),
-    department: document.getElementById('customerDepartment').value.trim(),
-    email: document.getElementById('customerEmail').value.trim(),
-    phone: document.getElementById('customerPhone').value.trim()
-  };
-}
-
-function openCustomerModal() {
-  document.getElementById('customerModal').classList.remove('hidden');
-  requestAnimationFrame(() => document.getElementById('customerCompany').focus());
-}
-
-function closeCustomerModal() {
-  document.getElementById('customerModal').classList.add('hidden');
-}
-
-async function exportQuoteWithCustomer(customer) {
-  if (!window.electronAPI) return;
-  const settings = readSettings();
-  const payload = buildQuotePayload({ stores, calcOptions: getCalcOptions() }, customer, settings);
-  
-  const exportBtn = document.getElementById('exportBtn');
-  exportBtn.style.opacity = '0.5';
-  exportBtn.style.pointerEvents = 'none';
-  
-  try {
-    await window.electronAPI.exportQuote(payload);
-  } catch (e) {
-    console.error(e);
-    alert('Error exporting PDF');
-  } finally {
-    exportBtn.style.opacity = '1';
-    exportBtn.style.pointerEvents = 'auto';
-  }
-}
-
-const performExport = async () => {
-  if (!window.electronAPI) return;
-  
-  const settings = readSettings();
-  
-  if (!settings.name) {
-    document.getElementById('settingsModal').classList.remove('hidden');
-    setSettingsFields(settings);
-    return;
-  }
-
-  openCustomerModal();
-};
-
-// ─── INIT ─────────────────────────────────────────────────────────────────
-function init() {
-  const first = createStore(1);
-  stores.push(first);
-  activeTabId = first.id;
-  bindEvents();
-  
+  document.getElementById('newRevisionBtn').addEventListener('click', async () => {
+    closeQuoteActionsMenu();
+    await createNewRevision();
+  });
+  document.getElementById('importPdfBtn').addEventListener('click', async () => {
+    closeQuoteActionsMenu();
+    await importQuoteFromPdf();
+  });
   document.getElementById('exportBtn').addEventListener('click', performExport);
-  window.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
-      e.preventDefault();
+
+  window.addEventListener('keydown', (event) => {
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'e') {
+      event.preventDefault();
       performExport();
     }
   });
 
-  // Settings
-  document.getElementById('settingsBtn').addEventListener('click', () => {
-    setSettingsFields(readSettings());
-    document.getElementById('settingsModal').classList.remove('hidden');
-  });
-  document.getElementById('closeSettings').addEventListener('click', () => {
-    document.getElementById('settingsModal').classList.add('hidden');
-  });
-  document.getElementById('settingsModal').querySelector('.modal-overlay').addEventListener('click', () => {
-    document.getElementById('settingsModal').classList.add('hidden');
-  });
+  document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+  document.getElementById('closeSettings').addEventListener('click', closeSettingsModal);
+  document.getElementById('settingsModal').querySelector('.modal-overlay').addEventListener('click', closeSettingsModal);
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
-    const settings = {
-      name: document.getElementById('settingName').value.trim(),
-      title: document.getElementById('settingTitle').value.trim(),
-      department: document.getElementById('settingDepartment').value.trim(),
-      email: document.getElementById('settingEmail').value.trim(),
-      phone: document.getElementById('settingPhone').value.trim()
-    };
-    localStorage.setItem('bdSettings', JSON.stringify(settings));
-    document.getElementById('settingsModal').classList.add('hidden');
+    preparedByProfile = readPreparedByFields();
+    invalidateDraftSnapshot();
+    setPreparedByDefaults(preparedByProfile);
+    closeSettingsModal();
+    scheduleDraftPersist();
   });
 
-  // Customer export profile
   document.getElementById('closeCustomerModal').addEventListener('click', closeCustomerModal);
   document.getElementById('cancelCustomerModal').addEventListener('click', closeCustomerModal);
   document.getElementById('customerModal').querySelector('.modal-overlay').addEventListener('click', closeCustomerModal);
-  const confirmCustomerExport = async () => {
-    const customer = readCustomerFields();
-    if (!customer.companyName) {
-      document.getElementById('customerCompany').focus();
-      return;
-    }
-    closeCustomerModal();
-    await exportQuoteWithCustomer(customer);
-  };
-  document.getElementById('confirmCustomerExport').addEventListener('click', confirmCustomerExport);
-  document.getElementById('customerModal').addEventListener('keydown', async (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      await confirmCustomerExport();
+  document.getElementById('confirmCustomerExport').addEventListener('click', exportActiveQuote);
+  document.getElementById('customerModal').addEventListener('keydown', async (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      await exportActiveQuote();
     }
   });
 
-  render();
+  document.getElementById('closeImportPreviewModal').addEventListener('click', closeImportPreviewModal);
+  document.getElementById('cancelImportPreview').addEventListener('click', closeImportPreviewModal);
+  document.getElementById('importPreviewModal').querySelector('.modal-overlay').addEventListener('click', closeImportPreviewModal);
+  document.getElementById('importActionOptions').addEventListener('click', (event) => {
+    const action = event.target.closest('[data-action]');
+    if (!action) return;
+    selectedImportAction = action.dataset.action;
+    renderImportActionOptions(activeImportPreview);
+  });
+  document.getElementById('confirmImportPreview').addEventListener('click', confirmImportPreview);
+}
+
+async function init() {
+  bindEvents();
+  renderQuoteChrome();
+
+  if (!window.electronAPI) {
+    applyRevisionBundle({
+      quote: { id: 1 },
+      activeRevision: {
+        id: 1,
+        quoteId: 1,
+        quoteCode: 'XMS-LOCAL-001',
+        revisionNumber: 0,
+        displayQuoteNumber: 'XMS-LOCAL-001',
+        status: 'draft',
+        customer: blankCustomer(),
+        preparedBy: getDefaultPreparedBy(),
+        calcOptions: buildInitialDraftSnapshot().calcOptions,
+        stores: buildInitialDraftSnapshot().stores
+      },
+      revisions: []
+    });
+    return;
+  }
+
+  try {
+    const bundle = await window.electronAPI.getStartupRevision();
+    if (bundle) {
+      applyRevisionBundle(bundle);
+      return;
+    }
+    const newBundle = await window.electronAPI.createNewQuote(buildInitialDraftSnapshot());
+    applyRevisionBundle(newBundle);
+  } catch (error) {
+    console.error(error);
+    alert(error.message || 'Không thể khởi tạo quote workflow.');
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);
