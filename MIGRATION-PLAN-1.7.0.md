@@ -987,8 +987,8 @@ Acceptance:
 | # | Item | Severity | Action |
 |---|---|---|---|
 | R1 | `@types/node` coverage for `node:sqlite.DatabaseSync` may lag. | Medium | If missing at install time, write `src/types/node-sqlite.d.ts` ambient declaration. `[CONFIRM]` if shim is needed. |
-| R2 | `src/templates/quote/template.html` path resolution in packaged app. | Medium | Confirm approach (A) vs (B) in §6.2. Pick (A) unless reason to change. |
-| R3 | Alias adoption (`@shared/*`, `@services/*`). | Low | Default: adopt in configs; use in new files; leave existing relative imports untouched during migration to minimize diff. Migrate to aliases in a follow-up. `[CONFIRM]` preference. |
+| R2 | `src/templates/quote/template.html` path resolution in packaged app. | Medium | **Decision locked:** use approach **(A)** and copy templates to `out/templates/` at build time. Keep runtime lookup relative to compiled main output (`out/main/...`). |
+| R3 | Alias adoption (`@shared/*`, `@services/*`). | Low | **Decision locked:** keep imports **relative-only** for v1.7.0 migration to minimize diff. Defer alias rollout to a follow-up refactor ticket. |
 | R4 | `app.ts` 1413 LOC stays monolithic. Refactor temptation will be strong. | Medium | Hard rule: no split in 1.7.0. A future `REFACTOR-PLAN-1.8.0.md` handles modularization. |
 | R5 | `gsap-lite` typing. Custom code, small surface, no external `@types`. | Low | Write inline types in the file. |
 | R6 | `strict` mode surfacing real null/undefined bugs in `app.js`. | Medium-High | Expected. Fix as discovered, do not blanket-cast to `!`. Log each bug found in the commit body. If >10, Archie wants to review the list. |
@@ -997,11 +997,11 @@ Acceptance:
 | R9 | Electron 41 + Node 22 runtime inside the packaged app. `node:sqlite` must be present in Electron's bundled Node. | Medium | Verify: Electron 41 uses Node 22.x. `node:sqlite` is in Node ≥ 22.5. Check `process.versions.node` at Phase 3 smoke test. |
 | R10 | Existing `ts-node`/`tsx` parse errors for `import.meta` if renderer code leaks into tests. | Low | `tsconfig.node.json` has `types: ["node"]` only, no DOM; tests should not import renderer files. Enforce via eslint `no-restricted-imports`. |
 
-`[CONFIRM]` list for Archie before Phase 1 starts:
-1. Alias adoption now (`@shared`, `@services`) vs. relative-imports-only-for-now.
-2. Template copy approach: (A) vite-plugin-static-copy into `out/templates/` vs. (B) path via `app.getAppPath()`.
-3. Acceptable `any`-leak budget across migration (target: 0).
-4. OK to delete UMD `.js` originals via `git mv` rather than keeping parallel `.js` files during migration. (Pre-migration snapshot in `archive/pre-ts-1.6.6/` is preserved regardless.)
+Locked decisions (approved on **2026-04-24**):
+1. **Alias strategy:** relative imports only in v1.7.0. Do not introduce `@shared/*` or `@services/*` during migration.
+2. **Template packaging strategy:** **(A)** copy `src/templates/` to `out/templates/` (e.g., via vite static copy step). Do not rely on `app.getAppPath()` in v1.7.0.
+3. **`any` leak budget:** **0** in production code. Existing rule stands: `any` only in unavoidable ambient declarations, with `// TODO(ts-1.7.1): replace any`.
+4. **Rename policy:** `.js -> .ts` transitions must use `git mv` to preserve history (with baseline snapshot in `archive/pre-ts-1.6.6/`).
 
 ---
 
