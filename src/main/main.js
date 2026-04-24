@@ -1,5 +1,13 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+
+/** @typedef {import('../shared/types').QuoteSnapshot} QuoteSnapshot */
+/** @typedef {import('../shared/types').ImportPreview} ImportPreview */
+/** @typedef {import('../shared/types').ImportActionKey} ImportActionKey */
+/** @typedef {import('../shared/preload-contract').CreateNewRevisionPayload} CreateNewRevisionPayload */
+/** @typedef {import('../shared/preload-contract').SaveQuoteDraftPayload} SaveQuoteDraftPayload */
+/** @typedef {import('../shared/preload-contract').ExportQuotePayload} ExportQuotePayload */
+/** @typedef {import('../shared/preload-contract').ConfirmImportQuotePdfPayload} ConfirmImportQuotePdfPayload */
 const { exportQuote } = require('../services/quote-exporter');
 const { calculateTotals } = require('../shared/calculator');
 const {
@@ -34,6 +42,11 @@ function ensureRepository() {
   return quoteRepository;
 }
 
+/**
+ * @param {QuoteSnapshot} snapshot
+ * @param {{ recomputeTotals?: boolean }} [options]
+ * @returns {QuoteSnapshot}
+ */
 function normalizeSnapshot(snapshot, options = {}) {
   const { recomputeTotals = false } = options;
   const stores = normalizeStores(snapshot?.stores);
@@ -49,6 +62,7 @@ function normalizeSnapshot(snapshot, options = {}) {
   };
 }
 
+/** @param {QuoteSnapshot} snapshot */
 function createNewQuoteFromSnapshot(snapshot) {
   const repository = ensureRepository();
   const sequencePrefix = getQuoteSequencePrefix(new Date());
@@ -63,6 +77,10 @@ function createNewQuoteFromSnapshot(snapshot) {
   });
 }
 
+/**
+ * @param {ImportPreview} preview
+ * @param {ImportActionKey} action
+ */
 function resolveImport(preview, action) {
   const repository = ensureRepository();
   const importedSnapshot = buildImportedSnapshot(preview);
@@ -178,7 +196,9 @@ app.whenReady().then(() => {
     return ensureRepository().getRevisionBundle(revisionId);
   });
 
-  ipcMain.handle('save-quote-draft', async (_event, { revisionId, snapshot }) => {
+  ipcMain.handle('save-quote-draft', async (_event, payload) => {
+    /** @type {SaveQuoteDraftPayload} */
+    const { revisionId, snapshot } = payload;
     const repository = ensureRepository();
     return repository.updateRevisionSnapshot({
       revisionId,
@@ -186,7 +206,9 @@ app.whenReady().then(() => {
     });
   });
 
-  ipcMain.handle('create-new-revision', async (_event, { revisionId, snapshot }) => {
+  ipcMain.handle('create-new-revision', async (_event, payload) => {
+    /** @type {CreateNewRevisionPayload} */
+    const { revisionId, snapshot } = payload;
     const repository = ensureRepository();
     const newRevision = repository.createNextRevisionFromCurrent({
       revisionId,
@@ -196,7 +218,9 @@ app.whenReady().then(() => {
     return repository.getRevisionBundle(newRevision.id);
   });
 
-  ipcMain.handle('export-quote', async (event, { revisionId, snapshot }) => {
+  ipcMain.handle('export-quote', async (event, ipcPayload) => {
+    /** @type {ExportQuotePayload} */
+    const { revisionId, snapshot } = ipcPayload;
     const repository = ensureRepository();
     const normalizedSnapshot = normalizeSnapshot(snapshot, { recomputeTotals: true });
     const currentRevision = repository.getRevisionById(revisionId);
@@ -213,7 +237,7 @@ app.whenReady().then(() => {
       currentRevision.quoteCode,
       currentRevision.revisionNumber
     );
-    const payload = buildQuotePayload(
+    const quotePayload = buildQuotePayload(
       normalizedSnapshot,
       normalizedSnapshot.customer,
       normalizedSnapshot.preparedBy,
@@ -223,7 +247,7 @@ app.whenReady().then(() => {
       }
     );
     const exportedAt = new Date().toISOString();
-    const manifest = buildEmbeddedManifest(payload, {
+    const manifest = buildEmbeddedManifest(quotePayload, {
       appVersion: app.getVersion(),
       exportedAt
     });
@@ -232,7 +256,7 @@ app.whenReady().then(() => {
       BrowserWindow,
       app,
       dialog,
-      payload,
+      payload: quotePayload,
       manifest,
       parentWindow: BrowserWindow.fromWebContents(event.sender)
     });
@@ -275,7 +299,9 @@ app.whenReady().then(() => {
     });
   });
 
-  ipcMain.handle('confirm-import-quote-pdf', async (_event, { preview, action }) => {
+  ipcMain.handle('confirm-import-quote-pdf', async (_event, payload) => {
+    /** @type {ConfirmImportQuotePdfPayload} */
+    const { preview, action } = payload;
     if (!preview || !preview.filePath) {
       throw new Error('Thiếu dữ liệu import preview.');
     }
