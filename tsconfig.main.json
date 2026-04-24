@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "lib": ["ES2022"],
+    "types": ["node", "electron"],
+    "composite": true,
+    "outDir": "./out/main",
+    "rootDir": "./src"
+  },
+  "include": [
+    "src/main/**/*.ts",
+    "src/services/**/*.ts",
+    "src/shared/**/*.ts",
+    "src/types/**/*.d.ts"
+  ]
+}
