@@ -53,6 +53,22 @@ xms-calculator/
 └── test/              # Node test runner test files
 ```
 
+## Quality gates
+
+Project policy is enforced by phase gates with stop-on-fail behavior:
+
+- Commit convention: `build/refactor/docs/test/chore`
+- Locked boundary: no UI change and no business logic change
+- Locked type policy: strict mode and no `any`
+
+Run:
+
+```
+npm run phase:gate
+```
+
+Detailed policy: [docs/phase-gate-policy.md](docs/phase-gate-policy.md).
+
 ## Versioning
 
 See [CHANGELOG.md](CHANGELOG.md).

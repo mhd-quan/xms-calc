@@ -10,7 +10,11 @@
     "test:watch": "node --test --watch test/*.test.js",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "dist:mac": "electron-builder --mac"
+    "dist:mac": "electron-builder --mac",
+    "policy:commit": "node scripts/policy/check-commit-convention.js",
+    "policy:boundaries": "node scripts/policy/check-boundaries.js",
+    "policy:strict": "node scripts/policy/check-strict-no-any.js",
+    "phase:gate": "node scripts/policy/phase-gate.js"
   },
   "author": "Archie",
   "license": "UNLICENSED",
