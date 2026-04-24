@@ -1,6 +1,6 @@
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
-    module.exports = factory(require('./calculator'), require('./quote-identity-service'));
+    module.exports = factory(require('../shared/calculator'), require('./quote-identity-service'));
   } else {
     root.BDQuotePayload = factory(root.BDCalculator, root.BDQuoteIdentityService);
   }

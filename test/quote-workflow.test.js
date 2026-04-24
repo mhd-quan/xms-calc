@@ -9,17 +9,17 @@ const {
   computeNextRevisionNumber,
   formatDisplayQuoteNumber,
   generateBaseQuoteCode
-} = require('../quote-identity-service');
-const { QuoteRepository } = require('../quote-repository');
+} = require('../src/services/quote-identity-service');
+const { QuoteRepository } = require('../src/services/quote-repository');
 const {
   buildEmbeddedManifest,
   buildQuotePayload
-} = require('../quote-payload');
+} = require('../src/services/quote-payload');
 const {
   buildImportPreview,
   embedManifestInPdf,
   extractManifestFromPdfBytes
-} = require('../pdf-import-service');
+} = require('../src/services/pdf-import-service');
 
 function makeSnapshot(overrides = {}) {
   return {

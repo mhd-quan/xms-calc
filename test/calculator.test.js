@@ -5,15 +5,15 @@ const {
   calculateDurationMonths,
   calculateStoreBreakdown,
   calculateTotals
-} = require('../calculator');
+} = require('../src/shared/calculator');
 const {
   buildDraftSnapshotFromManifest,
   buildEmbeddedManifest,
   buildQuotePayload
-} = require('../quote-payload');
+} = require('../src/services/quote-payload');
 const {
   buildQuoteIdentity
-} = require('../quote-identity-service');
+} = require('../src/services/quote-identity-service');
 
 const moneyEqual = (actual, expected) => {
   assert.equal(Math.round(actual), Math.round(expected));

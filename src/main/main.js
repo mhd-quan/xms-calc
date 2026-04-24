@@ -1,7 +1,7 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
-const { exportQuote } = require('./quote-exporter');
-const { calculateTotals } = require('./calculator');
+const { exportQuote } = require('../services/quote-exporter');
+const { calculateTotals } = require('../shared/calculator');
 const {
   buildQuotePayload,
   buildEmbeddedManifest,
@@ -9,19 +9,19 @@ const {
   normalizePreparedBy,
   normalizeProfile,
   normalizeStores
-} = require('./quote-payload');
+} = require('../services/quote-payload');
 const {
   EMBEDDED_PAYLOAD_SCHEMA_VERSION,
   buildQuoteIdentity,
   generateBaseQuoteCode,
   getQuoteSequencePrefix
-} = require('./quote-identity-service');
-const { QuoteRepository } = require('./quote-repository');
+} = require('../services/quote-identity-service');
+const { QuoteRepository } = require('../services/quote-repository');
 const {
   buildImportPreview,
   buildImportedSnapshot,
   extractManifestFromPdfFile
-} = require('./pdf-import-service');
+} = require('../services/pdf-import-service');
 
 let quoteRepository;
 
@@ -157,7 +157,7 @@ function createWindow() {
     }
   });
 
-  mainWindow.loadFile('index.html');
+  mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
 }
 
 app.whenReady().then(() => {

@@ -1,17 +1,19 @@
 {
-  "name": "xmusic-station-calculator",
+  "name": "xms-calculator",
   "productName": "XMS Calculator",
   "version": "1.6.5",
   "description": "Royalty Calculator for XMusic Station based on ND 17/2023",
-  "main": "main.js",
+  "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test",
+    "test": "node --test test/*.test.js",
+    "test:watch": "node --test --watch test/*.test.js",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "dist:mac": "electron-builder --mac"
   },
   "author": "",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "devDependencies": {
     "electron": "^41.2.2",
     "electron-builder": "^26.8.1"
@@ -22,21 +24,15 @@
   "build": {
     "appId": "com.xmusic.calculator",
     "files": [
-      "*.js",
-      "index.html",
-      "styles.css",
-      "vendor/**/*",
-      "quote-template/**/*"
+      "src/**/*",
+      "!src/**/*.map"
     ],
     "mac": {
       "category": "public.app-category.business",
       "target": [
         "dmg"
       ],
-      "icon": "512x512@2x.icns"
+      "icon": "build/icons/app.icns"
     }
-  },
-  "dependencies": {
-    "pdf-lib": "^1.17.1"
   }
 }

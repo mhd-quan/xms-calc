@@ -143,7 +143,7 @@ async function exportQuote({
   payload,
   manifest,
   parentWindow = null,
-  templatePath = path.join(__dirname, 'quote-template', 'template.html')
+  templatePath = path.join(__dirname, '../templates/quote/template.html')
 }) {
   validateQuotePayload(payload);
   if (!manifest || typeof manifest !== 'object') {
