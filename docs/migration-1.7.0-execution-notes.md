@@ -3,6 +3,15 @@
 Date: 2026-04-24  
 Scope: clarify execution rules in `MIGRATION-PLAN-1.7.0.md` for this environment.
 
+## 0.5) Expected behavior for `npm run dev` (locked decision)
+
+This note is an explicit lock so all later phase reports use the same expectation text.
+
+**Expected behavior by phase:**
+
+- **Phase 1:** run `npm run dev`; it is expected to **fail cleanly** because TypeScript sources are not fully migrated yet.
+- **Phase 2–7:** run `npm run dev`; it is expected to **start successfully** (Electron window launches) in addition to passing `npm test`.
+
 ## 1) Repo root path (current environment)
 
 **Decision:** canonical repo root for execution is:
