@@ -2,70 +2,81 @@
 
 ## Process model
 
-XMS Calculator is a standard two-process Electron application.
+XMS Calculator is a two-process Electron application built with TypeScript and electron-vite.
 
-```
-src/main/main.js          ← Node.js main process
-  └── src/main/preload.js ← Context bridge (contextIsolation: true)
-        └── src/renderer/ ← Chromium renderer (no Node access except via bridge)
+```text
+src/main/main.ts           ← Node.js main process bundle entry
+  └── src/main/preload.ts  ← Context bridge (contextIsolation: true)
+        └── src/renderer/  ← Chromium renderer bundle entry (no direct Node access)
 ```
 
-`main.js` handles IPC, file I/O, SQLite persistence, and PDF export. The renderer calls into main exclusively via the IPC handlers exposed by `preload.js`. `nodeIntegration` is disabled in the renderer; all Node-side work goes through the bridge.
+`main.ts` handles IPC, file I/O, SQLite persistence, and PDF export. The renderer calls into main exclusively via the IPC handlers exposed by `preload.ts`. `nodeIntegration` is disabled in the renderer; all Node-side work goes through the bridge contract.
 
 ## Module map
 
 | Module | Location | Role |
 |---|---|---|
-| `main.js` | `src/main/` | App lifecycle, window management, IPC dispatch |
-| `preload.js` | `src/main/` | Exposes `window.electronAPI` to renderer via contextBridge |
-| `index.html` / `app.js` | `src/renderer/` | UI shell and all renderer-side state |
-| `styles.css` | `src/renderer/styles/` | Full app stylesheet (1279 LOC, Ableton-inspired dark theme) |
-| `calculator.js` | `src/shared/` | Pure royalty math per ND 17/2023. No side effects, no I/O. Loaded in both renderer (script tag) and main process (require). |
-| `quote-payload.js` | `src/services/` | Quote data shape and serialization. UMD — works in both renderer and Node. |
-| `quote-identity-service.js` | `src/services/` | Quote code generation, revision numbering, fingerprinting. UMD. |
-| `quote-exporter.js` | `src/services/` | PDF export: loads template in a hidden BrowserWindow, captures via print API, embeds manifest. |
-| `pdf-import-service.js` | `src/services/` | PDF manifest extraction, fingerprint verification, revision conflict detection. |
-| `quote-repository.js` | `src/services/` | SQLite-backed quote persistence via `node:sqlite`. |
+| `main.ts` | `src/main/` | App lifecycle, window management, IPC dispatch |
+| `preload.ts` | `src/main/` | Exposes typed `window.electronAPI` to renderer via contextBridge |
+| `index.html` / `app.ts` | `src/renderer/` | UI shell and renderer state orchestration |
+| `styles.css` | `src/renderer/styles/` | Full app stylesheet (Ableton-inspired dark theme) |
+| `calculator.ts` | `src/shared/` | Pure royalty math per ND 17/2023. No side effects, no I/O. Imported from both renderer and main/services. |
+| `quote-payload.ts` | `src/services/` | Quote data shape normalization and serialization |
+| `quote-identity-service.ts` | `src/services/` | Quote code generation, revision numbering, fingerprinting |
+| `quote-exporter.ts` | `src/services/` | PDF export: loads template in hidden BrowserWindow, captures via print API, embeds manifest |
+| `pdf-import-service.ts` | `src/services/` | PDF manifest extraction, fingerprint verification, revision conflict detection |
+| `quote-repository.ts` | `src/services/` | SQLite-backed quote persistence via `node:sqlite` |
 
 ## Data flow
 
-```
-User input (renderer/app.js)
-  → IPC call (preload.js bridge)
-    → main.js dispatch
-      → calculator.js         (pure computation)
-      → quote-payload.js      (build structured payload)
-      → quote-repository.js   (persist to SQLite)
-      → quote-exporter.js     (PDF export)
-            └── src/templates/quote/template.html  (rendered in hidden BrowserWindow)
+```text
+User input (renderer/app.ts)
+  → IPC call (preload.ts bridge)
+    → main.ts dispatch
+      → calculator.ts          (pure computation)
+      → quote-payload.ts       (build structured payload)
+      → quote-repository.ts    (persist to SQLite)
+      → quote-exporter.ts      (PDF export)
+            └── src/templates/quote/template.html (rendered in hidden BrowserWindow)
 ```
 
 ## Dependency graph
 
-```
-main.js
-├── quote-exporter.js
-│   └── pdf-import-service.js
-│       ├── quote-identity-service.js
-│       └── quote-payload.js
-│           └── calculator.js (shared)
-├── calculator.js (shared)
-├── quote-payload.js
-├── quote-identity-service.js
-├── quote-repository.js
-│   └── quote-identity-service.js
-└── pdf-import-service.js
+```text
+main.ts
+├── services/quote-exporter.ts
+│   └── services/pdf-import-service.ts
+│       ├── services/quote-identity-service.ts
+│       └── services/quote-payload.ts
+│           └── shared/calculator.ts
+├── shared/calculator.ts
+├── services/quote-payload.ts
+├── services/quote-identity-service.ts
+├── services/quote-repository.ts
+│   └── services/quote-identity-service.ts
+└── services/pdf-import-service.ts
 
-renderer/index.html (browser scripts, loaded as globals)
-├── shared/calculator.js
-├── services/quote-identity-service.js
-└── services/quote-payload.js
+renderer/app.ts (ESM)
+├── shared/calculator.ts
+├── services/quote-identity-service.ts
+├── services/quote-payload.ts
+└── renderer/vendor/gsap-lite.ts
 ```
 
 ## Key design decisions
 
-**No bundler.** Files are loaded via Electron's native module resolution and direct script tags. This keeps the dev loop fast and the debug surface minimal. Acceptable for an internal tool with this scope.
+**Bundled ESM pipeline with electron-vite.**
+- Renderer is bundled by Vite.
+- Main and preload are bundled through electron-vite's Node-side build pipeline.
+- `npm run build` outputs to `out/`, then template assets are copied for runtime PDF rendering.
 
-**Shared modules as UMD.** `calculator.js`, `quote-payload.js`, and `quote-identity-service.js` use a UMD wrapper so they work both as Node.js CommonJS modules (in main) and as browser globals (in renderer via script tag). This avoids duplicating logic.
+**TypeScript strict mode across the project.**
+- `strict: true` is enforced in `tsconfig`.
+- Policy checks enforce strict-mode retention and no `any` regressions.
 
-**SQLite via `node:sqlite`.** Node 22 ships `node:sqlite` as a built-in. No native addon, no external dependency.
+**ESM modules end-to-end (no UMD globals).**
+- Shared/service modules are imported via ESM from both renderer and main contexts.
+- Legacy `window.BDCalculator` / `window.BDQuotePayload` / `window.BDQuoteIdentityService` globals are removed.
+
+**SQLite via `node:sqlite`.**
+Node 22 runtime support allows `node:sqlite` as built-in database integration without external native addons.
