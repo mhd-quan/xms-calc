@@ -1,37 +1,114 @@
-const fs = require('fs');
-const path = require('path');
-const { DatabaseSync } = require('node:sqlite');
-const {
-  buildQuoteIdentity,
-  computeNextRevisionNumber,
-  formatDisplayQuoteNumber
-} = require('./quote-identity-service');
+import fs from 'node:fs';
+import path from 'node:path';
+import { DatabaseSync } from 'node:sqlite';
+import { buildQuoteIdentity, computeNextRevisionNumber, formatDisplayQuoteNumber } from './quote-identity-service';
 
-function nowIso() {
+export type QuoteStatus = 'draft' | 'imported' | 'exported';
+export type RevisionSource = 'new' | 'clone' | 'import_pdf' | string;
+
+type Snapshot = {
+  customer?: Record<string, unknown>;
+  preparedBy?: Record<string, unknown>;
+  calcOptions?: Record<string, unknown>;
+  stores?: unknown[];
+  totals?: Record<string, unknown>;
+};
+
+type SerializedSnapshot = {
+  customer_json: string;
+  prepared_by_json: string;
+  calc_options_json: string;
+  stores_json: string;
+  totals_json: string;
+};
+
+type QuoteRow = {
+  id: number;
+  quote_code: string;
+  current_revision_number: number;
+  status: QuoteStatus;
+  created_at: string;
+  updated_at: string;
+};
+
+type QuoteRevisionRow = {
+  id: number;
+  quote_id: number;
+  quote_code: string;
+  revision_number: number;
+  display_quote_number: string;
+  source: string;
+  customer_json: string;
+  prepared_by_json: string;
+  calc_options_json: string;
+  stores_json: string;
+  totals_json: string;
+  embedded_payload_version: string | null;
+  pdf_file_path: string | null;
+  pdf_fingerprint: string | null;
+  exported_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type QuoteRecord = {
+  id: number;
+  quoteCode: string;
+  currentRevisionNumber: number;
+  status: QuoteStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type QuoteRevisionRecord = {
+  id: number;
+  quoteId: number;
+  quoteCode: string;
+  revisionNumber: number;
+  displayQuoteNumber: string;
+  source: string;
+  customer: Record<string, unknown>;
+  preparedBy: Record<string, unknown>;
+  calcOptions: Record<string, unknown>;
+  stores: unknown[];
+  totals: Record<string, unknown>;
+  embeddedPayloadVersion: string | null;
+  pdfFilePath: string | null;
+  pdfFingerprint: string | null;
+  exportedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+  status: QuoteStatus;
+  quoteIdentity: ReturnType<typeof buildQuoteIdentity>;
+};
+
+function nowIso(): string {
   return new Date().toISOString();
 }
 
-function ensureParentDir(filePath) {
+function ensureParentDir(filePath: string): void {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
 }
 
-function safeParseJson(value, fallback) {
+function safeParseJson<T>(value: string | null | undefined, fallback: T): T {
   if (!value) return fallback;
   try {
-    return JSON.parse(value);
+    return JSON.parse(value) as T;
   } catch (_error) {
     return fallback;
   }
 }
 
-function deriveRevisionStatus(row) {
+function deriveRevisionStatus(row: QuoteRevisionRow): QuoteStatus {
   if (row.exported_at) return 'exported';
   if (row.source === 'import_pdf') return 'imported';
   return 'draft';
 }
 
-class QuoteRepository {
-  constructor(dbPath) {
+export class QuoteRepository {
+  private readonly db: DatabaseSync;
+
+  constructor(dbPath: string) {
     ensureParentDir(dbPath);
     this.db = new DatabaseSync(dbPath);
     this.db.exec('PRAGMA foreign_keys = ON;');
@@ -68,11 +145,11 @@ class QuoteRepository {
     `);
   }
 
-  close() {
+  close(): void {
     this.db.close();
   }
 
-  serializeSnapshot(snapshot) {
+  private serializeSnapshot(snapshot: Snapshot): SerializedSnapshot {
     return {
       customer_json: JSON.stringify(snapshot.customer || {}),
       prepared_by_json: JSON.stringify(snapshot.preparedBy || {}),
@@ -82,7 +159,7 @@ class QuoteRepository {
     };
   }
 
-  hydrateRevisionRow(row) {
+  private hydrateRevisionRow(row: QuoteRevisionRow | null | undefined): QuoteRevisionRecord | null {
     if (!row) return null;
     return {
       id: row.id,
@@ -107,9 +184,14 @@ class QuoteRepository {
     };
   }
 
-  createQuote({ quoteCode, revisionNumber = 0, status = 'draft' }) {
+  createQuote({ quoteCode, revisionNumber = 0, status = 'draft' }: {
+    quoteCode: string;
+    revisionNumber?: number;
+    status?: QuoteStatus;
+  }): number {
     const timestamp = nowIso();
-    const result = this.db.prepare(`
+    const result = this.db
+      .prepare(`
       INSERT INTO quotes (
         quote_code,
         current_revision_number,
@@ -117,18 +199,21 @@ class QuoteRepository {
         created_at,
         updated_at
       ) VALUES (?, ?, ?, ?, ?)
-    `).run(quoteCode, revisionNumber, status, timestamp, timestamp);
+    `)
+      .run(quoteCode, revisionNumber, status, timestamp, timestamp) as { lastInsertRowid: number | bigint };
     return Number(result.lastInsertRowid);
   }
 
-  touchQuote(quoteId, revisionNumber, status) {
-    this.db.prepare(`
+  touchQuote(quoteId: number, revisionNumber: number, status: QuoteStatus): void {
+    this.db
+      .prepare(`
       UPDATE quotes
       SET current_revision_number = MAX(current_revision_number, ?),
           status = ?,
           updated_at = ?
       WHERE id = ?
-    `).run(revisionNumber, status, nowIso(), quoteId);
+    `)
+      .run(revisionNumber, status, nowIso(), quoteId);
   }
 
   createRevision({
@@ -141,11 +226,22 @@ class QuoteRepository {
     pdfFilePath = null,
     pdfFingerprint = null,
     exportedAt = null
-  }) {
+  }: {
+    quoteId: number;
+    quoteCode: string;
+    revisionNumber: number;
+    source: RevisionSource;
+    snapshot: Snapshot;
+    embeddedPayloadVersion?: string | null;
+    pdfFilePath?: string | null;
+    pdfFingerprint?: string | null;
+    exportedAt?: string | null;
+  }): QuoteRevisionRecord | null {
     const timestamp = nowIso();
     const serialized = this.serializeSnapshot(snapshot);
     const displayQuoteNumber = formatDisplayQuoteNumber(quoteCode, revisionNumber);
-    const result = this.db.prepare(`
+    const result = this.db
+      .prepare(`
       INSERT INTO quote_revisions (
         quote_id,
         revision_number,
@@ -163,31 +259,36 @@ class QuoteRepository {
         created_at,
         updated_at
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      quoteId,
-      revisionNumber,
-      displayQuoteNumber,
-      source,
-      serialized.customer_json,
-      serialized.prepared_by_json,
-      serialized.calc_options_json,
-      serialized.stores_json,
-      serialized.totals_json,
-      embeddedPayloadVersion,
-      pdfFilePath,
-      pdfFingerprint,
-      exportedAt,
-      timestamp,
-      timestamp
-    );
+    `)
+      .run(
+        quoteId,
+        revisionNumber,
+        displayQuoteNumber,
+        source,
+        serialized.customer_json,
+        serialized.prepared_by_json,
+        serialized.calc_options_json,
+        serialized.stores_json,
+        serialized.totals_json,
+        embeddedPayloadVersion,
+        pdfFilePath,
+        pdfFingerprint,
+        exportedAt,
+        timestamp,
+        timestamp
+      ) as { lastInsertRowid: number | bigint };
     this.touchQuote(quoteId, revisionNumber, exportedAt ? 'exported' : source === 'import_pdf' ? 'imported' : 'draft');
     return this.getRevisionById(Number(result.lastInsertRowid));
   }
 
-  updateRevisionSnapshot({ revisionId, snapshot }) {
+  updateRevisionSnapshot({ revisionId, snapshot }: { revisionId: number; snapshot: Snapshot }): {
+    revisionId: number;
+    updatedAt: string;
+  } {
     const serialized = this.serializeSnapshot(snapshot);
     const timestamp = nowIso();
-    this.db.prepare(`
+    this.db
+      .prepare(`
       UPDATE quote_revisions
       SET customer_json = ?,
           prepared_by_json = ?,
@@ -196,16 +297,18 @@ class QuoteRepository {
           totals_json = ?,
           updated_at = ?
       WHERE id = ?
-    `).run(
-      serialized.customer_json,
-      serialized.prepared_by_json,
-      serialized.calc_options_json,
-      serialized.stores_json,
-      serialized.totals_json,
-      timestamp,
-      revisionId
-    );
-    this.db.prepare(`
+    `)
+      .run(
+        serialized.customer_json,
+        serialized.prepared_by_json,
+        serialized.calc_options_json,
+        serialized.stores_json,
+        serialized.totals_json,
+        timestamp,
+        revisionId
+      );
+    this.db
+      .prepare(`
       UPDATE quotes
       SET status = 'draft',
           updated_at = ?
@@ -214,7 +317,8 @@ class QuoteRepository {
         FROM quote_revisions
         WHERE id = ?
       )
-    `).run(timestamp, revisionId);
+    `)
+      .run(timestamp, revisionId);
     return {
       revisionId,
       updatedAt: timestamp
@@ -228,11 +332,19 @@ class QuoteRepository {
     pdfFilePath,
     pdfFingerprint,
     exportedAt
-  }) {
+  }: {
+    revisionId: number;
+    snapshot: Snapshot;
+    embeddedPayloadVersion: string;
+    pdfFilePath: string;
+    pdfFingerprint: string;
+    exportedAt: string;
+  }): QuoteRevisionRecord | null {
     const revision = this.getRevisionById(revisionId);
     if (!revision) return null;
     const serialized = this.serializeSnapshot(snapshot);
-    this.db.prepare(`
+    this.db
+      .prepare(`
       UPDATE quote_revisions
       SET source = 'import_pdf',
           customer_json = ?,
@@ -246,19 +358,20 @@ class QuoteRepository {
           exported_at = ?,
           updated_at = ?
       WHERE id = ?
-    `).run(
-      serialized.customer_json,
-      serialized.prepared_by_json,
-      serialized.calc_options_json,
-      serialized.stores_json,
-      serialized.totals_json,
-      embeddedPayloadVersion,
-      pdfFilePath,
-      pdfFingerprint,
-      exportedAt,
-      nowIso(),
-      revisionId
-    );
+    `)
+      .run(
+        serialized.customer_json,
+        serialized.prepared_by_json,
+        serialized.calc_options_json,
+        serialized.stores_json,
+        serialized.totals_json,
+        embeddedPayloadVersion,
+        pdfFilePath,
+        pdfFingerprint,
+        exportedAt,
+        nowIso(),
+        revisionId
+      );
     this.touchQuote(revision.quoteId, revision.revisionNumber, 'imported');
     return this.getRevisionById(revisionId);
   }
@@ -270,11 +383,19 @@ class QuoteRepository {
     pdfFilePath,
     pdfFingerprint,
     exportedAt
-  }) {
+  }: {
+    revisionId: number;
+    snapshot: Snapshot;
+    embeddedPayloadVersion: string;
+    pdfFilePath: string;
+    pdfFingerprint: string;
+    exportedAt: string;
+  }): QuoteRevisionRecord | null {
     const revision = this.getRevisionById(revisionId);
     if (!revision) return null;
     const serialized = this.serializeSnapshot(snapshot);
-    this.db.prepare(`
+    this.db
+      .prepare(`
       UPDATE quote_revisions
       SET customer_json = ?,
           prepared_by_json = ?,
@@ -287,24 +408,29 @@ class QuoteRepository {
           exported_at = ?,
           updated_at = ?
       WHERE id = ?
-    `).run(
-      serialized.customer_json,
-      serialized.prepared_by_json,
-      serialized.calc_options_json,
-      serialized.stores_json,
-      serialized.totals_json,
-      embeddedPayloadVersion,
-      pdfFilePath,
-      pdfFingerprint,
-      exportedAt,
-      nowIso(),
-      revisionId
-    );
+    `)
+      .run(
+        serialized.customer_json,
+        serialized.prepared_by_json,
+        serialized.calc_options_json,
+        serialized.stores_json,
+        serialized.totals_json,
+        embeddedPayloadVersion,
+        pdfFilePath,
+        pdfFingerprint,
+        exportedAt,
+        nowIso(),
+        revisionId
+      );
     this.touchQuote(revision.quoteId, revision.revisionNumber, 'exported');
     return this.getRevisionById(revisionId);
   }
 
-  createBaseQuoteRevision({ quoteCode, snapshot, source = 'new' }) {
+  createBaseQuoteRevision({ quoteCode, snapshot, source = 'new' }: {
+    quoteCode: string;
+    snapshot: Snapshot;
+    source?: RevisionSource;
+  }): QuoteRevisionRecord | null {
     const quoteId = this.createQuote({ quoteCode, revisionNumber: 0 });
     return this.createRevision({
       quoteId,
@@ -315,14 +441,16 @@ class QuoteRepository {
     });
   }
 
-  createNextRevisionFromCurrent({ revisionId, snapshot, source = 'clone' }) {
+  createNextRevisionFromCurrent({ revisionId, snapshot, source = 'clone' }: {
+    revisionId: number;
+    snapshot: Snapshot;
+    source?: RevisionSource;
+  }): QuoteRevisionRecord | null {
     const current = this.getRevisionById(revisionId);
     if (!current) {
       throw new Error('Cannot create revision: current revision not found');
     }
-    const nextRevisionNumber = computeNextRevisionNumber(
-      this.getHighestRevisionNumber(current.quoteId)
-    );
+    const nextRevisionNumber = computeNextRevisionNumber(this.getHighestRevisionNumber(current.quoteId));
     return this.createRevision({
       quoteId: current.quoteId,
       quoteCode: current.quoteCode,
@@ -332,32 +460,38 @@ class QuoteRepository {
     });
   }
 
-  getHighestRevisionNumber(quoteId) {
-    const row = this.db.prepare(`
+  getHighestRevisionNumber(quoteId: number): number {
+    const row = this.db
+      .prepare(`
       SELECT COALESCE(MAX(revision_number), 0) AS revision_number
       FROM quote_revisions
       WHERE quote_id = ?
-    `).get(quoteId);
+    `)
+      .get(quoteId) as { revision_number?: number } | undefined;
     return Number(row?.revision_number) || 0;
   }
 
-  getLatestDraftRevision() {
-    const row = this.db.prepare(`
+  getLatestDraftRevision(): QuoteRevisionRecord | null {
+    const row = this.db
+      .prepare(`
       SELECT r.*, q.quote_code
       FROM quote_revisions r
       INNER JOIN quotes q ON q.id = r.quote_id
       ORDER BY r.updated_at DESC
       LIMIT 1
-    `).get();
+    `)
+      .get() as QuoteRevisionRow | undefined;
     return this.hydrateRevisionRow(row);
   }
 
-  getQuoteByCode(quoteCode) {
-    const row = this.db.prepare(`
+  getQuoteByCode(quoteCode: string): QuoteRecord | null {
+    const row = this.db
+      .prepare(`
       SELECT *
       FROM quotes
       WHERE quote_code = ?
-    `).get(quoteCode);
+    `)
+      .get(quoteCode) as QuoteRow | undefined;
     return row
       ? {
           id: row.id,
@@ -370,41 +504,51 @@ class QuoteRepository {
       : null;
   }
 
-  getRevisionByIdentity(quoteCode, revisionNumber) {
-    const row = this.db.prepare(`
+  getRevisionByIdentity(quoteCode: string, revisionNumber: number): QuoteRevisionRecord | null {
+    const row = this.db
+      .prepare(`
       SELECT r.*, q.quote_code
       FROM quote_revisions r
       INNER JOIN quotes q ON q.id = r.quote_id
       WHERE q.quote_code = ?
         AND r.revision_number = ?
       LIMIT 1
-    `).get(quoteCode, revisionNumber);
+    `)
+      .get(quoteCode, revisionNumber) as QuoteRevisionRow | undefined;
     return this.hydrateRevisionRow(row);
   }
 
-  getRevisionById(revisionId) {
-    const row = this.db.prepare(`
+  getRevisionById(revisionId: number): QuoteRevisionRecord | null {
+    const row = this.db
+      .prepare(`
       SELECT r.*, q.quote_code
       FROM quote_revisions r
       INNER JOIN quotes q ON q.id = r.quote_id
       WHERE r.id = ?
       LIMIT 1
-    `).get(revisionId);
+    `)
+      .get(revisionId) as QuoteRevisionRow | undefined;
     return this.hydrateRevisionRow(row);
   }
 
-  listRevisionsByQuote(quoteId) {
-    const rows = this.db.prepare(`
+  listRevisionsByQuote(quoteId: number): QuoteRevisionRecord[] {
+    const rows = this.db
+      .prepare(`
       SELECT r.*, q.quote_code
       FROM quote_revisions r
       INNER JOIN quotes q ON q.id = r.quote_id
       WHERE r.quote_id = ?
       ORDER BY r.revision_number ASC, r.created_at ASC
-    `).all(quoteId);
-    return rows.map((row) => this.hydrateRevisionRow(row));
+    `)
+      .all(quoteId) as QuoteRevisionRow[];
+    return rows.map((row) => this.hydrateRevisionRow(row)).filter((row): row is QuoteRevisionRecord => Boolean(row));
   }
 
-  getRevisionBundle(revisionId) {
+  getRevisionBundle(revisionId: number): {
+    quote: QuoteRecord | null;
+    activeRevision: QuoteRevisionRecord;
+    revisions: QuoteRevisionRecord[];
+  } | null {
     const activeRevision = this.getRevisionById(revisionId);
     if (!activeRevision) return null;
     const quote = this.getQuoteByCode(activeRevision.quoteCode);
@@ -415,12 +559,14 @@ class QuoteRepository {
     };
   }
 
-  findNextSequence(prefix) {
-    const rows = this.db.prepare(`
+  findNextSequence(prefix: string): number {
+    const rows = this.db
+      .prepare(`
       SELECT quote_code
       FROM quotes
       WHERE quote_code LIKE ?
-    `).all(`${prefix}%`);
+    `)
+      .all(`${prefix}%`) as Array<{ quote_code: string }>;
     const maxSequence = rows.reduce((max, row) => {
       const match = /^XMS-\d{6}-(\d{3})(?:-COPY\d+)?$/.exec(row.quote_code);
       if (!match) return max;
@@ -429,13 +575,15 @@ class QuoteRepository {
     return maxSequence + 1;
   }
 
-  generateDuplicateQuoteCode(baseQuoteCode) {
-    const rows = this.db.prepare(`
+  generateDuplicateQuoteCode(baseQuoteCode: string): string {
+    const rows = this.db
+      .prepare(`
       SELECT quote_code
       FROM quotes
       WHERE quote_code = ?
          OR quote_code LIKE ?
-    `).all(baseQuoteCode, `${baseQuoteCode}-COPY%`);
+    `)
+      .all(baseQuoteCode, `${baseQuoteCode}-COPY%`) as Array<{ quote_code: string }>;
     const used = new Set(rows.map((row) => row.quote_code));
     let copyNumber = 1;
     while (used.has(`${baseQuoteCode}-COPY${copyNumber}`)) {
@@ -444,7 +592,3 @@ class QuoteRepository {
     return `${baseQuoteCode}-COPY${copyNumber}`;
   }
 }
-
-module.exports = {
-  QuoteRepository
-};

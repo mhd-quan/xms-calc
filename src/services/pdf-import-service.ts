@@ -1,7 +1,7 @@
-const fs = require('fs/promises');
-const path = require('path');
-const crypto = require('crypto');
-const {
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import {
   PDFArray,
   PDFDict,
   PDFDocument,
@@ -10,29 +10,54 @@ const {
   PDFRawStream,
   PDFString,
   decodePDFRawStream
-} = require('pdf-lib');
-const {
-  EMBEDDED_PAYLOAD_SCHEMA_VERSION,
-  buildQuoteIdentity
-} = require('./quote-identity-service');
-const {
-  buildDraftSnapshotFromManifest
-} = require('./quote-payload');
+} from 'pdf-lib';
+import { EMBEDDED_PAYLOAD_SCHEMA_VERSION, buildQuoteIdentity } from './quote-identity-service';
+import { buildDraftSnapshotFromManifest } from './quote-payload';
+import type { QuoteRepository } from './quote-repository';
 
-const EMBEDDED_MANIFEST_FILENAME = 'xms-quote-manifest.json';
+export const EMBEDDED_MANIFEST_FILENAME = 'xms-quote-manifest.json';
 
-function createPdfFingerprint(pdfBytes) {
+type EmbeddedManifest = {
+  schemaVersion: string;
+  quoteIdentity: {
+    quoteCode: string;
+    revisionNumber: number;
+    displayQuoteNumber?: string;
+  };
+  customer?: {
+    companyName?: string;
+  };
+  stores?: unknown[];
+  totals?: {
+    grand?: number;
+    [key: string]: unknown;
+  };
+  exportedAt?: string;
+  [key: string]: unknown;
+};
+
+type ImportAction = {
+  key:
+    | 'import_new_quote'
+    | 'attach_to_existing_chain'
+    | 'open_existing'
+    | 'replace_existing_revision'
+    | 'import_duplicate_quote_copy';
+  label: string;
+};
+
+export function createPdfFingerprint(pdfBytes: Uint8Array): string {
   return crypto.createHash('sha256').update(pdfBytes).digest('hex');
 }
 
-function decodePdfText(object) {
+function decodePdfText(object: unknown): string {
   if (object instanceof PDFHexString || object instanceof PDFString) {
     return object.decodeText();
   }
   return '';
 }
 
-function readEmbeddedManifestBytes(pdfDoc) {
+function readEmbeddedManifestBytes(pdfDoc: PDFDocument): Uint8Array {
   const namesDict = pdfDoc.catalog.lookupMaybe(PDFName.of('Names'), PDFDict);
   const embeddedFilesDict = namesDict?.lookupMaybe(PDFName.of('EmbeddedFiles'), PDFDict);
   const namesArray = embeddedFilesDict?.lookupMaybe(PDFName.of('Names'), PDFArray);
@@ -58,21 +83,22 @@ function readEmbeddedManifestBytes(pdfDoc) {
   throw new Error('PDF không chứa manifest của XMS Quote Workflow.');
 }
 
-function validateManifestSchema(manifest) {
+export function validateManifestSchema(manifest: unknown): asserts manifest is EmbeddedManifest {
   if (!manifest || typeof manifest !== 'object') {
     throw new Error('Manifest báo giá không hợp lệ.');
   }
-  if (manifest.schemaVersion !== EMBEDDED_PAYLOAD_SCHEMA_VERSION) {
+  const typed = manifest as Partial<EmbeddedManifest>;
+  if (typed.schemaVersion !== EMBEDDED_PAYLOAD_SCHEMA_VERSION) {
     throw new Error(
-      `PDF schema ${manifest.schemaVersion || 'unknown'} chưa được hỗ trợ. Chỉ import PDF từ v${EMBEDDED_PAYLOAD_SCHEMA_VERSION}+ của app.`
+      `PDF schema ${typed.schemaVersion || 'unknown'} chưa được hỗ trợ. Chỉ import PDF từ v${EMBEDDED_PAYLOAD_SCHEMA_VERSION}+ của app.`
     );
   }
-  if (!manifest.quoteIdentity || !manifest.quoteIdentity.quoteCode) {
+  if (!typed.quoteIdentity || !typed.quoteIdentity.quoteCode) {
     throw new Error('Manifest báo giá thiếu thông tin định danh quote.');
   }
 }
 
-async function embedManifestInPdf(pdfBytes, manifest) {
+export async function embedManifestInPdf(pdfBytes: Uint8Array, manifest: EmbeddedManifest): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.load(pdfBytes);
   const manifestBytes = Buffer.from(JSON.stringify(manifest), 'utf8');
   const timestamp = manifest.exportedAt ? new Date(manifest.exportedAt) : new Date();
@@ -84,12 +110,12 @@ async function embedManifestInPdf(pdfBytes, manifest) {
     afRelationship: 'Data'
   });
   pdfDoc.setSubject(`XMS Quote Workflow Manifest ${manifest.schemaVersion}`);
-  pdfDoc.setKeywords(['xms-quote', `schema-${manifest.schemaVersion}`, manifest.quoteIdentity.displayQuoteNumber]);
+  pdfDoc.setKeywords(['xms-quote', `schema-${manifest.schemaVersion}`, manifest.quoteIdentity.displayQuoteNumber || '']);
   return pdfDoc.save();
 }
 
-async function extractManifestFromPdfBytes(pdfBytes) {
-  let pdfDoc;
+export async function extractManifestFromPdfBytes(pdfBytes: Uint8Array): Promise<EmbeddedManifest> {
+  let pdfDoc: PDFDocument;
   try {
     pdfDoc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
   } catch (_error) {
@@ -97,7 +123,7 @@ async function extractManifestFromPdfBytes(pdfBytes) {
   }
 
   const manifestBytes = readEmbeddedManifestBytes(pdfDoc);
-  let manifest;
+  let manifest: unknown;
   try {
     manifest = JSON.parse(Buffer.from(manifestBytes).toString('utf8'));
   } catch (_error) {
@@ -107,7 +133,12 @@ async function extractManifestFromPdfBytes(pdfBytes) {
   return manifest;
 }
 
-async function extractManifestFromPdfFile(filePath) {
+export async function extractManifestFromPdfFile(filePath: string): Promise<{
+  filePath: string;
+  fileName: string;
+  fingerprint: string;
+  manifest: EmbeddedManifest;
+}> {
   const pdfBytes = await fs.readFile(filePath);
   const manifest = await extractManifestFromPdfBytes(pdfBytes);
   return {
@@ -118,30 +149,60 @@ async function extractManifestFromPdfFile(filePath) {
   };
 }
 
-function buildImportPreview({ filePath, fileName, fingerprint, manifest, repository }) {
-  const quoteIdentity = buildQuoteIdentity(
-    manifest.quoteIdentity.quoteCode,
-    manifest.quoteIdentity.revisionNumber
-  );
+export function buildImportPreview({
+  filePath,
+  fileName,
+  fingerprint,
+  manifest,
+  repository
+}: {
+  filePath: string;
+  fileName: string;
+  fingerprint: string;
+  manifest: EmbeddedManifest;
+  repository: QuoteRepository;
+}): {
+  filePath: string;
+  fileName: string;
+  fingerprint: string;
+  manifest: EmbeddedManifest;
+  quoteIdentity: ReturnType<typeof buildQuoteIdentity>;
+  existingRevisionId: number | null;
+  conflictType: 'new_quote' | 'attach_existing_chain' | 'same_file' | 'revision_conflict';
+  recommendedAction: ImportAction['key'];
+  actions: ImportAction[];
+  summary: string;
+  preview: {
+    displayQuoteNumber: string;
+    quoteCode: string;
+    revisionNumber: number;
+    revisionLabel: string;
+    customerName: string;
+    branchCount: number;
+    grandTotal: number;
+    manifestCompatibility: string;
+    exportedAt: string;
+    hasExistingQuote: boolean;
+  };
+} {
+  const quoteIdentity = buildQuoteIdentity(manifest.quoteIdentity.quoteCode, manifest.quoteIdentity.revisionNumber);
   const existingQuote = repository.getQuoteByCode(quoteIdentity.quoteCode);
-  const existingRevision = repository.getRevisionByIdentity(
-    quoteIdentity.quoteCode,
-    quoteIdentity.revisionNumber
-  );
+  const existingRevision = repository.getRevisionByIdentity(quoteIdentity.quoteCode, quoteIdentity.revisionNumber);
 
-  let conflictType = 'new_quote';
-  let recommendedAction = 'import_new_quote';
-  let actions = [{ key: 'import_new_quote', label: 'Import revision' }];
-  let existingRevisionId = null;
+  let conflictType: 'new_quote' | 'attach_existing_chain' | 'same_file' | 'revision_conflict' = 'new_quote';
+  let recommendedAction: ImportAction['key'] = 'import_new_quote';
+  let actions: ImportAction[] = [{ key: 'import_new_quote', label: 'Import revision' }];
+  let existingRevisionId: number | null = null;
   let summary = 'Quote code chưa tồn tại trong local DB. Import sẽ tạo quote chain mới.';
 
   if (existingQuote && !existingRevision) {
     conflictType = 'attach_existing_chain';
     recommendedAction = 'attach_to_existing_chain';
     actions = [{ key: 'attach_to_existing_chain', label: 'Attach vào quote chain' }];
-    summary = quoteIdentity.revisionNumber > existingQuote.currentRevisionNumber
-      ? 'Revision mới hơn bản đang có. Import sẽ attach vào chain hiện tại.'
-      : 'Revision này sẽ được attach vào quote chain hiện có như một revision lịch sử.';
+    summary =
+      quoteIdentity.revisionNumber > existingQuote.currentRevisionNumber
+        ? 'Revision mới hơn bản đang có. Import sẽ attach vào chain hiện tại.'
+        : 'Revision này sẽ được attach vào quote chain hiện có như một revision lịch sử.';
   }
 
   if (existingRevision) {
@@ -188,17 +249,6 @@ function buildImportPreview({ filePath, fileName, fingerprint, manifest, reposit
   };
 }
 
-function buildImportedSnapshot(preview) {
+export function buildImportedSnapshot(preview: { manifest: EmbeddedManifest }): ReturnType<typeof buildDraftSnapshotFromManifest> {
   return buildDraftSnapshotFromManifest(preview.manifest);
 }
-
-module.exports = {
-  EMBEDDED_MANIFEST_FILENAME,
-  buildImportPreview,
-  buildImportedSnapshot,
-  createPdfFingerprint,
-  embedManifestInPdf,
-  extractManifestFromPdfBytes,
-  extractManifestFromPdfFile,
-  validateManifestSchema
-};
