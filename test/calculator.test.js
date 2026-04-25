@@ -5,15 +5,15 @@ const {
   calculateDurationMonths,
   calculateStoreBreakdown,
   calculateTotals
-} = require('../src/shared/calculator');
+} = require('../archive/pre-ts-1.6.6/src/shared/calculator');
 const {
   buildDraftSnapshotFromManifest,
   buildEmbeddedManifest,
   buildQuotePayload
-} = require('../src/services/quote-payload');
+} = require('../archive/pre-ts-1.6.6/src/services/quote-payload');
 const {
   buildQuoteIdentity
-} = require('../src/services/quote-identity-service');
+} = require('../archive/pre-ts-1.6.6/src/services/quote-identity-service');
 
 const moneyEqual = (actual, expected) => {
   assert.equal(Math.round(actual), Math.round(expected));
