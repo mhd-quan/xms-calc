@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import fs from 'node:fs';
 import path from 'node:path';
 
 import { buildImportPreview, buildImportedSnapshot, extractManifestFromPdfFile } from '../services/pdf-import-service';
@@ -17,6 +18,17 @@ import type {
 import type { ImportActionKey, ImportPreview, QuoteSnapshot, RevisionBundle } from '../shared/types';
 
 let quoteRepository: QuoteRepository | null = null;
+
+function resolvePreloadPath(): string {
+  const preloadCandidates = [
+    path.join(__dirname, 'preload.js'),
+    path.join(__dirname, 'preload.mjs'),
+    path.join(__dirname, '../preload/preload.js'),
+    path.join(__dirname, '../preload/preload.mjs')
+  ];
+  const matchedPath = preloadCandidates.find((candidate) => fs.existsSync(candidate));
+  return matchedPath || preloadCandidates[0];
+}
 
 function ensureRepository(): QuoteRepository {
   if (!quoteRepository) {
@@ -139,7 +151,7 @@ function createWindow(): void {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.js')
+      preload: resolvePreloadPath()
     }
   });
 
