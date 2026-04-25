@@ -1,27 +1,27 @@
-const fs = require('fs');
-const os = require('os');
-const path = require('path');
-const test = require('node:test');
-const assert = require('node:assert/strict');
-const { PDFDocument } = require('pdf-lib');
-const {
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import test from 'node:test';
+import { PDFDocument } from 'pdf-lib';
+import {
   buildQuoteIdentity,
   computeNextRevisionNumber,
   formatDisplayQuoteNumber,
   generateBaseQuoteCode
-} = require('../src/services/quote-identity-service');
-const { QuoteRepository } = require('../src/services/quote-repository');
-const {
+} from '../src/services/quote-identity-service.ts';
+import { QuoteRepository } from '../src/services/quote-repository.ts';
+import {
   buildEmbeddedManifest,
   buildQuotePayload
-} = require('../src/services/quote-payload');
-const {
+} from '../src/services/quote-payload.ts';
+import {
   buildImportPreview,
   embedManifestInPdf,
   extractManifestFromPdfBytes
-} = require('../src/services/pdf-import-service');
+} from '../src/services/pdf-import-service.ts';
 
-function makeSnapshot(overrides = {}) {
+function makeSnapshot(overrides: Record<string, unknown> = {}) {
   return {
     customer: { companyName: 'Công ty Test' },
     preparedBy: { name: 'BD User' },

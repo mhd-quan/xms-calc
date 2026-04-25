@@ -1,22 +1,26 @@
-const test = require('node:test');
-const assert = require('node:assert/strict');
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import calculatorPkg from '../archive/pre-ts-1.6.6/src/shared/calculator.js';
+import quotePayloadPkg from '../archive/pre-ts-1.6.6/src/services/quote-payload.js';
+import quoteIdentityPkg from '../archive/pre-ts-1.6.6/src/services/quote-identity-service.js';
+
 const {
   calculateCoef,
   calculateDurationMonths,
   calculateStoreBreakdown,
   calculateTotals
-} = require('../archive/pre-ts-1.6.6/src/shared/calculator');
+} = calculatorPkg;
 const {
   buildDraftSnapshotFromManifest,
   buildEmbeddedManifest,
   buildQuotePayload
-} = require('../archive/pre-ts-1.6.6/src/services/quote-payload');
+} = quotePayloadPkg;
 const {
   buildQuoteIdentity,
   computeNextRevisionNumber
-} = require('../archive/pre-ts-1.6.6/src/services/quote-identity-service');
+} = quoteIdentityPkg;
 
-const moneyEqual = (actual, expected) => {
+const moneyEqual = (actual: number, expected: number) => {
   assert.equal(Math.round(actual), Math.round(expected));
 };
 
