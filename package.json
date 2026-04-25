@@ -3,9 +3,9 @@
   "productName": "XMS Calculator",
   "version": "1.6.6",
   "description": "Royalty Calculator for XMusic Station based on ND 17/2023",
-  "main": "src/main/main.ts",
+  "main": "out/main/index.js",
   "scripts": {
-    "start": "electron .",
+    "start": "npm run dev",
     "test": "node --test test/calculator.test.js",
     "test:watch": "node --test --watch test/calculator.test.js",
     "pack": "npm run build && electron-builder --dir",
