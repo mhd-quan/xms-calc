@@ -1,110 +1,29 @@
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
 import test from 'node:test';
 
-type LegacyStore = {
-  name: string;
-  type: string;
-  area: string;
-  startDate: string;
-  endDate: string;
-};
-
-type LegacyOptions = {
-  baseSalary: number;
-  vatRate: number;
-  boxMode: string;
-  globalBoxCount: number;
-  hasAccountFee: boolean;
-  hasQTG: boolean;
-  hasQLQ: boolean;
-  globalDiscounts: { account: number; box: number; qtg: number; qlq: number };
-};
-
-type LegacyCalculator = {
-  calculateCoef(type: string, area: number): number;
-  calculateDurationMonths(startDate: string, endDate: string): number;
-  calculateStoreBreakdown(store: LegacyStore, options: LegacyOptions): {
-    qtgAmount: number;
-    qlqAmount: number;
-    total: number;
-  };
-  calculateTotals(stores: LegacyStore[], options: LegacyOptions): {
-    stores: Array<{ boxAmount: number }>;
-    totals: {
-      subtotalQTG: number;
-      subtotalQLQ: number;
-      subtotalAccount: number;
-      subtotalBox: number;
-      subtotal: number;
-      vat: number;
-      grand: number;
-    };
-  };
-};
-
-type LegacyQuotePayload = {
-  buildDraftSnapshotFromManifest(manifest: Record<string, unknown>): {
-    customer: { companyName: string };
-    preparedBy: { name: string };
-    calcOptions: { vatRate: number };
-    stores: Array<{ name: string }>;
-  };
-  buildEmbeddedManifest(payload: unknown, options: Record<string, unknown>): Record<string, unknown> & {
-    schemaVersion: string;
-    quoteIdentity: { quoteCode: string; revisionNumber: number; displayQuoteNumber: string };
-  };
-  buildQuotePayload(
-    state: Record<string, unknown>,
-    customerInput: Record<string, unknown>,
-    settingsInput: Record<string, unknown>,
-    options: Record<string, unknown>
-  ): {
-    meta: { quoteNumber: string };
-    quoteIdentity: { quoteCode: string };
-    customer: { companyName: string };
-    preparedBy: { name: string };
-    computedStores: Array<{ branchNo: number; typeLabel: string; shortType: string }>;
-    globals: { boxMode: string };
-    totals: { grand: number };
-  };
-};
-
-type LegacyQuoteIdentity = {
-  buildQuoteIdentity(quoteCode: string, revisionNumber: number): {
-    quoteCode: string;
-    revisionNumber: number;
-    displayQuoteNumber: string;
-  };
-  computeNextRevisionNumber(currentRevisionNumber: number): number;
-};
-
-const require = createRequire(import.meta.url);
-const calculatorPkg = require('../archive/pre-ts-1.6.6/src/shared/calculator.js') as LegacyCalculator;
-const quotePayloadPkg = require('../archive/pre-ts-1.6.6/src/services/quote-payload.js') as LegacyQuotePayload;
-const quoteIdentityPkg = require('../archive/pre-ts-1.6.6/src/services/quote-identity-service.js') as LegacyQuoteIdentity;
-
-const {
+import {
   calculateCoef,
   calculateDurationMonths,
   calculateStoreBreakdown,
   calculateTotals
-} = calculatorPkg;
-const {
+} from '../src/shared/calculator';
+import {
   buildDraftSnapshotFromManifest,
   buildEmbeddedManifest,
   buildQuotePayload
-} = quotePayloadPkg;
-const {
+} from '../src/services/quote-payload';
+import {
   buildQuoteIdentity,
   computeNextRevisionNumber
-} = quoteIdentityPkg;
+} from '../src/services/quote-identity-service';
+
+import type { CalcOptions, Store } from '../src/shared/types';
 
 const moneyEqual = (actual: number, expected: number) => {
   assert.equal(Math.round(actual), Math.round(expected));
 };
 
-const baseOptions = {
+const baseOptions: CalcOptions = {
   baseSalary: 2340000,
   vatRate: 0.1,
   boxMode: 'none',
@@ -115,7 +34,8 @@ const baseOptions = {
   globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 }
 };
 
-const cafeStore = {
+const cafeStore: Store = {
+  id: 1,
   name: 'Chi nhánh 1',
   type: 'cafe',
   area: '100',
