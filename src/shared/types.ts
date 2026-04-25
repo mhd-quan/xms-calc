@@ -188,7 +188,7 @@ export interface QuotePayload extends QuoteSnapshot {
   quoteIdentity: QuoteIdentity;
   meta: QuoteMeta;
   computedStores: Array<
-    Store & {
+    Omit<Store, 'area'> & {
       area: number;
       duration: number;
       coef: number;

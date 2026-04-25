@@ -1,8 +1,88 @@
 import assert from 'node:assert/strict';
+import { createRequire } from 'node:module';
 import test from 'node:test';
-import calculatorPkg from '../archive/pre-ts-1.6.6/src/shared/calculator.js';
-import quotePayloadPkg from '../archive/pre-ts-1.6.6/src/services/quote-payload.js';
-import quoteIdentityPkg from '../archive/pre-ts-1.6.6/src/services/quote-identity-service.js';
+
+type LegacyStore = {
+  name: string;
+  type: string;
+  area: string;
+  startDate: string;
+  endDate: string;
+};
+
+type LegacyOptions = {
+  baseSalary: number;
+  vatRate: number;
+  boxMode: string;
+  globalBoxCount: number;
+  hasAccountFee: boolean;
+  hasQTG: boolean;
+  hasQLQ: boolean;
+  globalDiscounts: { account: number; box: number; qtg: number; qlq: number };
+};
+
+type LegacyCalculator = {
+  calculateCoef(type: string, area: number): number;
+  calculateDurationMonths(startDate: string, endDate: string): number;
+  calculateStoreBreakdown(store: LegacyStore, options: LegacyOptions): {
+    qtgAmount: number;
+    qlqAmount: number;
+    total: number;
+  };
+  calculateTotals(stores: LegacyStore[], options: LegacyOptions): {
+    stores: Array<{ boxAmount: number }>;
+    totals: {
+      subtotalQTG: number;
+      subtotalQLQ: number;
+      subtotalAccount: number;
+      subtotalBox: number;
+      subtotal: number;
+      vat: number;
+      grand: number;
+    };
+  };
+};
+
+type LegacyQuotePayload = {
+  buildDraftSnapshotFromManifest(manifest: Record<string, unknown>): {
+    customer: { companyName: string };
+    preparedBy: { name: string };
+    calcOptions: { vatRate: number };
+    stores: Array<{ name: string }>;
+  };
+  buildEmbeddedManifest(payload: unknown, options: Record<string, unknown>): Record<string, unknown> & {
+    schemaVersion: string;
+    quoteIdentity: { quoteCode: string; revisionNumber: number; displayQuoteNumber: string };
+  };
+  buildQuotePayload(
+    state: Record<string, unknown>,
+    customerInput: Record<string, unknown>,
+    settingsInput: Record<string, unknown>,
+    options: Record<string, unknown>
+  ): {
+    meta: { quoteNumber: string };
+    quoteIdentity: { quoteCode: string };
+    customer: { companyName: string };
+    preparedBy: { name: string };
+    computedStores: Array<{ branchNo: number; typeLabel: string; shortType: string }>;
+    globals: { boxMode: string };
+    totals: { grand: number };
+  };
+};
+
+type LegacyQuoteIdentity = {
+  buildQuoteIdentity(quoteCode: string, revisionNumber: number): {
+    quoteCode: string;
+    revisionNumber: number;
+    displayQuoteNumber: string;
+  };
+  computeNextRevisionNumber(currentRevisionNumber: number): number;
+};
+
+const require = createRequire(import.meta.url);
+const calculatorPkg = require('../archive/pre-ts-1.6.6/src/shared/calculator.js') as LegacyCalculator;
+const quotePayloadPkg = require('../archive/pre-ts-1.6.6/src/services/quote-payload.js') as LegacyQuotePayload;
+const quoteIdentityPkg = require('../archive/pre-ts-1.6.6/src/services/quote-identity-service.js') as LegacyQuoteIdentity;
 
 const {
   calculateCoef,
@@ -91,6 +171,8 @@ test('box rent is prorated per branch duration', () => {
     globalBoxCount: 2
   });
 
+  assert.ok(rows[0]);
+  assert.ok(rows[1]);
   moneyEqual(rows[0].boxAmount, 2000000);
   moneyEqual(rows[1].boxAmount, 1000000);
   moneyEqual(totals.subtotalBox, 3000000);
@@ -130,9 +212,11 @@ test('buildQuotePayload creates export-safe metadata and enriched store rows', (
   assert.equal(payload.quoteIdentity.quoteCode, 'XMS-260423-001');
   assert.equal(payload.customer.companyName, 'Công ty Test');
   assert.equal(payload.preparedBy.name, 'Người lập');
-  assert.equal(payload.computedStores[0].branchNo, 1);
-  assert.equal(payload.computedStores[0].typeLabel, 'Quán cà phê - giải khát');
-  assert.equal(payload.computedStores[0].shortType, 'CAFÉ');
+  const computedStore = payload.computedStores[0];
+  assert.ok(computedStore);
+  assert.equal(computedStore.branchNo, 1);
+  assert.equal(computedStore.typeLabel, 'Quán cà phê - giải khát');
+  assert.equal(computedStore.shortType, 'CAFÉ');
   assert.equal(payload.globals.boxMode, 'none');
   moneyEqual(payload.totals.grand, calculateTotals([cafeStore], baseOptions).totals.grand);
 });
@@ -157,7 +241,7 @@ test('embedded manifest restores full editable draft snapshot', () => {
   assert.equal(snapshot.customer.companyName, 'Công ty B');
   assert.equal(snapshot.preparedBy.name, 'BD User');
   assert.equal(snapshot.calcOptions.vatRate, 0.08);
-  assert.equal(snapshot.stores[0].name, 'Chi nhánh 1');
+  assert.equal(snapshot.stores[0]?.name, 'Chi nhánh 1');
 });
 
 test('smoke workflow supports create -> export -> import -> revision', () => {

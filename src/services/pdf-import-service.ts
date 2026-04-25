@@ -9,42 +9,15 @@ import {
   PDFName,
   PDFRawStream,
   PDFString,
+  AFRelationship,
   decodePDFRawStream
 } from 'pdf-lib';
 import { EMBEDDED_PAYLOAD_SCHEMA_VERSION, buildQuoteIdentity } from './quote-identity-service';
 import { buildDraftSnapshotFromManifest } from './quote-payload';
 import type { QuoteRepository } from './quote-repository';
+import type { EmbeddedManifest, ImportAction, ImportPreview } from '../shared/types';
 
 export const EMBEDDED_MANIFEST_FILENAME = 'xms-quote-manifest.json';
-
-type EmbeddedManifest = {
-  schemaVersion: string;
-  quoteIdentity: {
-    quoteCode: string;
-    revisionNumber: number;
-    displayQuoteNumber?: string;
-  };
-  customer?: {
-    companyName?: string;
-  };
-  stores?: unknown[];
-  totals?: {
-    grand?: number;
-    [key: string]: unknown;
-  };
-  exportedAt?: string;
-  [key: string]: unknown;
-};
-
-type ImportAction = {
-  key:
-    | 'import_new_quote'
-    | 'attach_to_existing_chain'
-    | 'open_existing'
-    | 'replace_existing_revision'
-    | 'import_duplicate_quote_copy';
-  label: string;
-};
 
 export function createPdfFingerprint(pdfBytes: Uint8Array): string {
   return crypto.createHash('sha256').update(pdfBytes).digest('hex');
@@ -72,7 +45,7 @@ function readEmbeddedManifestBytes(pdfDoc: PDFDocument): Uint8Array {
     if (!fileSpec || fileName !== EMBEDDED_MANIFEST_FILENAME) continue;
 
     const embeddedFileDict = fileSpec.lookupMaybe(PDFName.of('EF'), PDFDict);
-    const embeddedStream = embeddedFileDict?.lookupMaybe(PDFName.of('F'), PDFRawStream);
+    const embeddedStream = embeddedFileDict?.lookup(PDFName.of('F')) as PDFRawStream | undefined;
     if (!embeddedStream) {
       throw new Error('Embedded manifest không thể đọc được.');
     }
@@ -107,7 +80,7 @@ export async function embedManifestInPdf(pdfBytes: Uint8Array, manifest: Embedde
     description: 'XMS Quote Workflow embedded manifest',
     creationDate: timestamp,
     modificationDate: timestamp,
-    afRelationship: 'Data'
+    afRelationship: AFRelationship.Data
   });
   pdfDoc.setSubject(`XMS Quote Workflow Manifest ${manifest.schemaVersion}`);
   pdfDoc.setKeywords(['xms-quote', `schema-${manifest.schemaVersion}`, manifest.quoteIdentity.displayQuoteNumber || '']);
@@ -161,30 +134,7 @@ export function buildImportPreview({
   fingerprint: string;
   manifest: EmbeddedManifest;
   repository: QuoteRepository;
-}): {
-  filePath: string;
-  fileName: string;
-  fingerprint: string;
-  manifest: EmbeddedManifest;
-  quoteIdentity: ReturnType<typeof buildQuoteIdentity>;
-  existingRevisionId: number | null;
-  conflictType: 'new_quote' | 'attach_existing_chain' | 'same_file' | 'revision_conflict';
-  recommendedAction: ImportAction['key'];
-  actions: ImportAction[];
-  summary: string;
-  preview: {
-    displayQuoteNumber: string;
-    quoteCode: string;
-    revisionNumber: number;
-    revisionLabel: string;
-    customerName: string;
-    branchCount: number;
-    grandTotal: number;
-    manifestCompatibility: string;
-    exportedAt: string;
-    hasExistingQuote: boolean;
-  };
-} {
+}): ImportPreview {
   const quoteIdentity = buildQuoteIdentity(manifest.quoteIdentity.quoteCode, manifest.quoteIdentity.revisionNumber);
   const existingQuote = repository.getQuoteByCode(quoteIdentity.quoteCode);
   const existingRevision = repository.getRevisionByIdentity(quoteIdentity.quoteCode, quoteIdentity.revisionNumber);

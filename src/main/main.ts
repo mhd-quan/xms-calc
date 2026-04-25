@@ -16,6 +16,7 @@ import type {
   SaveQuoteDraftPayload
 } from '../shared/preload-contract';
 import type { ImportActionKey, ImportPreview, QuoteSnapshot, RevisionBundle } from '../shared/types';
+import type { DialogLike } from '../services/quote-exporter';
 
 let quoteRepository: QuoteRepository | null = null;
 
@@ -27,7 +28,7 @@ function resolvePreloadPath(): string {
     path.join(__dirname, '../preload/preload.mjs')
   ];
   const matchedPath = preloadCandidates.find((candidate) => fs.existsSync(candidate));
-  return matchedPath || preloadCandidates[0];
+  return matchedPath || preloadCandidates[0] || path.join(__dirname, 'preload.js');
 }
 
 function ensureRepository(): QuoteRepository {
@@ -228,7 +229,7 @@ app.whenReady().then(() => {
     const exportResult = await exportQuote({
       BrowserWindow,
       app,
-      dialog,
+      dialog: dialog as unknown as DialogLike,
       payload: quotePayload,
       manifest,
       parentWindow: BrowserWindow.fromWebContents(event.sender)
@@ -270,7 +271,9 @@ app.whenReady().then(() => {
         });
 
     if (canceled || !filePaths.length) return null;
-    const extracted = await extractManifestFromPdfFile(filePaths[0]);
+    const selectedFilePath = filePaths[0];
+    if (!selectedFilePath) return null;
+    const extracted = await extractManifestFromPdfFile(selectedFilePath);
     return buildImportPreview({
       ...extracted,
       repository: ensureRepository()

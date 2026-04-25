@@ -9,6 +9,9 @@
   },
   "include": [
     "electron.vite.config.ts",
+    "src/services/**/*.ts",
+    "src/shared/**/*.ts",
+    "src/types/**/*.d.ts",
     "test/**/*.ts"
   ]
 }

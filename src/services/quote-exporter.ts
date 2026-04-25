@@ -3,6 +3,8 @@ import path from 'node:path';
 import { performance } from 'node:perf_hooks';
 import { createPdfFingerprint, embedManifestInPdf } from './pdf-import-service';
 
+import type { EmbeddedManifest, QuotePayload } from '../shared/types';
+
 export const EXPORT_TIMEOUT_MS = 30000;
 
 type MemorySnapshot = {
@@ -11,38 +13,13 @@ type MemorySnapshot = {
   electronError?: string;
 };
 
-type QuotePayload = {
-  meta: {
-    customer?: { companyName?: string };
-    customerName?: string;
-    displayQuoteNumber?: string;
-  };
-  customer?: { companyName?: string };
-  stores: unknown[];
-  totals: Record<string, unknown>;
-  globals: Record<string, unknown>;
-  quoteIdentity: {
-    displayQuoteNumber?: string;
-  };
-};
-
-type ExportManifest = {
-  schemaVersion: string;
-  quoteIdentity: {
-    displayQuoteNumber?: string;
-  };
-  exportedAt?: string;
-  [key: string]: unknown;
-};
-
 type AppLike = {
   getPath(name: 'documents'): string;
   isPackaged?: boolean;
 };
 
-type DialogLike = {
-  showSaveDialog: ((options: unknown) => Promise<{ filePath?: string }>) &
-    ((parentWindow: BrowserWindowLike, options: unknown) => Promise<{ filePath?: string }>);
+export type DialogLike = {
+  showSaveDialog: (...args: unknown[]) => Promise<{ filePath?: string }>;
 };
 
 type WebContentsLike = {
@@ -216,7 +193,7 @@ export async function exportQuote({
   app: AppLike;
   dialog: DialogLike;
   payload: QuotePayload;
-  manifest: ExportManifest;
+  manifest: EmbeddedManifest;
   parentWindow?: BrowserWindowLike | null;
   templatePath?: string;
 }): Promise<{ filePath: string; fingerprint: string } | null> {

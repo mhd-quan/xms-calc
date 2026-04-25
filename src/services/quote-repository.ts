@@ -3,15 +3,28 @@ import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { buildQuoteIdentity, computeNextRevisionNumber, formatDisplayQuoteNumber } from './quote-identity-service';
 
-export type QuoteStatus = 'draft' | 'imported' | 'exported';
+import type {
+  CalcOptions,
+  CustomerProfile,
+  PreparedByProfile,
+  QuoteRecord,
+  QuoteRevision,
+  QuoteSnapshot,
+  RevisionBundle,
+  RevisionStatus,
+  Store,
+  Totals
+} from '../shared/types';
+
+export type QuoteStatus = RevisionStatus;
 export type RevisionSource = 'new' | 'clone' | 'import_pdf' | string;
 
 type Snapshot = {
-  customer?: Record<string, unknown>;
-  preparedBy?: Record<string, unknown>;
-  calcOptions?: Record<string, unknown>;
-  stores?: unknown[];
-  totals?: Record<string, unknown>;
+  customer?: QuoteSnapshot['customer'] | Record<string, unknown>;
+  preparedBy?: QuoteSnapshot['preparedBy'] | Record<string, unknown>;
+  calcOptions?: QuoteSnapshot['calcOptions'] | Record<string, unknown>;
+  stores?: QuoteSnapshot['stores'] | unknown[];
+  totals?: QuoteSnapshot['totals'] | Record<string, unknown>;
 };
 
 type SerializedSnapshot = {
@@ -51,36 +64,7 @@ type QuoteRevisionRow = {
   updated_at: string;
 };
 
-export type QuoteRecord = {
-  id: number;
-  quoteCode: string;
-  currentRevisionNumber: number;
-  status: QuoteStatus;
-  createdAt: string;
-  updatedAt: string;
-};
-
-export type QuoteRevisionRecord = {
-  id: number;
-  quoteId: number;
-  quoteCode: string;
-  revisionNumber: number;
-  displayQuoteNumber: string;
-  source: string;
-  customer: Record<string, unknown>;
-  preparedBy: Record<string, unknown>;
-  calcOptions: Record<string, unknown>;
-  stores: unknown[];
-  totals: Record<string, unknown>;
-  embeddedPayloadVersion: string | null;
-  pdfFilePath: string | null;
-  pdfFingerprint: string | null;
-  exportedAt: string | null;
-  createdAt: string;
-  updatedAt: string;
-  status: QuoteStatus;
-  quoteIdentity: ReturnType<typeof buildQuoteIdentity>;
-};
+export type QuoteRevisionRecord = QuoteRevision;
 
 function nowIso(): string {
   return new Date().toISOString();
@@ -168,11 +152,32 @@ export class QuoteRepository {
       revisionNumber: row.revision_number,
       displayQuoteNumber: row.display_quote_number,
       source: row.source,
-      customer: safeParseJson(row.customer_json, {}),
-      preparedBy: safeParseJson(row.prepared_by_json, {}),
-      calcOptions: safeParseJson(row.calc_options_json, {}),
-      stores: safeParseJson(row.stores_json, []),
-      totals: safeParseJson(row.totals_json, {}),
+      customer: safeParseJson<CustomerProfile>(row.customer_json, {
+        companyName: '',
+        contactName: '',
+        department: '',
+        email: '',
+        phone: ''
+      }),
+      preparedBy: safeParseJson<PreparedByProfile>(row.prepared_by_json, {
+        name: '',
+        title: '',
+        department: '',
+        email: '',
+        phone: ''
+      }),
+      calcOptions: safeParseJson<CalcOptions>(row.calc_options_json, {
+        baseSalary: 2340000,
+        vatRate: 0,
+        boxMode: 'none',
+        globalBoxCount: 1,
+        hasAccountFee: true,
+        hasQTG: true,
+        hasQLQ: true,
+        globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 }
+      }),
+      stores: safeParseJson<Store[]>(row.stores_json, []),
+      totals: safeParseJson<Partial<Totals>>(row.totals_json, {}),
       embeddedPayloadVersion: row.embedded_payload_version,
       pdfFilePath: row.pdf_file_path,
       pdfFingerprint: row.pdf_fingerprint,

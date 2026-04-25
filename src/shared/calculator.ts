@@ -1,4 +1,4 @@
-export const BUSINESS_TYPES = {
+export const BUSINESS_TYPES: Record<string, { label: string; short: string }> = {
   cafe: { label: 'Quán cà phê - giải khát', short: 'CAFÉ' },
   restaurant: { label: 'Nhà hàng, phòng hội thảo, hội nghị', short: 'F&B' },
   store: { label: 'Cửa hàng, showroom', short: 'RETAIL' },
@@ -13,7 +13,7 @@ export const ACCOUNT_FEE_YEARLY = 600000;
 export const BOX_BUY_PRICE = 2000000;
 export const BOX_RENT_YEARLY = 1000000;
 
-type BusinessType = keyof typeof BUSINESS_TYPES;
+export type BusinessType = keyof typeof BUSINESS_TYPES;
 
 type DiscountInput = {
   account?: number;
@@ -22,7 +22,7 @@ type DiscountInput = {
   qlq?: number;
 };
 
-type CalculatorOptionsInput = {
+export type CalculatorOptionsInput = {
   baseSalary?: number;
   vatRate?: number;
   boxMode?: 'none' | 'buy' | 'rent';
@@ -49,10 +49,10 @@ type NormalizedOptions = {
   };
 };
 
-type StoreInput = {
+export type StoreInput = {
   name: string;
-  type: BusinessType;
-  area: number;
+  type: BusinessType | string;
+  area: number | string;
   startDate: string;
   endDate: string;
 };
@@ -63,7 +63,7 @@ export function clampDiscount(value: unknown): number {
   return Math.max(0, Math.min(100, n));
 }
 
-export function calculateCoef(type: BusinessType, area: number): number {
+export function calculateCoef(type: BusinessType | string, area: number): number {
   const a = Number(area) || 0;
   let coef = 0;
   let maxCoef = Infinity;

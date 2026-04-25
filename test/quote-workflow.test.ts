@@ -9,17 +9,17 @@ import {
   computeNextRevisionNumber,
   formatDisplayQuoteNumber,
   generateBaseQuoteCode
-} from '../src/services/quote-identity-service.ts';
-import { QuoteRepository } from '../src/services/quote-repository.ts';
+} from '../src/services/quote-identity-service';
+import { QuoteRepository } from '../src/services/quote-repository';
 import {
   buildEmbeddedManifest,
   buildQuotePayload
-} from '../src/services/quote-payload.ts';
+} from '../src/services/quote-payload';
 import {
   buildImportPreview,
   embedManifestInPdf,
   extractManifestFromPdfBytes
-} from '../src/services/pdf-import-service.ts';
+} from '../src/services/pdf-import-service';
 
 function makeSnapshot(overrides: Record<string, unknown> = {}) {
   return {
@@ -63,15 +63,18 @@ test('repository creates base quote and next revision', () => {
     quoteCode: 'XMS-260423-001',
     snapshot: makeSnapshot()
   });
+  assert.ok(base);
   assert.equal(base.revisionNumber, 0);
 
   const next = repo.createNextRevisionFromCurrent({
     revisionId: base.id,
     snapshot: makeSnapshot({ customer: { companyName: 'Công ty R1' } })
   });
+  assert.ok(next);
   assert.equal(next.revisionNumber, 1);
 
   const byIdentity = repo.getRevisionByIdentity('XMS-260423-001', 1);
+  assert.ok(byIdentity);
   assert.equal(byIdentity.customer.companyName, 'Công ty R1');
   assert.equal(repo.listRevisionsByQuote(base.quoteId).length, 2);
 
@@ -116,6 +119,7 @@ test('import preview reports same revision conflict based on fingerprint', () =>
     quoteCode: 'XMS-260423-004',
     snapshot: baseSnapshot
   });
+  assert.ok(base);
   repo.markRevisionExported({
     revisionId: base.id,
     snapshot: baseSnapshot,

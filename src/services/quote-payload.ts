@@ -4,6 +4,18 @@ import {
   buildQuoteIdentity
 } from './quote-identity-service';
 
+import type {
+  BoxMode,
+  CalcOptions,
+  CustomerProfile,
+  EmbeddedManifest,
+  PreparedByProfile,
+  QuoteIdentity,
+  QuotePayload,
+  QuoteSnapshot,
+  Store
+} from '../shared/types';
+
 type ProfileInput = {
   companyName?: string;
   contactName?: string;
@@ -20,7 +32,16 @@ type PreparedByInput = {
   phone?: string;
 };
 
-function normalizeProfile(profile?: ProfileInput) {
+type QuotePayloadOptions = {
+  quoteIdentity?: Pick<QuoteIdentity, 'quoteCode' | 'revisionNumber'>;
+  quoteDateInput?: Date | string | number;
+};
+
+function isBoxMode(value: unknown): value is BoxMode {
+  return value === 'none' || value === 'buy' || value === 'rent';
+}
+
+function normalizeProfile(profile?: ProfileInput | CustomerProfile | Record<string, unknown>): CustomerProfile {
   return {
     companyName: String(profile?.companyName || '').trim(),
     contactName: String(profile?.contactName || '').trim(),
@@ -30,7 +51,9 @@ function normalizeProfile(profile?: ProfileInput) {
   };
 }
 
-function normalizePreparedBy(settings?: PreparedByInput) {
+function normalizePreparedBy(
+  settings?: PreparedByInput | PreparedByProfile | Record<string, unknown>
+): PreparedByProfile {
   return {
     name: String(settings?.name || '').trim(),
     title: String(settings?.title || '').trim(),
@@ -40,7 +63,7 @@ function normalizePreparedBy(settings?: PreparedByInput) {
   };
 }
 
-function normalizeStores(stores: Array<Record<string, unknown>> = []) {
+function normalizeStores(stores: Array<Partial<Store> | Record<string, unknown>> = []): Store[] {
   return (Array.isArray(stores) ? stores : []).map((store, index) => ({
     id: Number(store?.id) || Date.now() + index + Math.random(),
     name: String(store?.name || `Chi nhánh ${index + 1}`).trim() || `Chi nhánh ${index + 1}`,
@@ -51,10 +74,10 @@ function normalizeStores(stores: Array<Record<string, unknown>> = []) {
   }));
 }
 
-function normalizeCalcOptions(calcOptions: Record<string, unknown> = {}) {
-  const discounts = (calcOptions?.globalDiscounts as Record<string, unknown>) || {};
+function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string, unknown> = {}): CalcOptions {
+  const discounts = (calcOptions?.globalDiscounts as Partial<CalcOptions['globalDiscounts']> | undefined) || {};
   return {
-    boxMode: calcOptions?.boxMode || 'none',
+    boxMode: isBoxMode(calcOptions?.boxMode) ? calcOptions.boxMode : 'none',
     globalBoxCount: Math.max(1, Number(calcOptions?.globalBoxCount) || 1),
     hasAccountFee: calcOptions?.hasAccountFee !== false,
     hasQTG: calcOptions?.hasQTG !== false,
@@ -70,24 +93,24 @@ function normalizeCalcOptions(calcOptions: Record<string, unknown> = {}) {
   };
 }
 
-function buildGlobals(calcOptions: Record<string, unknown>) {
+function buildGlobals(calcOptions: Partial<CalcOptions> | Record<string, unknown>): CalcOptions {
   return {
     ...normalizeCalcOptions(calcOptions)
   };
 }
 
 function buildQuotePayload(
-  state: Record<string, unknown>,
-  customerInput: ProfileInput,
-  settingsInput: PreparedByInput,
-  options: Record<string, any> = {}
-) {
+  state: QuoteSnapshot | Record<string, unknown>,
+  customerInput: ProfileInput | CustomerProfile,
+  settingsInput: PreparedByInput | PreparedByProfile,
+  options: QuotePayloadOptions = {}
+): QuotePayload {
   const quoteDate = options.quoteDateInput instanceof Date
     ? options.quoteDateInput
     : new Date(options.quoteDateInput || new Date());
-  const stores = normalizeStores(state?.stores as Array<Record<string, unknown>>);
+  const stores = normalizeStores(state?.stores as Array<Partial<Store> | Record<string, unknown>>);
   const calcOptions = normalizeCalcOptions((state?.calcOptions as Record<string, unknown>) || {});
-  const quote = calculateTotals(stores as never, calcOptions as never);
+  const quote = calculateTotals(stores, calcOptions);
   const customer = normalizeProfile(customerInput);
   const preparedBy = normalizePreparedBy(settingsInput);
   const quoteIdentity = options.quoteIdentity
@@ -118,23 +141,30 @@ function buildQuotePayload(
     preparedBy,
     calcOptions,
     stores,
-    computedStores: quote.stores.map((store: Record<string, any>, index: number) => ({
-      ...stores[index],
-      ...store,
-      branchNo: index + 1,
-      typeLabel: store.type && BUSINESS_TYPES[store.type as keyof typeof BUSINESS_TYPES]
-        ? BUSINESS_TYPES[store.type as keyof typeof BUSINESS_TYPES].label
-        : '',
-      shortType: store.type && BUSINESS_TYPES[store.type as keyof typeof BUSINESS_TYPES]
-        ? BUSINESS_TYPES[store.type as keyof typeof BUSINESS_TYPES].short
-        : ''
-    })),
+    computedStores: quote.stores.map((store, index) => {
+      const sourceStore = stores[index] ?? {
+        id: index + 1,
+        name: '',
+        type: '',
+        area: '',
+        startDate: '',
+        endDate: ''
+      };
+      const typeMeta = store.type ? BUSINESS_TYPES[store.type] : undefined;
+      return {
+        ...sourceStore,
+        ...store,
+        branchNo: index + 1,
+        typeLabel: typeMeta?.label ?? '',
+        shortType: typeMeta?.short ?? ''
+      };
+    }),
     globals: buildGlobals(calcOptions),
     totals: quote.totals
   };
 }
 
-function buildEmbeddedManifest(payload: Record<string, any>, options: Record<string, unknown> = {}) {
+function buildEmbeddedManifest(payload: QuotePayload, options: Record<string, unknown> = {}): EmbeddedManifest {
   return {
     schemaVersion: EMBEDDED_PAYLOAD_SCHEMA_VERSION,
     appVersion: String(options.appVersion || ''),
@@ -149,18 +179,19 @@ function buildEmbeddedManifest(payload: Record<string, any>, options: Record<str
     calcOptions: normalizeCalcOptions(payload.calcOptions),
     stores: normalizeStores(payload.stores),
     totals: { ...(payload.totals || {}) },
-    exportedAt: options.exportedAt || new Date().toISOString(),
+    exportedAt: String(options.exportedAt || new Date().toISOString()),
     pdfFingerprintSource: 'sha256:file'
   };
 }
 
-function buildDraftSnapshotFromManifest(manifest: Record<string, any>) {
+function buildDraftSnapshotFromManifest(manifest: EmbeddedManifest | Record<string, unknown>): QuoteSnapshot {
+  const typedManifest = manifest as Partial<EmbeddedManifest>;
   return {
-    customer: normalizeProfile(manifest?.customer),
-    preparedBy: normalizePreparedBy(manifest?.preparedBy),
-    calcOptions: normalizeCalcOptions(manifest?.calcOptions),
-    stores: normalizeStores(manifest?.stores),
-    totals: { ...(manifest?.totals || {}) }
+    customer: normalizeProfile(typedManifest.customer),
+    preparedBy: normalizePreparedBy(typedManifest.preparedBy),
+    calcOptions: normalizeCalcOptions(typedManifest.calcOptions),
+    stores: normalizeStores(typedManifest.stores),
+    totals: { ...(typedManifest.totals || {}) }
   };
 }
 

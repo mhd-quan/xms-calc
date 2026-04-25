@@ -32,6 +32,7 @@ import type {
 } from '../shared/types';
 
 type ComputedQuote = ReturnType<typeof calculateTotals>;
+type RenderSnapshot = ReturnType<typeof createRenderSnapshot>;
 
 type RenderScopeKey = 'sidebar' | 'main' | 'totals';
 type RenderScope = RenderScopeKey | 'all' | RenderScope[];
@@ -48,6 +49,10 @@ function closestFromEvent<T extends Element>(event: Event, selector: string): T 
   const target = event.target;
   if (!(target instanceof Element)) return null;
   return target.closest(selector) as T | null;
+}
+
+function valueFromEvent(event: Event): string {
+  return event.target instanceof HTMLElement ? String(event.target.value) : '';
 }
 
 function asErrorMessage(error: unknown, fallback: string): string {
@@ -103,13 +108,14 @@ let persistTimer: ReturnType<typeof setTimeout> | null = null;
 let persistPromise: Promise<unknown> = Promise.resolve();
 
 const formatVND = (n: number | string) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
-const escapeHTML = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+const HTML_ENTITIES: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
   '"': '&quot;',
   "'": '&#39;'
-}[char]));
+};
+const escapeHTML = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (char) => HTML_ENTITIES[char] ?? char);
 
 function blankCustomer(): CustomerProfile {
   return {
@@ -491,7 +497,7 @@ async function confirmImportPreview() {
   try {
     const bundle = await window.electronAPI.confirmImportQuotePdf({
       preview: activeImportPreview,
-      action: selectedImportAction ?? undefined
+      action: selectedImportAction ?? activeImportPreview.recommendedAction
     });
     closeImportPreviewModal();
     applyRevisionBundle(bundle);
@@ -571,7 +577,7 @@ function oneYearLater() {
 
 function formatDateStr(ymd: string): string {
   const [year, month, day] = ymd.split('-');
-  return `${day}/${month}/${year}`;
+  return `${day ?? ''}/${month ?? ''}/${year ?? ''}`;
 }
 
 function createStore(index: number): Store {
@@ -589,7 +595,7 @@ function getActive() {
   return stores.find((store) => store.id === activeTabId) || stores[0];
 }
 
-const STORE_FIELD_RENDER_SCOPES = {
+const STORE_FIELD_RENDER_SCOPES: Record<StoreField, RenderScope[]> = {
   name: ['main', 'sidebar'],
   area: ['main', 'sidebar', 'totals'],
   type: ['main', 'sidebar', 'totals'],
@@ -623,7 +629,7 @@ function removeStore(id: number): void {
     duration: 0.2,
     onComplete: () => {
       stores = stores.filter((store) => store.id !== id);
-      if (activeTabId === id) activeTabId = stores[0].id;
+      if (activeTabId === id) activeTabId = stores[0]?.id ?? null;
       commitQuoteMutation();
     }
   });
@@ -650,10 +656,10 @@ function sanitizeAreaValue(value: string): string {
 
 function parseBulkAreaLine(line: string): string {
   const cells = String(line).split('\t').map(sanitizeAreaValue).filter(Boolean);
-  return cells.length ? cells[cells.length - 1] : sanitizeAreaValue(line);
+  return cells.length ? cells[cells.length - 1] ?? sanitizeAreaValue(line) : sanitizeAreaValue(line);
 }
 
-function getFilledBulkRows() {
+function getFilledBulkRows(): string[] {
   return bulkAreas
     .map(sanitizeAreaValue)
     .filter((value) => value !== '' && Number(value) > 0);
@@ -663,7 +669,8 @@ function renderBulkType() {
   const text = document.getElementById('bulkBusinessTypeText');
   const dd = document.getElementById('bulkBusinessType');
   if (!text || !dd) return;
-  text.textContent = bulkType && BUSINESS_TYPES[bulkType] ? BUSINESS_TYPES[bulkType].label : 'Chọn mô hình...';
+  const bulkTypeMeta = bulkType ? BUSINESS_TYPES[bulkType] : undefined;
+  text.textContent = bulkTypeMeta?.label ?? 'Chọn mô hình...';
   dd.dataset.value = bulkType;
   dd.querySelectorAll('.dropdown-item').forEach((el) => {
     el.classList.toggle('active', el.dataset.value === bulkType);
@@ -718,7 +725,7 @@ function addBulkRows() {
     return;
   }
 
-  let firstCreatedId = null;
+  let firstCreatedId: number | null = null;
   areas.forEach((areaValue) => {
     const store = createStore(stores.length + 1);
     store.type = bulkType;
@@ -742,19 +749,20 @@ const STORE_COLORS = [
 function animateNumber(elementId: string, newValue: number): void {
   const el = document.getElementById(elementId);
   if (!el) return;
-  const cached = el._lastValue ?? (parseFloat(el.textContent.replace(/\./g, '').replace(/,/g, '')) || 0);
+  const cached = el._lastValue ?? (parseFloat((el.textContent ?? '').replace(/\./g, '').replace(/,/g, '')) || 0);
   if (Math.abs(cached - newValue) < 0.5) return;
 
   el._lastValue = newValue;
   if (el._tweenObj) gsap.killTweensOf(el._tweenObj);
   el._tweenObj = { val: cached };
 
-  gsap.to(el._tweenObj, {
+  const tweenObj = el._tweenObj;
+  gsap.to(tweenObj, {
     val: newValue,
     duration: 0.4,
     ease: 'power2.out',
     onUpdate: () => {
-      el.textContent = formatVND(el._tweenObj.val);
+      el.textContent = formatVND(tweenObj.val);
     }
   });
 }
@@ -767,7 +775,7 @@ function setNumberImmediate(elementId: string, newValue: number, options: { pref
   el.textContent = `${options.prefix || ''}${formatVND(newValue)}`;
 }
 
-function renderSidebar(snapshot) {
+function renderSidebar(snapshot: RenderSnapshot): void {
   const search = document.getElementById('searchInput').value.toLowerCase();
   const filtered = stores.filter((store) => store.name.toLowerCase().includes(search));
   const list = document.getElementById('storeList');
@@ -794,7 +802,7 @@ function renderSidebar(snapshot) {
             <span class="store-item-name">${store.name}</span>
           </div>
           <div class="store-item-meta">
-            <span>${store.type && BUSINESS_TYPES[store.type] ? BUSINESS_TYPES[store.type].short : 'CHƯA CHỌN'}</span>
+            <span>${store.type && BUSINESS_TYPES[store.type]?.short ? BUSINESS_TYPES[store.type]?.short : 'CHƯA CHỌN'}</span>
             <span class="dot">·</span>
             <span class="tnum">${store.area ? `${store.area}m²` : '--m²'}</span>
           </div>
@@ -813,19 +821,19 @@ function renderSidebar(snapshot) {
   }
 }
 
-function renderMain(snapshot) {
+function renderMain(snapshot: RenderSnapshot): void {
   const store = snapshot.activeStore;
   if (!store) return;
   const area = Number(store.area) || 0;
-  const breakdown = snapshot.activeBreakdown || {};
-  const duration = breakdown.duration ?? calculateDurationMonths(store.startDate, store.endDate);
-  const coef = breakdown.coef ?? calculateCoef(store.type, area);
-  const storeTotal = breakdown.total || 0;
+  const breakdown = snapshot.activeBreakdown;
+  const duration = breakdown?.duration ?? calculateDurationMonths(store.startDate, store.endDate);
+  const coef = breakdown?.coef ?? calculateCoef(store.type, area);
+  const storeTotal = breakdown?.total || 0;
   const storeIdx = snapshot.activeStoreIndex;
 
   document.getElementById('salaryDisplay').textContent = `${formatVND(baseSalary)} ₫`;
   document.getElementById('locationCount').textContent = `${stores.length} loc`;
-  const color = STORE_COLORS[storeIdx % STORE_COLORS.length];
+  const color = STORE_COLORS[storeIdx % STORE_COLORS.length] ?? '#CFF533';
   document.getElementById('activeBranchColor').style.backgroundColor = color;
   document.getElementById('activeBranchName').textContent = store.name;
 
@@ -838,7 +846,8 @@ function renderMain(snapshot) {
   animateNumber('statStoreTotal', storeTotal);
 
   const typeText = document.getElementById('businessTypeText');
-  typeText.textContent = store.type && BUSINESS_TYPES[store.type] ? BUSINESS_TYPES[store.type].label : 'Chọn mô hình kinh doanh...';
+  const storeTypeMeta = store.type ? BUSINESS_TYPES[store.type] : undefined;
+  typeText.textContent = storeTypeMeta?.label ?? 'Chọn mô hình kinh doanh...';
   document.querySelectorAll('#businessType .dropdown-item').forEach((el) => {
     el.classList.toggle('active', el.dataset.value === store.type);
   });
@@ -856,9 +865,9 @@ function renderMain(snapshot) {
 
   if (hasAccountFee) {
     accRight.classList.remove('disabled');
-    document.getElementById('discountAccountVal').textContent = globalDiscounts.account;
+    document.getElementById('discountAccountVal').textContent = String(globalDiscounts.account);
     const accSlider = document.getElementById('discountAccount');
-    if (document.activeElement !== accSlider) accSlider.value = globalDiscounts.account;
+    if (document.activeElement !== accSlider) accSlider.value = String(globalDiscounts.account);
     accSlider.style.setProperty('--val', `${globalDiscounts.account}%`);
   } else {
     accRight.classList.add('disabled');
@@ -869,14 +878,14 @@ function renderMain(snapshot) {
   });
   document.getElementById('boxQuantityRow').classList.toggle('hidden', boxMode === 'none');
   const boxInput = document.getElementById('boxCount');
-  if (document.activeElement !== boxInput) boxInput.value = globalBoxCount;
+  if (document.activeElement !== boxInput) boxInput.value = String(globalBoxCount);
 
   const boxDiscountRow = document.getElementById('boxDiscountRow');
   if (boxMode === 'buy') {
     boxDiscountRow.classList.remove('hidden');
-    document.getElementById('discountBoxVal').textContent = globalDiscounts.box;
+    document.getElementById('discountBoxVal').textContent = String(globalDiscounts.box);
     const boxSlider = document.getElementById('discountBox');
-    if (document.activeElement !== boxSlider) boxSlider.value = globalDiscounts.box;
+    if (document.activeElement !== boxSlider) boxSlider.value = String(globalDiscounts.box);
     boxSlider.style.setProperty('--val', `${globalDiscounts.box}%`);
   } else {
     boxDiscountRow.classList.add('hidden');
@@ -893,17 +902,18 @@ function renderMain(snapshot) {
   const qtgToggle = document.getElementById('qtgToggle');
   qtgToggle.classList.toggle('on', hasQTG);
   qtgToggle.textContent = hasQTG ? 'BẬT' : 'TẮT';
-  const qtgMid = qtgToggle.closest('.copyright-row').querySelector('.copyright-mid');
-  const qtgRight = qtgToggle.closest('.copyright-row').querySelector('.copyright-right');
+  const qtgRow = qtgToggle.closest('.copyright-row') ?? qtgToggle;
+  const qtgMid = qtgRow.querySelector('.copyright-mid');
+  const qtgRight = qtgRow.querySelector('.copyright-right');
 
   if (hasQTG) {
     qtgMid.classList.remove('disabled');
     qtgRight.classList.remove('disabled');
-    document.getElementById('discountQTGVal').textContent = globalDiscounts.qtg;
+    document.getElementById('discountQTGVal').textContent = String(globalDiscounts.qtg);
     const qtgSlider = document.getElementById('discountQTG');
-    if (document.activeElement !== qtgSlider) qtgSlider.value = globalDiscounts.qtg;
+    if (document.activeElement !== qtgSlider) qtgSlider.value = String(globalDiscounts.qtg);
     qtgSlider.style.setProperty('--val', `${globalDiscounts.qtg}%`);
-    animateNumber('qtgAmount', breakdown.qtgAmount || 0);
+    animateNumber('qtgAmount', breakdown?.qtgAmount || 0);
   } else {
     qtgMid.classList.add('disabled');
     qtgRight.classList.add('disabled');
@@ -916,17 +926,18 @@ function renderMain(snapshot) {
   const qlqToggle = document.getElementById('qlqToggle');
   qlqToggle.classList.toggle('on', hasQLQ);
   qlqToggle.textContent = hasQLQ ? 'BẬT' : 'TẮT';
-  const qlqMid = qlqToggle.closest('.copyright-row').querySelector('.copyright-mid');
-  const qlqRight = qlqToggle.closest('.copyright-row').querySelector('.copyright-right');
+  const qlqRow = qlqToggle.closest('.copyright-row') ?? qlqToggle;
+  const qlqMid = qlqRow.querySelector('.copyright-mid');
+  const qlqRight = qlqRow.querySelector('.copyright-right');
 
   if (hasQLQ) {
     qlqMid.classList.remove('disabled');
     qlqRight.classList.remove('disabled');
-    document.getElementById('discountQLQVal').textContent = globalDiscounts.qlq;
+    document.getElementById('discountQLQVal').textContent = String(globalDiscounts.qlq);
     const qlqSlider = document.getElementById('discountQLQ');
-    if (document.activeElement !== qlqSlider) qlqSlider.value = globalDiscounts.qlq;
+    if (document.activeElement !== qlqSlider) qlqSlider.value = String(globalDiscounts.qlq);
     qlqSlider.style.setProperty('--val', `${globalDiscounts.qlq}%`);
-    animateNumber('qlqAmount', breakdown.qlqAmount || 0);
+    animateNumber('qlqAmount', breakdown?.qlqAmount || 0);
   } else {
     qlqMid.classList.add('disabled');
     qlqRight.classList.add('disabled');
@@ -934,7 +945,7 @@ function renderMain(snapshot) {
   }
 }
 
-function renderBottomBar(snapshot) {
+function renderBottomBar(snapshot: RenderSnapshot): void {
   const { totals } = snapshot.quote;
 
   animateNumber('totalQTG', totals.subtotalQTG);
@@ -956,7 +967,7 @@ function renderBottomBar(snapshot) {
 
 function createRenderSnapshot() {
   const quote = getCurrentComputedQuote();
-  const breakdownsById = new Map();
+  const breakdownsById = new Map<number, ComputedQuote['stores'][number]>();
   quote.stores.forEach((breakdown, index) => {
     if (stores[index]) breakdownsById.set(stores[index].id, breakdown);
   });
@@ -1040,7 +1051,7 @@ function buildCalendar(dateStr: string, wrapperEl: HTMLElement): void {
     wrapperEl.querySelectorAll('.datepicker-nav').forEach((btn) => {
       btn.addEventListener('click', (event) => {
         event.stopPropagation();
-        curMonth += parseInt(btn.dataset.dir, 10);
+        curMonth += parseInt(btn.dataset.dir ?? '0', 10);
         if (curMonth < 0) {
           curMonth = 11;
           curYear -= 1;
@@ -1070,7 +1081,7 @@ function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, ma
     document.body.style.cursor = 'ew-resize';
   });
 
-  const onMouseMove = (event) => {
+  const onMouseMove = (event: MouseEvent) => {
     if (!isDragging) return;
     const dx = event.clientX - startX;
     let step = baseStep;
@@ -1082,7 +1093,7 @@ function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, ma
     newVal = Math.max(min, Math.min(max, newVal));
 
     if (Number(el.value) !== newVal) {
-      el.value = newVal;
+      el.value = String(newVal);
       el.dispatchEvent(new Event('input', { bubbles: true }));
     }
   };
@@ -1105,16 +1116,16 @@ function bindEvents() {
   });
 
   document.getElementById('storeList').addEventListener('click', (event) => {
-    const removeBtn = event.target.closest('.store-item-remove');
+    const removeBtn = closestFromEvent(event, '.store-item-remove');
     if (removeBtn) {
       event.stopPropagation();
-      removeStore(parseFloat(removeBtn.dataset.remove));
+      removeStore(parseFloat(removeBtn.dataset.remove ?? '0'));
       return;
     }
 
-    const item = event.target.closest('.store-item');
+    const item = closestFromEvent(event, '.store-item');
     if (!item) return;
-    const newId = parseFloat(item.dataset.id);
+    const newId = parseFloat(item.dataset.id ?? '0');
     if (newId !== activeTabId) {
       activeTabId = newId;
       gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.2 });
@@ -1123,7 +1134,7 @@ function bindEvents() {
   });
 
   document.getElementById('revisionList').addEventListener('click', async (event) => {
-    const item = event.target.closest('[data-revision-id]');
+    const item = closestFromEvent(event, '[data-revision-id]');
     if (!item) return;
     const revisionId = Number(item.dataset.revisionId);
     if (!revisionId || revisionId === activeRevisionId) return;
@@ -1154,9 +1165,9 @@ function bindEvents() {
   bulkAddModal.querySelector('.modal-overlay').addEventListener('click', closeBulkAddModal);
 
   bulkDd.addEventListener('click', (event) => {
-    const item = event.target.closest('.dropdown-item');
+    const item = closestFromEvent(event, '.dropdown-item');
     if (item) {
-      bulkType = item.dataset.value;
+      bulkType = item.dataset.value ?? '';
       renderBulkType();
     }
     const isOpen = bulkDd.classList.contains('open');
@@ -1169,14 +1180,14 @@ function bindEvents() {
   });
 
   bulkRowsEl.addEventListener('input', (event) => {
-    const input = event.target.closest('.bulk-area-input');
+    const input = closestFromEvent(event, '.bulk-area-input');
     if (!input) return;
     bulkAreas[Number(input.dataset.index)] = input.value;
     document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
   });
 
   bulkRowsEl.addEventListener('keydown', (event) => {
-    const input = event.target.closest('.bulk-area-input');
+    const input = closestFromEvent(event, '.bulk-area-input');
     if (!input || event.key !== 'Enter') return;
     event.preventDefault();
     const index = Number(input.dataset.index);
@@ -1186,9 +1197,9 @@ function bindEvents() {
   });
 
   bulkRowsEl.addEventListener('paste', (event) => {
-    const input = event.target.closest('.bulk-area-input');
+    const input = closestFromEvent(event, '.bulk-area-input');
     if (!input) return;
-    const text = event.clipboardData.getData('text');
+    const text = event.clipboardData?.getData('text') ?? '';
     const lines = text.split(/\r?\n/).map(parseBulkAreaLine).filter(Boolean);
     if (lines.length <= 1) return;
     event.preventDefault();
@@ -1206,7 +1217,7 @@ function bindEvents() {
   salaryDisplay.addEventListener('click', () => {
     salaryDisplay.classList.add('hidden');
     salaryInput.classList.remove('hidden');
-    salaryInput.value = baseSalary;
+    salaryInput.value = String(baseSalary);
     salaryInput.focus();
     salaryInput.select();
   });
@@ -1222,15 +1233,15 @@ function bindEvents() {
     if (event.key === 'Enter') closeSalary();
   });
 
-  document.getElementById('storeName').addEventListener('input', (event) => updateActive('name', event.target.value));
-  document.getElementById('areaInput').addEventListener('input', (event) => updateActive('area', event.target.value));
+  document.getElementById('storeName').addEventListener('input', (event) => updateActive('name', valueFromEvent(event)));
+  document.getElementById('areaInput').addEventListener('input', (event) => updateActive('area', valueFromEvent(event)));
 
   const dd = document.getElementById('businessType');
   const menu = dd.querySelector('.dropdown-menu');
   dd.addEventListener('click', (event) => {
-    const item = event.target.closest('.dropdown-item');
+    const item = closestFromEvent(event, '.dropdown-item');
     if (item) {
-      updateActive('type', item.dataset.value);
+      updateActive('type', item.dataset.value ?? '');
     }
     const isOpen = dd.classList.contains('open');
     if (!isOpen) {
@@ -1241,22 +1252,22 @@ function bindEvents() {
     }
   });
 
-  const setupDatePicker = (pickerId, field) => {
+  const setupDatePicker = (pickerId: string, field: Extract<StoreField, 'startDate' | 'endDate'>): void => {
     const pk = document.getElementById(pickerId);
     const popup = pk.querySelector('.datepicker-popup');
     pk.addEventListener('click', (event) => {
-      const cell = event.target.closest('.datepicker-cell:not(.dim)');
+      const cell = closestFromEvent(event, '.datepicker-cell:not(.dim)');
       if (cell) {
-        updateActive(field, cell.dataset.date);
+        updateActive(field, cell.dataset.date ?? '');
         gsap.to(popup, { opacity: 0, duration: 0.15, onComplete: () => pk.classList.remove('open') });
         return;
       }
-      if (event.target.closest('.datepicker-nav')) return;
+      if (closestFromEvent(event, '.datepicker-nav')) return;
 
       const isOpen = pk.classList.contains('open');
       if (!isOpen) {
         const active = getActive();
-        buildCalendar(active[field], pk);
+        if (active) buildCalendar(active[field], pk);
         pk.classList.add('open');
         gsap.fromTo(popup, { opacity: 0, y: -5 }, { opacity: 1, y: 0, duration: 0.2 });
       } else {
@@ -1268,18 +1279,19 @@ function bindEvents() {
   setupDatePicker('endDatePicker', 'endDate');
 
   document.addEventListener('click', (event) => {
-    if (!quoteActionsMenu.contains(event.target)) {
+    const clickTarget = event.target instanceof Node ? event.target : null;
+    if (!quoteActionsMenu.contains(clickTarget)) {
       closeQuoteActionsMenu();
     }
-    if (!dd.contains(event.target) && dd.classList.contains('open')) {
+    if (!dd.contains(clickTarget) && dd.classList.contains('open')) {
       gsap.to(menu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => dd.classList.remove('open') });
     }
-    if (!bulkDd.contains(event.target) && bulkDd.classList.contains('open')) {
+    if (!bulkDd.contains(clickTarget) && bulkDd.classList.contains('open')) {
       gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
     }
     ['startDatePicker', 'endDatePicker'].forEach((id) => {
       const pk = document.getElementById(id);
-      if (!pk.contains(event.target) && pk.classList.contains('open')) {
+      if (!pk.contains(clickTarget) && pk.classList.contains('open')) {
         gsap.to(pk.querySelector('.datepicker-popup'), {
           opacity: 0,
           duration: 0.15,
@@ -1292,6 +1304,7 @@ function bindEvents() {
   document.querySelectorAll('.section-header').forEach((header) => {
     header.addEventListener('click', () => {
       const section = header.closest('.section');
+      if (!section) return;
       const body = section.querySelector('.section-body');
       const isCollapsed = section.classList.contains('collapsed');
 
@@ -1318,9 +1331,12 @@ function bindEvents() {
   });
 
   document.getElementById('boxModeControl').addEventListener('click', (event) => {
-    const btn = event.target.closest('.seg-btn');
+    const btn = closestFromEvent(event, '.seg-btn');
     if (!btn) return;
-    boxMode = btn.dataset.mode;
+    const nextBoxMode = btn.dataset.mode;
+    if (nextBoxMode === 'none' || nextBoxMode === 'buy' || nextBoxMode === 'rent') {
+      boxMode = nextBoxMode;
+    }
     commitQuoteMutation();
   });
 
@@ -1333,17 +1349,24 @@ function bindEvents() {
     commitQuoteMutation();
   });
   document.getElementById('boxCount').addEventListener('input', (event) => {
-    globalBoxCount = Math.max(1, Number(event.target.value) || 1);
+    globalBoxCount = Math.max(1, Number(valueFromEvent(event)) || 1);
     commitQuoteMutation();
   });
 
-  ['discountAccount', 'discountBox', 'discountQTG', 'discountQLQ'].forEach((id) => {
+  const discountFieldById: Record<string, keyof GlobalDiscounts> = {
+    discountAccount: 'account',
+    discountBox: 'box',
+    discountQTG: 'qtg',
+    discountQLQ: 'qlq'
+  };
+  Object.keys(discountFieldById).forEach((id) => {
     const sl = document.getElementById(id);
     if (!sl) return;
     const valText = document.getElementById(`${id}Val`);
     sl.addEventListener('input', (event) => {
-      const map = { discountAccount: 'account', discountBox: 'box', discountQTG: 'qtg', discountQLQ: 'qlq' };
-      globalDiscounts[map[id]] = Number(event.target.value);
+      const discountField = discountFieldById[id];
+      if (!discountField) return;
+      globalDiscounts[discountField] = Number(valueFromEvent(event));
       commitQuoteMutation();
       if (valText) gsap.to(valText, { scale: 1.1, duration: 0.1 });
     });
@@ -1353,7 +1376,7 @@ function bindEvents() {
   });
 
   document.getElementById('vatControl').addEventListener('click', (event) => {
-    const btn = event.target.closest('.seg-btn');
+    const btn = closestFromEvent(event, '.seg-btn');
     if (!btn) return;
     vatRate = Number(btn.dataset.vat);
     commitQuoteMutation('totals');
@@ -1410,10 +1433,19 @@ function bindEvents() {
   document.getElementById('cancelImportPreview').addEventListener('click', closeImportPreviewModal);
   document.getElementById('importPreviewModal').querySelector('.modal-overlay').addEventListener('click', closeImportPreviewModal);
   document.getElementById('importActionOptions').addEventListener('click', (event) => {
-    const action = event.target.closest('[data-action]');
+    const action = closestFromEvent(event, '[data-action]');
     if (!action) return;
-    selectedImportAction = action.dataset.action;
-    renderImportActionOptions(activeImportPreview);
+    const nextAction = action.dataset.action;
+    if (
+      nextAction === 'import_new_quote' ||
+      nextAction === 'attach_to_existing_chain' ||
+      nextAction === 'open_existing' ||
+      nextAction === 'replace_existing_revision' ||
+      nextAction === 'import_duplicate_quote_copy'
+    ) {
+      selectedImportAction = nextAction;
+    }
+    if (activeImportPreview) renderImportActionOptions(activeImportPreview);
   });
   document.getElementById('confirmImportPreview').addEventListener('click', confirmImportPreview);
 }
@@ -1423,19 +1455,42 @@ async function init() {
   renderQuoteChrome();
 
   if (!window.electronAPI) {
+    const now = new Date().toISOString();
+    const fallbackSnapshot = buildInitialDraftSnapshot();
     applyRevisionBundle({
-      quote: { id: 1 },
+      quote: {
+        id: 1,
+        quoteCode: 'XMS-LOCAL-001',
+        currentRevisionNumber: 0,
+        status: 'draft',
+        createdAt: now,
+        updatedAt: now
+      },
       activeRevision: {
         id: 1,
         quoteId: 1,
         quoteCode: 'XMS-LOCAL-001',
         revisionNumber: 0,
         displayQuoteNumber: 'XMS-LOCAL-001',
+        source: 'new',
+        embeddedPayloadVersion: null,
+        pdfFilePath: null,
+        pdfFingerprint: null,
+        exportedAt: null,
+        createdAt: now,
+        updatedAt: now,
         status: 'draft',
         customer: blankCustomer(),
         preparedBy: getDefaultPreparedBy(),
-        calcOptions: buildInitialDraftSnapshot().calcOptions,
-        stores: buildInitialDraftSnapshot().stores
+        calcOptions: fallbackSnapshot.calcOptions,
+        stores: fallbackSnapshot.stores,
+        totals: {},
+        quoteIdentity: {
+          quoteCode: 'XMS-LOCAL-001',
+          revisionNumber: 0,
+          revisionLabel: 'Base',
+          displayQuoteNumber: 'XMS-LOCAL-001'
+        }
       },
       revisions: []
     });
