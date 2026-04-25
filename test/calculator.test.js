@@ -12,7 +12,8 @@ const {
   buildQuotePayload
 } = require('../archive/pre-ts-1.6.6/src/services/quote-payload');
 const {
-  buildQuoteIdentity
+  buildQuoteIdentity,
+  computeNextRevisionNumber
 } = require('../archive/pre-ts-1.6.6/src/services/quote-identity-service');
 
 const moneyEqual = (actual, expected) => {
@@ -153,4 +154,31 @@ test('embedded manifest restores full editable draft snapshot', () => {
   assert.equal(snapshot.preparedBy.name, 'BD User');
   assert.equal(snapshot.calcOptions.vatRate, 0.08);
   assert.equal(snapshot.stores[0].name, 'Chi nhánh 1');
+});
+
+test('smoke workflow supports create -> export -> import -> revision', () => {
+  const baseQuoteCode = 'XMS-260425-007';
+  const createdIdentity = buildQuoteIdentity(baseQuoteCode, 0);
+  const createdPayload = buildQuotePayload(
+    { stores: [cafeStore], calcOptions: baseOptions },
+    { companyName: 'Công ty Smoke' },
+    { name: 'Smoke Tester' },
+    {
+      quoteDateInput: new Date('2026-04-25T00:00:00.000Z'),
+      quoteIdentity: createdIdentity
+    }
+  );
+  const exportedManifest = buildEmbeddedManifest(createdPayload, {
+    appVersion: '1.6.6',
+    exportedAt: '2026-04-25T10:00:00.000Z'
+  });
+
+  const importedSnapshot = buildDraftSnapshotFromManifest(exportedManifest);
+  const nextRevision = computeNextRevisionNumber(exportedManifest.quoteIdentity.revisionNumber);
+  const revisedIdentity = buildQuoteIdentity(exportedManifest.quoteIdentity.quoteCode, nextRevision);
+
+  assert.equal(createdPayload.meta.quoteNumber, 'XMS-260425-007');
+  assert.equal(importedSnapshot.customer.companyName, 'Công ty Smoke');
+  assert.equal(nextRevision, 1);
+  assert.equal(revisedIdentity.displayQuoteNumber, 'XMS-260425-007-R1');
 });
