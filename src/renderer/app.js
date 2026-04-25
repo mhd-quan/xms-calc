@@ -1,18 +1,18 @@
 /* XMusic Station — Quote Workflow v1.6 */
 
-const {
+import {
   BUSINESS_TYPES,
   calculateCoef,
   calculateDurationMonths,
   calculateTotals
-} = window.BDCalculator;
-const {
+} from '../shared/calculator';
+import {
   buildQuotePayload,
   normalizeCalcOptions,
   normalizePreparedBy,
   normalizeProfile,
   normalizeStores
-} = window.BDQuotePayload;
+} from '../services/quote-payload';
 
 let baseSalary = 2340000;
 let vatRate = 0;
