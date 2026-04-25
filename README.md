@@ -12,24 +12,31 @@ Desktop Electron app built for internal BD and key account management use. Calcu
 
 ## Tech stack
 
-Electron 41, vanilla JavaScript (no framework), Node.js built-in test runner, pdf-lib, electron-builder.
+Electron 41, TypeScript (`strict: true`), electron-vite (Vite renderer + bundled main/preload), Node.js built-in test runner with `tsx`, pdf-lib, electron-builder.
 
 ## Install and run
 
-```
+```bash
 npm install
-npm start
+npm run dev
 ```
 
-## Test
+## Scripts
 
-```
-npm test
-```
+- `npm run dev`: start Electron in development mode via `electron-vite`.
+- `npm start`: alias of `npm run dev`.
+- `npm run build`: build bundled output to `out/` and copy quote templates.
+- `npm run pack`: build and package app directory.
+- `npm run dist` / `npm run dist:mac`: build and generate distributables.
+- `npm test`: run Node test runner against TypeScript tests through `tsx` loader.
+- `npm run typecheck`: run TypeScript project reference checks.
+- `npm run lint`: run ESLint.
+- `npm run format`: format with Prettier.
+- `npm run phase:gate`: run policy gate checks.
 
 ## Build
 
-```
+```bash
 npm run dist:mac
 ```
 
@@ -37,13 +44,13 @@ Output: `dist/*.dmg`
 
 ## Directory layout
 
-```
+```text
 xms-calculator/
 ├── src/
-│   ├── main/          # Electron main process (main.js, preload.js)
-│   ├── renderer/      # Browser-facing UI (index.html, app.js, styles/, vendor/)
+│   ├── main/          # Electron main process (main.ts, preload.ts)
+│   ├── renderer/      # Browser-facing UI (index.html, app.ts, styles/, vendor/)
 │   ├── services/      # Stateful services (quote export, import, repository, payload)
-│   ├── shared/        # Pure logic shared across main and renderer (calculator.js)
+│   ├── shared/        # Pure logic shared across main and renderer (calculator.ts)
 │   └── templates/     # PDF export template (HTML + CSS + fonts + assets)
 │       └── quote/
 ├── assets/brand/      # Brand assets (NCT logo, signature)
@@ -63,7 +70,7 @@ Project policy is enforced by phase gates with stop-on-fail behavior:
 
 Run:
 
-```
+```bash
 npm run phase:gate
 ```
 
