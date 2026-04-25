@@ -502,7 +502,14 @@ async function confirmImportPreview() {
 }
 
 async function exportActiveQuote() {
-  if (!window.electronAPI || !activeRevisionId) return;
+  if (!window.electronAPI) {
+    alert('Không thể kết nối tới Electron API. Vui lòng khởi động lại ứng dụng.');
+    return;
+  }
+  if (!activeRevisionId) {
+    alert('Không tìm thấy revision đang mở để export.');
+    return;
+  }
   customerProfile = readCustomerFields();
   invalidateDraftSnapshot();
   if (!customerProfile.companyName) {

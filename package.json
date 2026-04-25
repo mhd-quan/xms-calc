@@ -10,7 +10,7 @@
     "test:watch": "node --import tsx --test --watch test/*.test.ts",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
-    "dist:mac": "electron-builder --mac",
+    "dist:mac": "npm run build && electron-builder --mac",
     "policy:commit": "node scripts/policy/check-commit-convention.js",
     "policy:boundaries": "node scripts/policy/check-boundaries.js",
     "policy:strict": "node scripts/policy/check-strict-no-any.js",
