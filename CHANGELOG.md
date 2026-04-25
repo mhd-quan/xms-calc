@@ -5,6 +5,31 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.7.0] — 2026-04-25
+
+### Added
+- Full TypeScript project scaffolding with strict compiler configs (`tsconfig*.json`) and typed Electron contracts (`src/shared/types.ts`, `src/shared/preload-contract.d.ts`, `src/renderer/electron-api.d.ts`).
+- Electron-Vite build pipeline and modernized npm scripts for typecheck/build/dev workflows.
+- Policy and governance scripts for phase-gate validation, module boundaries, strict typing, and commit-convention checks.
+- Archived pre-migration JavaScript snapshot under `archive/pre-ts-1.6.6/` for historical reference.
+
+### Changed
+- Version bumped from `1.6.6` to `1.7.0`.
+- Main, preload, renderer, shared logic, services, and tests migrated from JavaScript/CommonJS patterns to TypeScript module-based sources.
+- Renderer loading path moved to bundler-driven module entry (`src/renderer/app.ts`) while preserving application behavior and UI output.
+- Documentation updated for architecture and migration execution notes aligned with the TypeScript baseline.
+
+### Removed
+- Legacy runtime dependence on browser globals for calculator/payload/identity modules in active source flow.
+- Active test/runtime reliance on `.js` source files in `src/` and `test/` (replaced by `.ts` counterparts).
+
+### Unchanged
+- Core calculator business formulas and ND 17/2023 pricing logic behavior remain unchanged.
+- Quote template visual output and branding assets remain functionally unchanged.
+- Application domain scope and major user workflows (calculation, quote generation, persistence, PDF export/import) remain unchanged.
+
+---
+
 ## [1.6.6] — 2026-04-24
 
 ### Changed
