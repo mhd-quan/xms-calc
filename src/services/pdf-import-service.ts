@@ -91,7 +91,7 @@ export async function extractManifestFromPdfBytes(pdfBytes: Uint8Array): Promise
   let pdfDoc: PDFDocument;
   try {
     pdfDoc = await PDFDocument.load(pdfBytes, { updateMetadata: false });
-  } catch (_error) {
+  } catch {
     throw new Error('File đã chọn không phải PDF hợp lệ.');
   }
 
@@ -99,7 +99,7 @@ export async function extractManifestFromPdfBytes(pdfBytes: Uint8Array): Promise
   let manifest: unknown;
   try {
     manifest = JSON.parse(Buffer.from(manifestBytes).toString('utf8'));
-  } catch (_error) {
+  } catch {
     throw new Error('Manifest trong PDF bị hỏng hoặc không đọc được.');
   }
   validateManifestSchema(manifest);

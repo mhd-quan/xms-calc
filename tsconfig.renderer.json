@@ -11,6 +11,7 @@
   },
   "include": [
     "src/renderer/**/*.ts",
+    "src/templates/**/*.ts",
     "src/services/quote-identity-service.ts",
     "src/services/quote-payload.ts",
     "src/shared/**/*.ts"

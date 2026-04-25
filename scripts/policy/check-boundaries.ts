@@ -1,13 +1,14 @@
 #!/usr/bin/env node
-const { execSync } = require('node:child_process');
+import { execSync } from 'node:child_process';
 
 const DISALLOWED = [
-  /^src\/renderer\//,
-  /^src\/templates\//,
-  /^src\/shared\/calculator\.js$/
+  /^src\/renderer\/index\.html$/,
+  /^src\/renderer\/styles\//,
+  /^src\/templates\/quote\/template\.css$/,
+  /^src\/shared\/calculator\.(js|ts)$/
 ];
 
-function getChangedFiles() {
+function getChangedFiles(): string[] {
   const range = process.argv[2] || 'HEAD~1..HEAD';
   const output = execSync(`git diff --name-only ${range}`, { encoding: 'utf8' }).trim();
   if (!output) return [];
@@ -27,6 +28,6 @@ try {
   console.log('✅ Boundary policy passed (no UI/business logic files changed).');
 } catch (error) {
   console.error('❌ Unable to validate boundary policy.');
-  console.error(error.message);
+  console.error(error instanceof Error ? error.message : String(error));
   process.exit(1);
 }

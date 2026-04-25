@@ -8,7 +8,6 @@ import {
   calculateTotals
 } from '../shared/calculator';
 import {
-  buildQuotePayload,
   normalizeCalcOptions,
   normalizePreparedBy,
   normalizeProfile,
@@ -38,12 +37,6 @@ type RenderScopeKey = 'sidebar' | 'main' | 'totals';
 type RenderScope = RenderScopeKey | 'all' | RenderScope[];
 
 type StoreField = keyof Pick<Store, 'name' | 'area' | 'type' | 'startDate' | 'endDate'>;
-
-function byId<T extends HTMLElement>(id: string): T {
-  const el = document.getElementById(id);
-  if (!el) throw new Error(`Missing element #${id}`);
-  return el as T;
-}
 
 function closestFromEvent<T extends Element>(event: Event, selector: string): T | null {
   const target = event.target;
@@ -82,7 +75,6 @@ let bulkAreas: string[] = [''];
 let customerProfile: CustomerProfile = blankCustomer();
 let preparedByProfile: PreparedByProfile = blankPreparedBy();
 
-let activeQuoteId: number | null = null;
 let activeQuoteCode: string = '';
 let activeRevisionId: number | null = null;
 let activeRevisionNumber: number = 0;
@@ -95,7 +87,7 @@ let selectedImportAction: ImportActionKey | null = null;
 
 let isHydratingRevision = false;
 let renderScheduled = false;
-let renderScope = new Set<RenderScopeKey>();
+const renderScope = new Set<RenderScopeKey>();
 let chromeDirty = true;
 let computedQuoteDirty = true;
 let computedQuoteCache: ComputedQuote | null = null;
@@ -163,7 +155,7 @@ function getCalcOptions(): CalcOptions {
 function getDefaultPreparedBy(): PreparedByProfile {
   try {
     return normalizePreparedBy(JSON.parse(localStorage.getItem('bdSettings') ?? '{}') || {});
-  } catch (_error) {
+  } catch {
     return blankPreparedBy();
   }
 }
@@ -292,7 +284,6 @@ async function flushDraftPersist() {
 
 function syncBundleMetadata(bundle: RevisionBundle | null): void {
   if (!bundle || !bundle.activeRevision) return;
-  activeQuoteId = bundle.quote?.id || bundle.activeRevision.quoteId;
   activeQuoteCode = bundle.activeRevision.quoteCode;
   activeRevisionId = bundle.activeRevision.id;
   activeRevisionNumber = bundle.activeRevision.revisionNumber;
