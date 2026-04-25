@@ -2,6 +2,7 @@
 
 import {
   BUSINESS_TYPES,
+  DEFAULT_BASE_SALARY,
   calculateCoef,
   calculateDurationMonths,
   calculateTotals
@@ -14,58 +15,95 @@ import {
   normalizeStores
 } from '../services/quote-payload';
 
-import gsap from './vendor/gsap-lite.ts';
-let baseSalary = 2340000;
-let vatRate = 0;
-let stores = [];
-let activeTabId = null;
+import gsap from './vendor/gsap-lite';
 
-let boxMode = 'none';
-let globalBoxCount = 1;
-let hasAccountFee = true;
-let hasQTG = true;
-let hasQLQ = true;
+import type {
+  CalcOptions,
+  CustomerProfile,
+  GlobalDiscounts,
+  ImportActionKey,
+  ImportPreview,
+  PreparedByProfile,
+  QuoteRevision,
+  QuoteSnapshot,
+  RevisionBundle,
+  RevisionStatus,
+  Store
+} from '../shared/types';
 
-let globalDiscounts = {
+type ComputedQuote = ReturnType<typeof calculateTotals>;
+
+type RenderScopeKey = 'sidebar' | 'main' | 'totals';
+type RenderScope = RenderScopeKey | 'all' | RenderScope[];
+
+type StoreField = keyof Pick<Store, 'name' | 'area' | 'type' | 'startDate' | 'endDate'>;
+
+function byId<T extends HTMLElement>(id: string): T {
+  const el = document.getElementById(id);
+  if (!el) throw new Error(`Missing element #${id}`);
+  return el as T;
+}
+
+function closestFromEvent<T extends Element>(event: Event, selector: string): T | null {
+  const target = event.target;
+  if (!(target instanceof Element)) return null;
+  return target.closest(selector) as T | null;
+}
+
+function asErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error ? error.message : fallback;
+}
+let baseSalary: number = DEFAULT_BASE_SALARY;
+let vatRate: number = 0;
+let stores: Store[] = [];
+let activeTabId: number | null = null;
+
+let boxMode: CalcOptions['boxMode'] = 'none';
+let globalBoxCount: number = 1;
+let hasAccountFee: boolean = true;
+let hasQTG: boolean = true;
+let hasQLQ: boolean = true;
+
+let globalDiscounts: GlobalDiscounts = {
   account: 0,
   box: 0,
   qtg: 0,
   qlq: 0
 };
 
-let bulkType = '';
-let bulkAreas = [''];
+let bulkType: Store['type'] | '' = '';
+let bulkAreas: string[] = [''];
 
-let customerProfile = blankCustomer();
-let preparedByProfile = blankPreparedBy();
+let customerProfile: CustomerProfile = blankCustomer();
+let preparedByProfile: PreparedByProfile = blankPreparedBy();
 
-let activeQuoteId = null;
-let activeQuoteCode = '';
-let activeRevisionId = null;
-let activeRevisionNumber = 0;
-let activeDisplayQuoteNumber = '';
-let activeRevisionStatus = 'draft';
-let revisionsForQuote = [];
+let activeQuoteId: number | null = null;
+let activeQuoteCode: string = '';
+let activeRevisionId: number | null = null;
+let activeRevisionNumber: number = 0;
+let activeDisplayQuoteNumber: string = '';
+let activeRevisionStatus: RevisionStatus = 'draft';
+let revisionsForQuote: QuoteRevision[] = [];
 
-let activeImportPreview = null;
-let selectedImportAction = null;
+let activeImportPreview: ImportPreview | null = null;
+let selectedImportAction: ImportActionKey | null = null;
 
 let isHydratingRevision = false;
 let renderScheduled = false;
-let renderScope = new Set();
+let renderScope = new Set<RenderScopeKey>();
 let chromeDirty = true;
 let computedQuoteDirty = true;
-let computedQuoteCache = null;
+let computedQuoteCache: ComputedQuote | null = null;
 let draftSnapshotDirty = true;
-let draftSnapshotCache = null;
+let draftSnapshotCache: QuoteSnapshot | null = null;
 
 let lastPersistedSnapshot = '';
-let pendingPersistSerialized = null;
-let persistTimer = null;
-let persistPromise = Promise.resolve();
+let pendingPersistSerialized: string | null = null;
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+let persistPromise: Promise<unknown> = Promise.resolve();
 
-const formatVND = (n) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
-const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+const formatVND = (n: number | string) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
+const escapeHTML = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
   '&': '&amp;',
   '<': '&lt;',
   '>': '&gt;',
@@ -73,7 +111,7 @@ const escapeHTML = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => 
   "'": '&#39;'
 }[char]));
 
-function blankCustomer() {
+function blankCustomer(): CustomerProfile {
   return {
     companyName: '',
     contactName: '',
@@ -83,7 +121,7 @@ function blankCustomer() {
   };
 }
 
-function blankPreparedBy() {
+function blankPreparedBy(): PreparedByProfile {
   return {
     name: '',
     title: '',
@@ -93,17 +131,17 @@ function blankPreparedBy() {
   };
 }
 
-function statusLabel(status) {
+function statusLabel(status: RevisionStatus): string {
   if (status === 'exported') return 'Exported';
   if (status === 'imported') return 'Imported';
   return 'Draft';
 }
 
-function revisionLabel(revisionNumber) {
+function revisionLabel(revisionNumber: number): string {
   return Number(revisionNumber) > 0 ? `R${revisionNumber}` : 'Base';
 }
 
-function getCalcOptions() {
+function getCalcOptions(): CalcOptions {
   return {
     baseSalary,
     vatRate,
@@ -116,20 +154,20 @@ function getCalcOptions() {
   };
 }
 
-function getDefaultPreparedBy() {
+function getDefaultPreparedBy(): PreparedByProfile {
   try {
-    return normalizePreparedBy(JSON.parse(localStorage.getItem('bdSettings')) || {});
+    return normalizePreparedBy(JSON.parse(localStorage.getItem('bdSettings') ?? '{}') || {});
   } catch (_error) {
     return blankPreparedBy();
   }
 }
 
-function buildInitialDraftSnapshot() {
+function buildInitialDraftSnapshot(): QuoteSnapshot {
   return {
     customer: blankCustomer(),
     preparedBy: getDefaultPreparedBy(),
     calcOptions: normalizeCalcOptions({
-      baseSalary: 2340000,
+      baseSalary: DEFAULT_BASE_SALARY,
       vatRate: 0,
       boxMode: 'none',
       globalBoxCount: 1,
@@ -143,11 +181,11 @@ function buildInitialDraftSnapshot() {
   };
 }
 
-function setPreparedByDefaults(preparedBy) {
+function setPreparedByDefaults(preparedBy: PreparedByProfile): void {
   localStorage.setItem('bdSettings', JSON.stringify(normalizePreparedBy(preparedBy)));
 }
 
-function snapshotString(snapshot) {
+function snapshotString(snapshot: QuoteSnapshot): string {
   return JSON.stringify(snapshot);
 }
 
@@ -164,7 +202,7 @@ function markChromeDirty() {
   chromeDirty = true;
 }
 
-function getCurrentComputedQuote() {
+function getCurrentComputedQuote(): ComputedQuote {
   if (!computedQuoteDirty && computedQuoteCache) {
     return computedQuoteCache;
   }
@@ -173,7 +211,7 @@ function getCurrentComputedQuote() {
   return computedQuoteCache;
 }
 
-function buildDraftSnapshot() {
+function buildDraftSnapshot(): QuoteSnapshot {
   if (!draftSnapshotDirty && draftSnapshotCache) {
     return draftSnapshotCache;
   }
@@ -190,7 +228,7 @@ function buildDraftSnapshot() {
   return draftSnapshotCache;
 }
 
-async function persistDraftSerialized(serialized) {
+async function persistDraftSerialized(serialized: string): Promise<true | null> {
   if (!serialized || !window.electronAPI || !activeRevisionId) return null;
   if (serialized === lastPersistedSnapshot) {
     pendingPersistSerialized = null;
@@ -246,7 +284,7 @@ async function flushDraftPersist() {
   await persistPromise;
 }
 
-function syncBundleMetadata(bundle) {
+function syncBundleMetadata(bundle: RevisionBundle | null): void {
   if (!bundle || !bundle.activeRevision) return;
   activeQuoteId = bundle.quote?.id || bundle.activeRevision.quoteId;
   activeQuoteCode = bundle.activeRevision.quoteCode;
@@ -258,7 +296,7 @@ function syncBundleMetadata(bundle) {
   markChromeDirty();
 }
 
-function hydrateEditorFromRevision(revision) {
+function hydrateEditorFromRevision(revision: QuoteRevision): void {
   isHydratingRevision = true;
 
   const snapshot = {
@@ -296,13 +334,13 @@ function hydrateEditorFromRevision(revision) {
   render();
 }
 
-function applyRevisionBundle(bundle) {
+function applyRevisionBundle(bundle: RevisionBundle | null): void {
   if (!bundle || !bundle.activeRevision) return;
   syncBundleMetadata(bundle);
   hydrateEditorFromRevision(bundle.activeRevision);
 }
 
-function setCustomerFields(customer) {
+function setCustomerFields(customer: CustomerProfile): void {
   document.getElementById('customerCompany').value = customer.companyName || '';
   document.getElementById('customerContactName').value = customer.contactName || '';
   document.getElementById('customerDepartment').value = customer.department || '';
@@ -310,7 +348,7 @@ function setCustomerFields(customer) {
   document.getElementById('customerPhone').value = customer.phone || '';
 }
 
-function setSettingsFields(settings) {
+function setSettingsFields(settings: PreparedByProfile): void {
   document.getElementById('settingName').value = settings.name || '';
   document.getElementById('settingTitle').value = settings.title || '';
   document.getElementById('settingDepartment').value = settings.department || '';
@@ -318,7 +356,7 @@ function setSettingsFields(settings) {
   document.getElementById('settingPhone').value = settings.phone || '';
 }
 
-function readCustomerFields() {
+function readCustomerFields(): CustomerProfile {
   return normalizeProfile({
     companyName: document.getElementById('customerCompany').value.trim(),
     contactName: document.getElementById('customerContactName').value.trim(),
@@ -328,7 +366,7 @@ function readCustomerFields() {
   });
 }
 
-function readPreparedByFields() {
+function readPreparedByFields(): PreparedByProfile {
   return normalizePreparedBy({
     name: document.getElementById('settingName').value.trim(),
     title: document.getElementById('settingTitle').value.trim(),
@@ -389,7 +427,7 @@ function closeQuoteActionsMenu() {
   document.getElementById('quoteActionsMenu')?.classList.remove('open');
 }
 
-function renderImportActionOptions(preview) {
+function renderImportActionOptions(preview: ImportPreview): void {
   const container = document.getElementById('importActionOptions');
   container.innerHTML = preview.actions.map((action) => `
     <button class="import-action-option${action.key === selectedImportAction ? ' active' : ''}" data-action="${action.key}">
@@ -398,7 +436,7 @@ function renderImportActionOptions(preview) {
   `).join('');
 }
 
-function openImportPreviewModal(preview) {
+function openImportPreviewModal(preview: ImportPreview): void {
   activeImportPreview = preview;
   selectedImportAction = preview.recommendedAction;
 
@@ -413,7 +451,7 @@ function openImportPreviewModal(preview) {
   document.getElementById('importPreviewModal').classList.remove('hidden');
 }
 
-async function loadRevisionById(revisionId) {
+async function loadRevisionById(revisionId: number): Promise<void> {
   if (!window.electronAPI) return;
   const bundle = await window.electronAPI.loadQuoteRevision(revisionId);
   applyRevisionBundle(bundle);
@@ -444,7 +482,7 @@ async function importQuoteFromPdf() {
     openImportPreviewModal(preview);
   } catch (error) {
     console.error(error);
-    alert(error.message || 'Không thể import PDF.');
+    alert(asErrorMessage(error, 'Không thể import PDF.'));
   }
 }
 
@@ -453,13 +491,13 @@ async function confirmImportPreview() {
   try {
     const bundle = await window.electronAPI.confirmImportQuotePdf({
       preview: activeImportPreview,
-      action: selectedImportAction
+      action: selectedImportAction ?? undefined
     });
     closeImportPreviewModal();
     applyRevisionBundle(bundle);
   } catch (error) {
     console.error(error);
-    alert(error.message || 'Không thể hoàn tất import.');
+    alert(asErrorMessage(error, 'Không thể hoàn tất import.'));
   }
 }
 
@@ -491,7 +529,7 @@ async function exportActiveQuote() {
     }
   } catch (error) {
     console.error(error);
-    alert(error.message || 'Error exporting PDF');
+    alert(asErrorMessage(error, 'Error exporting PDF'));
   } finally {
     exportBtn.style.opacity = '1';
     exportBtn.style.pointerEvents = 'auto';
@@ -506,7 +544,7 @@ function performExport() {
   openCustomerModal();
 }
 
-function toLocalYMD(date) {
+function toLocalYMD(date: Date): string {
   return [
     date.getFullYear(),
     String(date.getMonth() + 1).padStart(2, '0'),
@@ -524,12 +562,12 @@ function oneYearLater() {
   return toLocalYMD(d);
 }
 
-function formatDateStr(ymd) {
+function formatDateStr(ymd: string): string {
   const [year, month, day] = ymd.split('-');
   return `${day}/${month}/${year}`;
 }
 
-function createStore(index) {
+function createStore(index: number): Store {
   return {
     id: Date.now() + Math.random(),
     name: `Chi nhánh ${index}`,
@@ -565,7 +603,7 @@ function addStore() {
   gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.25 });
 }
 
-function removeStore(id) {
+function removeStore(id: number): void {
   if (stores.length <= 1) return;
   const el = document.querySelector(`[data-id="${id}"]`);
   if (el) gsap.killTweensOf(el);
@@ -584,7 +622,7 @@ function removeStore(id) {
   });
 }
 
-function updateActive(field, value) {
+function updateActive(field: StoreField, value: string): void {
   const store = getActive();
   if (!store || store[field] === value) return;
   store[field] = value;
@@ -593,17 +631,17 @@ function updateActive(field, value) {
   scheduleDraftPersist();
 }
 
-function commitQuoteMutation(scope = 'all') {
+function commitQuoteMutation(scope: RenderScope = 'all'): void {
   invalidateComputedQuote();
   render(scope);
   scheduleDraftPersist();
 }
 
-function sanitizeAreaValue(value) {
+function sanitizeAreaValue(value: string): string {
   return String(value || '').trim().replace(',', '.');
 }
 
-function parseBulkAreaLine(line) {
+function parseBulkAreaLine(line: string): string {
   const cells = String(line).split('\t').map(sanitizeAreaValue).filter(Boolean);
   return cells.length ? cells[cells.length - 1] : sanitizeAreaValue(line);
 }
@@ -625,7 +663,7 @@ function renderBulkType() {
   });
 }
 
-function renderBulkRows(focusIndex = null) {
+function renderBulkRows(focusIndex: number | null = null): void {
   const rowsEl = document.getElementById('bulkRows');
   if (!rowsEl) return;
   if (bulkAreas.length === 0) bulkAreas = [''];
@@ -694,7 +732,7 @@ const STORE_COLORS = [
   '#55E6C1', '#FD7272', '#9AECDB'
 ];
 
-function animateNumber(elementId, newValue) {
+function animateNumber(elementId: string, newValue: number): void {
   const el = document.getElementById(elementId);
   if (!el) return;
   const cached = el._lastValue ?? (parseFloat(el.textContent.replace(/\./g, '').replace(/,/g, '')) || 0);
@@ -714,7 +752,7 @@ function animateNumber(elementId, newValue) {
   });
 }
 
-function setNumberImmediate(elementId, newValue, options = {}) {
+function setNumberImmediate(elementId: string, newValue: number, options: { prefix?: string } = {}): void {
   const el = document.getElementById(elementId);
   if (!el) return;
   el._lastValue = newValue;
@@ -929,7 +967,7 @@ function createRenderSnapshot() {
   };
 }
 
-function addRenderScopes(scope) {
+function addRenderScopes(scope: RenderScope): void {
   if (Array.isArray(scope)) {
     scope.forEach(addRenderScopes);
     return;
@@ -943,7 +981,7 @@ function addRenderScopes(scope) {
   renderScope.add(scope);
 }
 
-function render(scope = 'all') {
+function render(scope: RenderScope = 'all'): void {
   addRenderScopes(scope);
   if (renderScheduled) return;
   renderScheduled = true;
@@ -961,7 +999,7 @@ function render(scope = 'all') {
   });
 }
 
-function buildCalendar(dateStr, wrapperEl) {
+function buildCalendar(dateStr: string, wrapperEl: HTMLElement): void {
   const date = new Date(dateStr);
   let curYear = date.getFullYear();
   let curMonth = date.getMonth();
@@ -1010,7 +1048,7 @@ function buildCalendar(dateStr, wrapperEl) {
   }
 }
 
-function setupScrubbableInput(inputId, baseStep = 1, min = -Infinity, max = Infinity) {
+function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, max = Infinity): void {
   const el = document.getElementById(inputId);
   if (!el) return;
   el.style.cursor = 'ew-resize';
@@ -1407,7 +1445,7 @@ async function init() {
     applyRevisionBundle(newBundle);
   } catch (error) {
     console.error(error);
-    alert(error.message || 'Không thể khởi tạo quote workflow.');
+    alert(asErrorMessage(error, 'Không thể khởi tạo quote workflow.'));
   }
 }
 
