@@ -14,6 +14,7 @@ import {
   normalizeStores
 } from '../services/quote-payload';
 
+import gsap from './vendor/gsap-lite.ts';
 let baseSalary = 2340000;
 let vatRate = 0;
 let stores = [];
