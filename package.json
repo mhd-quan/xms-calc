@@ -3,7 +3,7 @@
   "productName": "XMS Calculator",
   "version": "1.6.6",
   "description": "Royalty Calculator for XMusic Station based on ND 17/2023",
-  "main": "out/main/index.js",
+  "main": "out/main/main.js",
   "scripts": {
     "start": "npm run dev",
     "test": "node --import tsx --test test/*.test.ts",
@@ -16,7 +16,7 @@
     "policy:strict": "node scripts/policy/check-strict-no-any.js",
     "phase:gate": "node scripts/policy/phase-gate.js",
     "dev": "electron-vite dev",
-    "build": "electron-vite build",
+    "build": "electron-vite build && node scripts/copy-templates.mjs",
     "typecheck": "tsc -b --pretty false",
     "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .js,.cjs,.mjs",
     "format": "prettier --write ."
@@ -44,8 +44,8 @@
   "build": {
     "appId": "com.xmusic.calculator",
     "files": [
-      "src/**/*",
-      "!src/**/*.map"
+      "out/**/*",
+      "!out/**/*.map"
     ],
     "mac": {
       "category": "public.app-category.business",
