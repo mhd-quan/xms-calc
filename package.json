@@ -6,8 +6,8 @@
   "main": "out/main/index.js",
   "scripts": {
     "start": "npm run dev",
-    "test": "node --experimental-strip-types --test test/calculator.test.ts",
-    "test:watch": "node --experimental-strip-types --test --watch test/calculator.test.ts",
+    "test": "node --import tsx --test test/*.test.ts",
+    "test:watch": "node --import tsx --test --watch test/*.test.ts",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "dist:mac": "electron-builder --mac",
