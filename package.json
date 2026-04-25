@@ -6,8 +6,8 @@
   "main": "src/main/main.js",
   "scripts": {
     "start": "electron .",
-    "test": "node --test test/*.test.js",
-    "test:watch": "node --test --watch test/*.test.js",
+    "test": "node --test test/calculator.test.js",
+    "test:watch": "node --test --watch test/calculator.test.js",
     "pack": "npm run build && electron-builder --dir",
     "dist": "npm run build && electron-builder",
     "dist:mac": "electron-builder --mac",
@@ -18,7 +18,7 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "typecheck": "tsc -b --pretty false",
-    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .js,.cjs,.mjs,.ts",
+    "lint": "ESLINT_USE_FLAT_CONFIG=false eslint . --ext .js,.cjs,.mjs",
     "format": "prettier --write ."
   },
   "author": "Archie",

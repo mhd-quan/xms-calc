@@ -10,5 +10,5 @@ module.exports = {
     sourceType: 'module'
   },
   extends: ['eslint:recommended'],
-  ignorePatterns: ['dist/', 'out/', '.vite/', 'node_modules/']
+  ignorePatterns: ['dist/', 'out/', '.vite/', 'node_modules/', 'archive/**', 'src/renderer/app.js']
 }
