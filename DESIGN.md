@@ -78,3 +78,31 @@ The interface uses a multi-layered gray-scale system with high-saturation functi
 - **Single-Window Workflow:** Avoid pop-up windows. Content should appear in the lower Detail View or the Side Browser.
 - **Hover States:** Subtle brightening of buttons or borders to indicate interactivity.
 - **Drag & Drop:** The UI is built around dragging samples/effects from the browser into tracks/racks.
+
+---
+
+## 6. XMS Calculator Live Variant
+
+The shipped calculator UI is a specific operating skin for XMS, not a generic Ableton clone. It keeps the Ableton logic but biases the shell toward charcoal and amber, with blue and pear used only as deliberate line accents.
+
+### 6.1 Live App Tokens
+
+| Token | Value | Usage |
+| :--- | :--- | :--- |
+| `--bg-root` | `#1a1c20` | App frame / outer canvas |
+| `--bg-surface` | `#22252a` | Sidebar, panels, dropdown bodies |
+| `--bg-elevated` | `#2a2d33` | Active rows, section headers |
+| `--bg-inset` | `#14161a` | Inputs and recessed tracks |
+| `--text-primary` | `#e6e8ec` | Main labels and values |
+| `--text-secondary` | `#b6bac1` | Secondary labels and metadata |
+| `--daw-orange` | `#FFB43A` | Active, focus, confirm, export-ready states |
+| `--pear` | `#CFF533` | Primary line accent, selection, key confirmation points |
+| `--picton` | `#44CCFF` | Data utility accent, counters, date controls |
+
+### 6.2 Live Rules
+
+- Rectangular controls stay at 3px radius or below.
+- Floating surfaces stay flat and border-led; no elevation shadow.
+- Amber owns active/focus in the shell.
+- Pear and picton are reserved for line accents, data cues, and a few key affordances.
+- Store colors are muted and varied, not neon-heavy, so the shell remains charcoal first.
