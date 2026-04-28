@@ -731,10 +731,8 @@ function addBulkRows() {
 }
 
 const STORE_COLORS = [
-  '#CFF533', '#44CCFF', '#FF9F43', '#FF4757', '#2ED573', '#A55EEA', '#70A1FF',
-  '#FF7F50', '#FFD32A', '#17C0EB', '#FFCCCC', '#C56CF0', '#32FF7E', '#FF3838',
-  '#18DCFF', '#7158E2', '#3AE374', '#FFB8B8', '#1B9CFC', '#F8EFBA', '#E15F41',
-  '#55E6C1', '#FD7272', '#9AECDB'
+  '#CFF533', '#44CCFF', '#FFB43A', '#D4715A', '#8EAF76', '#5AA89C',
+  '#5C7AFF', '#8E6FFF', '#C474E3', '#E56B6B', '#FFD300', '#9C8F7A'
 ];
 
 function animateNumber(elementId: string, newValue: number): void {
