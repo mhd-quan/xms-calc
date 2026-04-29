@@ -382,6 +382,14 @@ function renderQuoteChrome() {
   document.getElementById('activeQuoteNumber').textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
   document.getElementById('activeRevisionBadge').textContent = revisionLabel(activeRevisionNumber);
   document.getElementById('activeRevisionStatusText').textContent = statusLabel(activeRevisionStatus);
+  const bottomQuoteCode = document.getElementById('bottomQuoteCode');
+  if (bottomQuoteCode) bottomQuoteCode.textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
+  const bottomStatusText = document.getElementById('bottomStatusText');
+  if (bottomStatusText) bottomStatusText.textContent = statusLabel(activeRevisionStatus);
+  const statusQuoteNumber = document.getElementById('statusQuoteNumber');
+  if (statusQuoteNumber) statusQuoteNumber.textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
+  const statusRevisionState = document.getElementById('statusRevisionState');
+  if (statusRevisionState) statusRevisionState.textContent = statusLabel(activeRevisionStatus);
 
   const revisionList = document.getElementById('revisionList');
   revisionList.innerHTML = revisionsForQuote.map((revision) => `
@@ -731,8 +739,8 @@ function addBulkRows() {
 }
 
 const STORE_COLORS = [
-  '#CFF533', '#44CCFF', '#FFB43A', '#D4715A', '#8EAF76', '#5AA89C',
-  '#5C7AFF', '#8E6FFF', '#C474E3', '#E56B6B', '#FFD300', '#9C8F7A'
+  '#D4715A', '#E9AD62', '#8EAF76', '#5AA89C', '#7177A8', '#A678A8',
+  '#968E82', '#C4604C', '#B8742E', '#678A4F', '#3F8F86', '#5C638F'
 ];
 
 function animateNumber(elementId: string, newValue: number): void {
@@ -822,9 +830,11 @@ function renderMain(snapshot: RenderSnapshot): void {
 
   document.getElementById('salaryDisplay').textContent = `${formatVND(baseSalary)} ₫`;
   document.getElementById('locationCount').textContent = `${stores.length} loc`;
-  const color = STORE_COLORS[storeIdx % STORE_COLORS.length] ?? '#CFF533';
+  const color = STORE_COLORS[storeIdx % STORE_COLORS.length] ?? '#D4715A';
   document.getElementById('activeBranchColor').style.backgroundColor = color;
   document.getElementById('activeBranchName').textContent = store.name;
+  const statusBranchName = document.getElementById('statusBranchName');
+  if (statusBranchName) statusBranchName.textContent = store.name;
 
   document.getElementById('storeIndex').textContent = `Chi nhánh ${String(storeIdx + 1).padStart(2, '0')} / ${String(stores.length).padStart(2, '0')}`;
   const nameInput = document.getElementById('storeName');
@@ -952,6 +962,12 @@ function renderBottomBar(snapshot: RenderSnapshot): void {
   const ceiling = 50000000;
   const fillPct = Math.min(100, (totals.grand / ceiling) * 100);
   document.getElementById('grandVuFill').style.width = `${fillPct}%`;
+
+  const bottomBranchCount = document.getElementById('bottomBranchCount');
+  if (bottomBranchCount) bottomBranchCount.textContent = `${stores.length} chi nhánh`;
+
+  const statusLineCount = document.getElementById('statusLineCount');
+  if (statusLineCount) statusLineCount.textContent = `${stores.length} chi nhánh`;
 }
 
 function createRenderSnapshot() {

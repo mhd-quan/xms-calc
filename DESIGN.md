@@ -83,7 +83,7 @@ The interface uses a multi-layered gray-scale system with high-saturation functi
 
 ## 6. XMS Calculator Live Variant
 
-The shipped calculator UI is a specific operating skin for XMS, not a generic Ableton clone. It keeps the Ableton logic but biases the shell toward charcoal and amber, with blue and pear used only as deliberate line accents.
+The shipped calculator UI is a specific operating skin for XMS, not a generic Ableton clone. It keeps the Ableton logic but biases the shell toward charcoal and amber, with pear and blue confined to the brand mark / identity linework rather than repeated chrome states.
 
 ### 6.1 Live App Tokens
 
@@ -96,13 +96,13 @@ The shipped calculator UI is a specific operating skin for XMS, not a generic Ab
 | `--text-primary` | `#e6e8ec` | Main labels and values |
 | `--text-secondary` | `#b6bac1` | Secondary labels and metadata |
 | `--daw-orange` | `#FFB43A` | Active, focus, confirm, export-ready states |
-| `--pear` | `#CFF533` | Primary line accent, selection, key confirmation points |
-| `--picton` | `#44CCFF` | Data utility accent, counters, date controls |
+| `--data` | `#5cd4c4` | Muted data trace for secondary faders / low-volume readouts |
 
 ### 6.2 Live Rules
 
 - Rectangular controls stay at 3px radius or below.
 - Floating surfaces stay flat and border-led; no elevation shadow.
 - Amber owns active/focus in the shell.
-- Pear and picton are reserved for line accents, data cues, and a few key affordances.
-- Store colors are muted and varied, not neon-heavy, so the shell remains charcoal first.
+- Pear and blue do not own repeated states; they remain in the XMS mark and rare identity linework.
+- Store colors are muted and varied, not neon-heavy, and never use pear/blue as the default first tracks.
+- Workbench density follows the Direction A mockup: compact topbar, bordered calculation sections, bottom info/status layers.
