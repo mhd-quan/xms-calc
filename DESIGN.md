@@ -96,7 +96,7 @@ The shipped calculator UI is a specific operating skin for XMS, not a generic Ab
 | `--text-primary` | `#e6e8ec` | Main labels and values |
 | `--text-secondary` | `#b6bac1` | Secondary labels and metadata |
 | `--daw-orange` | `#FFB43A` | Active, focus, confirm, export-ready states |
-| `--data` | `#5cd4c4` | Muted data trace for secondary faders / low-volume readouts |
+| `--data` | `#5cd4c4` | Muted data trace for low-volume summary markers |
 
 ### 6.2 Live Rules
 
@@ -106,3 +106,5 @@ The shipped calculator UI is a specific operating skin for XMS, not a generic Ab
 - Pear and blue do not own repeated states; they remain in the XMS mark and rare identity linework.
 - Store colors are muted and varied, not neon-heavy, and never use pear/blue as the default first tracks.
 - Workbench density follows the Direction A mockup: compact topbar, bordered calculation sections, bottom info/status layers.
+- Bottom and status bars span the entire application frame; sidebar and workbench stop above them.
+- Faders use amber active fill with a right-side value box, matching the Design Language fader pattern.

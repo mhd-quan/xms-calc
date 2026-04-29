@@ -301,9 +301,9 @@
                 <div class="platform-right" id="accountFeeRight">
                   <div class="fader-header">
                     <span class="field-label">Chiết khấu (chung)</span>
-                    <div class="fader-val"><span id="discountAccountVal" class="value-box value-box-data">0</span><span class="fader-pct">%</span></div>
+                    <div class="fader-val"><span id="discountAccountVal" class="value-box value-box-accent">0</span><span class="fader-pct">%</span></div>
                   </div>
-                  <input id="discountAccount" type="range" min="0" max="100" step="5" value="0" class="fader fader-data">
+                  <input id="discountAccount" type="range" min="0" max="100" step="5" value="0" class="fader fader-accent">
                 </div>
               </div>
 
@@ -338,9 +338,9 @@
                   <div id="boxDiscountRow" class="hidden" style="margin-top: 14px;">
                     <div class="fader-header">
                       <span class="field-label">Chiết khấu (chung)</span>
-                      <div class="fader-val"><span id="discountBoxVal" class="value-box value-box-data">0</span><span class="fader-pct">%</span></div>
+                      <div class="fader-val"><span id="discountBoxVal" class="value-box value-box-accent">0</span><span class="fader-pct">%</span></div>
                     </div>
-                    <input id="discountBox" type="range" min="0" max="100" step="5" value="0" class="fader fader-data">
+                    <input id="discountBox" type="range" min="0" max="100" step="5" value="0" class="fader fader-accent">
                   </div>
                 </div>
               </div>
@@ -418,75 +418,75 @@
 
         </div>
       </div>
+    </main>
 
-      <!-- BOTTOM BAR -->
-      <div class="bottombar">
-        <div class="bottombar-inner">
-          <div class="bottom-info-view">
-            <div class="bottom-info-head">
-              <span>XMS Calculator</span>
-              <span id="bottomStatusText" class="tnum">Draft</span>
-            </div>
-            <div class="bottom-info-desc">
-              <span id="bottomQuoteCode" class="tnum">XMS-000000-000</span>
-              <span class="dot">·</span>
-              <span id="bottomBranchCount" class="tnum">1 chi nhánh</span>
-              <span class="dot">·</span>
-              <span>ND 17/2023</span>
-            </div>
+    <!-- BOTTOM BAR -->
+    <div class="bottombar">
+      <div class="bottombar-inner">
+        <div class="bottom-info-view">
+          <div class="bottom-info-head">
+            <span>XMS Calculator</span>
+            <span id="bottomStatusText" class="tnum">Draft</span>
           </div>
-          <div class="bottom-breakdown">
-            <div class="bottom-item">
-              <div class="bottom-label">Q. Tác Giả</div>
-              <div class="bottom-val tnum" id="totalQTG">0</div>
-            </div>
-            <div class="bottom-item">
-              <div class="bottom-label">Q. Liên Quan</div>
-              <div class="bottom-val tnum" id="totalQLQ">0</div>
-            </div>
-            <div class="bottom-item">
-              <div class="bottom-label">Tài khoản</div>
-              <div class="bottom-val tnum" id="totalAccount">0</div>
-            </div>
-            <div class="bottom-item">
-              <div class="bottom-label">Box</div>
-              <div class="bottom-val tnum" id="totalBox">0</div>
-            </div>
+          <div class="bottom-info-desc">
+            <span id="bottomQuoteCode" class="tnum">XMS-000000-000</span>
+            <span class="dot">·</span>
+            <span id="bottomBranchCount" class="tnum">1 chi nhánh</span>
+            <span class="dot">·</span>
+            <span>ND 17/2023</span>
           </div>
-          <div class="bottom-subtotal">
-            <div class="bottom-sub-row" style="margin-bottom: 6px;">
-              <span class="bottom-label">Subtotal</span>
-              <span class="bottom-val tnum" id="subtotalVal">0</span>
-            </div>
-            <div class="bottom-sub-row">
-              <div class="segmented-control" id="vatControl">
-                <button class="seg-btn active" data-vat="0"><span>KHÔNG</span></button>
-                <button class="seg-btn" data-vat="0.08"><span>8%</span></button>
-                <button class="seg-btn" data-vat="0.1"><span>10%</span></button>
-              </div>
-              <span class="bottom-val tnum dim" id="vatVal">+0</span>
-            </div>
+        </div>
+        <div class="bottom-breakdown">
+          <div class="bottom-item">
+            <div class="bottom-label">Q. Tác Giả</div>
+            <div class="bottom-val tnum" id="totalQTG">0</div>
           </div>
-          <div class="bottom-grand">
-            <div class="bottom-label">Tổng thanh toán</div>
-            <div class="grand-total">
-              <span class="grand-number tnum" id="grandTotal">0</span>
-              <span class="grand-currency">₫</span>
+          <div class="bottom-item">
+            <div class="bottom-label">Q. Liên Quan</div>
+            <div class="bottom-val tnum" id="totalQLQ">0</div>
+          </div>
+          <div class="bottom-item">
+            <div class="bottom-label">Tài khoản</div>
+            <div class="bottom-val tnum" id="totalAccount">0</div>
+          </div>
+          <div class="bottom-item">
+            <div class="bottom-label">Box</div>
+            <div class="bottom-val tnum" id="totalBox">0</div>
+          </div>
+        </div>
+        <div class="bottom-subtotal">
+          <div class="bottom-sub-row" style="margin-bottom: 6px;">
+            <span class="bottom-label">Subtotal</span>
+            <span class="bottom-val tnum" id="subtotalVal">0</span>
+          </div>
+          <div class="bottom-sub-row">
+            <div class="segmented-control" id="vatControl">
+              <button class="seg-btn active" data-vat="0"><span>KHÔNG</span></button>
+              <button class="seg-btn" data-vat="0.08"><span>8%</span></button>
+              <button class="seg-btn" data-vat="0.1"><span>10%</span></button>
             </div>
-            <div class="grand-vu-meter">
-              <div id="grandVuFill" style="position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--daw-orange); transition: width 400ms var(--ease-spring);"></div>
-            </div>
+            <span class="bottom-val tnum dim" id="vatVal">+0</span>
+          </div>
+        </div>
+        <div class="bottom-grand">
+          <div class="bottom-label">Tổng thanh toán</div>
+          <div class="grand-total">
+            <span class="grand-number tnum" id="grandTotal">0</span>
+            <span class="grand-currency">₫</span>
+          </div>
+          <div class="grand-vu-meter">
+            <div id="grandVuFill" style="position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--daw-orange); transition: width 400ms var(--ease-spring);"></div>
           </div>
         </div>
       </div>
-      <div class="statusbar">
-        <div class="statusbar-cell"><span class="status-dot"></span><span id="statusRevisionState">Draft</span></div>
-        <div class="statusbar-cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
-        <div class="statusbar-cell tnum" id="statusLineCount">1 chi nhánh</div>
-        <div class="statusbar-cell" id="statusBranchName">Chi nhánh 1</div>
-        <div class="statusbar-cell statusbar-cell-right">XMS v1.7 · CALC</div>
-      </div>
-    </main>
+    </div>
+    <div class="statusbar">
+      <div class="statusbar-cell"><span class="status-dot"></span><span id="statusRevisionState">Draft</span></div>
+      <div class="statusbar-cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
+      <div class="statusbar-cell tnum" id="statusLineCount">1 chi nhánh</div>
+      <div class="statusbar-cell" id="statusBranchName">Chi nhánh 1</div>
+      <div class="statusbar-cell statusbar-cell-right">XMS v1.7 · CALC</div>
+    </div>
   </div>
 
   <!-- BULK ADD MODAL -->
