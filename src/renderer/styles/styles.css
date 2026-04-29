@@ -19,7 +19,6 @@
   --text-dim: #5d6168;
   
   --data: #5cd4c4;
-  --data-dim: rgba(92, 212, 196, 0.12);
   
   --daw-orange: #FFB43A;
   --daw-orange-dim: rgba(255, 180, 58, 0.12);
@@ -57,11 +56,21 @@ input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin
 input[type=number] { -moz-appearance: textfield; }
 
 /* ─── LAYOUT ───────────────────────────────────────────────────────────── */
-.app-shell { display: flex; height: 100vh; width: 100%; overflow: hidden; }
+.app-shell {
+  display: grid;
+  grid-template-columns: 304px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto 22px;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
 
 /* ─── SIDEBAR ──────────────────────────────────────────────────────────── */
 .sidebar {
-  width: 304px; flex-shrink: 0; background: var(--bg-surface);
+  grid-column: 1;
+  grid-row: 1;
+  min-height: 0;
+  background: var(--bg-surface);
   border-right: 1px solid var(--border-subtle);
   display: flex; flex-direction: column;
 }
@@ -309,7 +318,15 @@ input[type=number] { -moz-appearance: textfield; }
 .add-store-btn:hover { color: var(--daw-orange); background: var(--bg-hover); border-color: var(--daw-orange); }
 
 /* ─── MAIN ─────────────────────────────────────────────────────────────── */
-.main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--bg-root); }
+.main {
+  grid-column: 2;
+  grid-row: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg-root);
+}
 
 /* Topbar */
 .topbar {
@@ -526,13 +543,6 @@ input[type=number] { -moz-appearance: textfield; }
   color: var(--text-primary);
   box-shadow: inset 2px 0 0 var(--daw-orange);
 }
-.value-box-data {
-  background: var(--bg-inset);
-  border-color: var(--border-dim);
-  color: var(--text-primary);
-  box-shadow: inset 2px 0 0 var(--data);
-}
-
 /* ─── SECTIONS ─────────────────────────────────────────────────────────── */
 .section {
   margin-bottom: 10px;
@@ -823,21 +833,6 @@ input[type=number] { -moz-appearance: textfield; }
 .fader-accent:hover::-webkit-slider-thumb { background: #fff; box-shadow: 0 0 0 1px var(--daw-orange-dim); }
 .fader-accent::-webkit-slider-thumb:active { box-shadow: 0 0 0 1px var(--daw-orange-dim), 0 0 0 3px rgba(255, 180, 58, 0.12); transform: scale(1.1); }
 
-.fader-data {
-  background: linear-gradient(var(--data), var(--data)) 0 / var(--val, 0%) 6px no-repeat;
-  background-origin: content-box; padding: 6px 0;
-}
-.fader-data::-webkit-slider-runnable-track { background: transparent; }
-.fader-data::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 8px; height: 18px; background: var(--text-primary);
-  border-radius: 2px; margin-top: -7px;
-  border: 1px solid var(--border-subtle);
-  transition: background 150ms, box-shadow 150ms, transform 150ms;
-}
-.fader-data:hover::-webkit-slider-thumb { background: #fff; box-shadow: 0 0 0 1px var(--data-dim); }
-.fader-data::-webkit-slider-thumb:active { box-shadow: 0 0 0 1px var(--data-dim), 0 0 0 3px rgba(92, 212, 196, 0.12); transform: scale(1.1); }
-
 .fader-daw-orange {
   background: linear-gradient(var(--daw-orange), var(--daw-orange)) 0 / var(--val, 0%) 6px no-repeat;
   background-origin: content-box; padding: 6px 0;
@@ -910,7 +905,10 @@ input[type=number] { -moz-appearance: textfield; }
 
 /* ─── BOTTOM BAR (Meter/Detail Panel) ──────────────────────────────────── */
 .bottombar {
-  flex-shrink: 0; border-top: 1px solid var(--border-subtle);
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+  border-top: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
 }
 .bottombar-inner {
@@ -1018,8 +1016,9 @@ input[type=number] { -moz-appearance: textfield; }
 }
 
 .statusbar {
+  grid-column: 1 / -1;
+  grid-row: 3;
   height: 22px;
-  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -1354,6 +1353,7 @@ input[type=number] { -moz-appearance: textfield; }
 
 @media (max-width: 980px) {
   /* MINI-SIDEBAR MODE */
+  .app-shell { grid-template-columns: 64px minmax(0, 1fr); }
   .sidebar { width: 64px; }
   .brand-text, .brand-decree { display: none; }
   .quote-history-panel { display: none; }
