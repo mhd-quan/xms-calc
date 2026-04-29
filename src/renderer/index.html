@@ -101,7 +101,7 @@
           <span id="activeRevisionStatusText" class="bc-dim">Draft</span>
           <span class="bc-sep">/</span>
           <span class="bc-active" style="display: flex; align-items: center; gap: 6px;">
-            <span id="activeBranchColor" style="width: 8px; height: 8px; background: var(--pear); border-radius: 2px;"></span>
+            <span id="activeBranchColor" style="width: 8px; height: 8px; background: var(--daw-orange); border-radius: 2px;"></span>
             <span id="activeBranchName">Chi nhánh 1</span>
           </span>
           <span class="bc-sep" style="margin: 0 4px;">·</span>
@@ -193,7 +193,7 @@
                 </div>
                 <div class="stat-block stat-hero">
                   <div class="stat-label">Tổng (pre-VAT)</div>
-                  <div class="stat-value pear tnum" id="statStoreTotal">0 <span class="stat-unit">₫</span></div>
+                  <div class="stat-value accent tnum" id="statStoreTotal">0 <span class="stat-unit">₫</span></div>
                 </div>
               </div>
             </div>
@@ -301,9 +301,9 @@
                 <div class="platform-right" id="accountFeeRight">
                   <div class="fader-header">
                     <span class="field-label">Chiết khấu (chung)</span>
-                    <div class="fader-val"><span id="discountAccountVal" class="value-box value-box-picton">0</span><span class="fader-pct">%</span></div>
+                    <div class="fader-val"><span id="discountAccountVal" class="value-box value-box-data">0</span><span class="fader-pct">%</span></div>
                   </div>
-                  <input id="discountAccount" type="range" min="0" max="100" step="5" value="0" class="fader fader-picton">
+                  <input id="discountAccount" type="range" min="0" max="100" step="5" value="0" class="fader fader-data">
                 </div>
               </div>
 
@@ -338,9 +338,9 @@
                   <div id="boxDiscountRow" class="hidden" style="margin-top: 14px;">
                     <div class="fader-header">
                       <span class="field-label">Chiết khấu (chung)</span>
-                      <div class="fader-val"><span id="discountBoxVal" class="value-box value-box-picton">0</span><span class="fader-pct">%</span></div>
+                      <div class="fader-val"><span id="discountBoxVal" class="value-box value-box-data">0</span><span class="fader-pct">%</span></div>
                     </div>
-                    <input id="discountBox" type="range" min="0" max="100" step="5" value="0" class="fader fader-picton">
+                    <input id="discountBox" type="range" min="0" max="100" step="5" value="0" class="fader fader-data">
                   </div>
                 </div>
               </div>
@@ -374,10 +374,10 @@
                 <div class="copyright-mid">
                   <div class="fader-header">
                     <span class="field-label">Chiết khấu (chung)</span>
-                    <div class="fader-val"><span id="discountQTGVal" class="value-box value-box-pear">0</span><span
+                    <div class="fader-val"><span id="discountQTGVal" class="value-box value-box-accent">0</span><span
                         class="fader-pct">%</span></div>
                   </div>
-                  <input id="discountQTG" type="range" min="0" max="100" step="5" value="0" class="fader fader-pear">
+                  <input id="discountQTG" type="range" min="0" max="100" step="5" value="0" class="fader fader-accent">
                 </div>
                 <div class="copyright-right">
                   <div class="field-label">Thành tiền</div>
@@ -403,10 +403,10 @@
                 <div class="copyright-mid">
                   <div class="fader-header">
                     <span class="field-label">Chiết khấu (chung)</span>
-                    <div class="fader-val"><span id="discountQLQVal" class="value-box value-box-pear">0</span><span
+                    <div class="fader-val"><span id="discountQLQVal" class="value-box value-box-accent">0</span><span
                         class="fader-pct">%</span></div>
                   </div>
-                  <input id="discountQLQ" type="range" min="0" max="100" step="5" value="0" class="fader fader-pear">
+                  <input id="discountQLQ" type="range" min="0" max="100" step="5" value="0" class="fader fader-accent">
                 </div>
                 <div class="copyright-right">
                   <div class="field-label">Thành tiền</div>
@@ -422,6 +422,19 @@
       <!-- BOTTOM BAR -->
       <div class="bottombar">
         <div class="bottombar-inner">
+          <div class="bottom-info-view">
+            <div class="bottom-info-head">
+              <span>XMS Calculator</span>
+              <span id="bottomStatusText" class="tnum">Draft</span>
+            </div>
+            <div class="bottom-info-desc">
+              <span id="bottomQuoteCode" class="tnum">XMS-000000-000</span>
+              <span class="dot">·</span>
+              <span id="bottomBranchCount" class="tnum">1 chi nhánh</span>
+              <span class="dot">·</span>
+              <span>ND 17/2023</span>
+            </div>
+          </div>
           <div class="bottom-breakdown">
             <div class="bottom-item">
               <div class="bottom-label">Q. Tác Giả</div>
@@ -461,10 +474,17 @@
               <span class="grand-currency">₫</span>
             </div>
             <div class="grand-vu-meter">
-              <div id="grandVuFill" style="position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--pear); transition: width 400ms var(--ease-spring);"></div>
+              <div id="grandVuFill" style="position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--daw-orange); transition: width 400ms var(--ease-spring);"></div>
             </div>
           </div>
         </div>
+      </div>
+      <div class="statusbar">
+        <div class="statusbar-cell"><span class="status-dot"></span><span id="statusRevisionState">Draft</span></div>
+        <div class="statusbar-cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
+        <div class="statusbar-cell tnum" id="statusLineCount">1 chi nhánh</div>
+        <div class="statusbar-cell" id="statusBranchName">Chi nhánh 1</div>
+        <div class="statusbar-cell statusbar-cell-right">XMS v1.7 · CALC</div>
       </div>
     </main>
   </div>
