@@ -45,7 +45,7 @@
   background: var(--active);
 }
 
-.topbar__breadcrumb { flex: 1; }
+.topbar__breadcrumb { flex: 1; min-width: 0; }
 .topbar__actions { display: flex; align-items: center; gap: 6px; }
 
 /* SIDEBAR */

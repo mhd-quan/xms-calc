@@ -15,6 +15,7 @@ import {
 } from '../services/quote-payload';
 
 import gsap from './vendor/gsap-lite';
+import { renderTopbar } from './modules/render-topbar';
 
 import type {
   CalcOptions,
@@ -31,7 +32,7 @@ import type {
 } from '../shared/types';
 
 type ComputedQuote = ReturnType<typeof calculateTotals>;
-type RenderSnapshot = ReturnType<typeof createRenderSnapshot>;
+export type RenderSnapshot = ReturnType<typeof createRenderSnapshot>;
 
 type RenderScopeKey = 'sidebar' | 'main' | 'totals';
 type RenderScope = RenderScopeKey | 'all' | RenderScope[];
@@ -42,6 +43,10 @@ function closestFromEvent<T extends Element>(event: Event, selector: string): T 
   const target = event.target;
   if (!(target instanceof Element)) return null;
   return target.closest(selector) as T | null;
+}
+
+function optionalElement(id: string): HTMLElement | null {
+  return document.getElementById(id) as HTMLElement | null;
 }
 
 function valueFromEvent(event: Event): string {
@@ -379,9 +384,6 @@ function renderQuoteChrome() {
   document.getElementById('historyRevisionLabel').textContent = revisionLabel(activeRevisionNumber);
   document.getElementById('historyStatusChip').textContent = statusLabel(activeRevisionStatus);
 
-  document.getElementById('activeQuoteNumber').textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
-  document.getElementById('activeRevisionBadge').textContent = revisionLabel(activeRevisionNumber);
-  document.getElementById('activeRevisionStatusText').textContent = statusLabel(activeRevisionStatus);
   const bottomQuoteCode = document.getElementById('bottomQuoteCode');
   if (bottomQuoteCode) bottomQuoteCode.textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
   const bottomStatusText = document.getElementById('bottomStatusText');
@@ -426,10 +428,6 @@ function closeImportPreviewModal() {
   activeImportPreview = null;
   selectedImportAction = null;
   document.getElementById('importPreviewModal').classList.add('hidden');
-}
-
-function closeQuoteActionsMenu() {
-  document.getElementById('quoteActionsMenu')?.classList.remove('open');
 }
 
 function renderImportActionOptions(preview: ImportPreview): void {
@@ -526,9 +524,11 @@ async function exportActiveQuote() {
   scheduleDraftPersist();
   await flushDraftPersist();
 
-  const exportBtn = document.getElementById('exportBtn');
-  exportBtn.style.opacity = '0.5';
-  exportBtn.style.pointerEvents = 'none';
+  const exportBtn = optionalElement('btnSave');
+  if (exportBtn) {
+    exportBtn.style.opacity = '0.5';
+    exportBtn.style.pointerEvents = 'none';
+  }
 
   try {
     const result = await window.electronAPI.exportQuote({
@@ -543,8 +543,10 @@ async function exportActiveQuote() {
     console.error(error);
     alert(asErrorMessage(error, 'Error exporting PDF'));
   } finally {
-    exportBtn.style.opacity = '1';
-    exportBtn.style.pointerEvents = 'auto';
+    if (exportBtn) {
+      exportBtn.style.opacity = '1';
+      exportBtn.style.pointerEvents = 'auto';
+    }
   }
 }
 
@@ -554,6 +556,25 @@ function performExport() {
     return;
   }
   openCustomerModal();
+}
+
+async function saveCurrentDraft(): Promise<void> {
+  const saveBtn = optionalElement('btnSave');
+  if (saveBtn) {
+    saveBtn.style.opacity = '0.65';
+    saveBtn.style.pointerEvents = 'none';
+  }
+
+  try {
+    invalidateDraftSnapshot();
+    scheduleDraftPersist();
+    await flushDraftPersist();
+  } finally {
+    if (saveBtn) {
+      saveBtn.style.opacity = '1';
+      saveBtn.style.pointerEvents = 'auto';
+    }
+  }
 }
 
 function toLocalYMD(date: Date): string {
@@ -828,11 +849,6 @@ function renderMain(snapshot: RenderSnapshot): void {
   const storeTotal = breakdown?.total || 0;
   const storeIdx = snapshot.activeStoreIndex;
 
-  document.getElementById('salaryDisplay').textContent = `${formatVND(baseSalary)} ₫`;
-  document.getElementById('locationCount').textContent = `${stores.length} loc`;
-  const color = STORE_COLORS[storeIdx % STORE_COLORS.length] ?? '#D4715A';
-  document.getElementById('activeBranchColor').style.backgroundColor = color;
-  document.getElementById('activeBranchName').textContent = store.name;
   const statusBranchName = document.getElementById('statusBranchName');
   if (statusBranchName) statusBranchName.textContent = store.name;
 
@@ -986,7 +1002,12 @@ function createRenderSnapshot() {
     activeStore,
     activeStoreIndex,
     activeBreakdown,
-    maxStoreTotal
+    maxStoreTotal,
+    customer: customerProfile,
+    activeQuoteCode,
+    activeDisplayQuoteNumber,
+    activeRevisionNumber,
+    activeRevisionStatus
   };
 }
 
@@ -1015,6 +1036,7 @@ function render(scope: RenderScope = 'all'): void {
       chromeDirty = false;
     }
     const snapshot = createRenderSnapshot();
+    renderTopbar(snapshot);
     if (renderScope.has('sidebar')) renderSidebar(snapshot);
     if (renderScope.has('main')) renderMain(snapshot);
     if (renderScope.has('totals')) renderBottomBar(snapshot);
@@ -1148,22 +1170,13 @@ function bindEvents() {
   });
 
   document.getElementById('addStoreBtn').addEventListener('click', addStore);
-  const quoteActionsMenu = document.getElementById('quoteActionsMenu');
-  const quoteActionsBtn = document.getElementById('quoteActionsBtn');
-  quoteActionsBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    quoteActionsMenu.classList.toggle('open');
-  });
-  quoteActionsMenu.querySelector('.quote-actions-dropdown').addEventListener('click', (event) => {
-    event.stopPropagation();
-  });
 
   const bulkAddModal = document.getElementById('bulkAddModal');
   const bulkDd = document.getElementById('bulkBusinessType');
   const bulkMenu = bulkDd.querySelector('.dropdown-menu');
   const bulkRowsEl = document.getElementById('bulkRows');
 
-  document.getElementById('bulkAddBtn').addEventListener('click', openBulkAddModal);
+  document.getElementById('btnBulkAdd').addEventListener('click', openBulkAddModal);
   document.getElementById('closeBulkAdd').addEventListener('click', closeBulkAddModal);
   document.getElementById('cancelBulkAdd').addEventListener('click', closeBulkAddModal);
   document.getElementById('applyBulkAdd').addEventListener('click', addBulkRows);
@@ -1217,27 +1230,6 @@ function bindEvents() {
     renderBulkRows(nextIndex);
   });
 
-  const salaryDisplay = document.getElementById('salaryDisplay');
-  const salaryInput = document.getElementById('salaryInput');
-  salaryDisplay.addEventListener('click', () => {
-    salaryDisplay.classList.add('hidden');
-    salaryInput.classList.remove('hidden');
-    salaryInput.value = String(baseSalary);
-    salaryInput.focus();
-    salaryInput.select();
-  });
-  const closeSalary = () => {
-    baseSalary = Number(salaryInput.value) || baseSalary;
-    salaryDisplay.textContent = `${formatVND(baseSalary)} ₫`;
-    salaryInput.classList.add('hidden');
-    salaryDisplay.classList.remove('hidden');
-    commitQuoteMutation();
-  };
-  salaryInput.addEventListener('blur', closeSalary);
-  salaryInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') closeSalary();
-  });
-
   document.getElementById('storeName').addEventListener('input', (event) => updateActive('name', valueFromEvent(event)));
   document.getElementById('areaInput').addEventListener('input', (event) => updateActive('area', valueFromEvent(event)));
 
@@ -1285,9 +1277,6 @@ function bindEvents() {
 
   document.addEventListener('click', (event) => {
     const clickTarget = event.target instanceof Node ? event.target : null;
-    if (!quoteActionsMenu.contains(clickTarget)) {
-      closeQuoteActionsMenu();
-    }
     if (!dd.contains(clickTarget) && dd.classList.contains('open')) {
       gsap.to(menu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => dd.classList.remove('open') });
     }
@@ -1389,30 +1378,33 @@ function bindEvents() {
 
   setupScrubbableInput('areaInput', 1, 1, 10000);
   setupScrubbableInput('boxCount', 1, 1, 1000);
-  setupScrubbableInput('salaryInput', 10000, 1000000, 50000000);
 
-  document.getElementById('newQuoteBtn').addEventListener('click', async () => {
-    closeQuoteActionsMenu();
-    await createNewQuote();
+  optionalElement('newQuoteBtn')?.addEventListener('click', () => {
+    void createNewQuote();
   });
-  document.getElementById('newRevisionBtn').addEventListener('click', async () => {
-    closeQuoteActionsMenu();
-    await createNewRevision();
+  optionalElement('newRevisionBtn')?.addEventListener('click', () => {
+    void createNewRevision();
   });
-  document.getElementById('importPdfBtn').addEventListener('click', async () => {
-    closeQuoteActionsMenu();
-    await importQuoteFromPdf();
+  optionalElement('importPdfBtn')?.addEventListener('click', () => {
+    void importQuoteFromPdf();
   });
-  document.getElementById('exportBtn').addEventListener('click', performExport);
+  document.getElementById('btnCustomer').addEventListener('click', openCustomerModal);
+  document.getElementById('btnSave').addEventListener('click', () => {
+    void saveCurrentDraft();
+  });
 
   window.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'e') {
       event.preventDefault();
       performExport();
     }
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      void saveCurrentDraft();
+    }
   });
 
-  document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+  document.getElementById('btnSettings').addEventListener('click', openSettingsModal);
   document.getElementById('closeSettings').addEventListener('click', closeSettingsModal);
   document.getElementById('settingsModal').querySelector('.modal-overlay').addEventListener('click', closeSettingsModal);
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
