@@ -1,3 +1,4 @@
+import { formatVND } from './format';
 import { paletteVar } from './palette';
 
 import type { RenderSnapshot } from '../app';
@@ -11,6 +12,7 @@ export function renderWorkbench(snapshot: RenderSnapshot): void {
   setText('workStoreCount', '1');
   setText('workLineCount', '3');
   setText('workDateRangeText', formatDateRange(store.startDate, store.endDate));
+  setSectionTotals(snapshot);
 
   const color = getElement('workBranchColor');
   if (color) color.style.background = paletteVar(index);
@@ -19,6 +21,20 @@ export function renderWorkbench(snapshot: RenderSnapshot): void {
   if (title instanceof HTMLInputElement && document.activeElement !== title) {
     title.value = store.name;
   }
+}
+
+function setSectionTotals(snapshot: RenderSnapshot): void {
+  const breakdown = snapshot.activeBreakdown;
+  if (!breakdown) {
+    setText('facilitySectionTotal', '0.0m');
+    setText('platformSectionTotal', '0');
+    setText('copyrightSectionTotal', '0');
+    return;
+  }
+
+  setText('facilitySectionTotal', `${breakdown.duration.toFixed(1)}m`);
+  setText('platformSectionTotal', formatVND(breakdown.accountAmount + breakdown.boxAmount));
+  setText('copyrightSectionTotal', formatVND(breakdown.qtgAmount + breakdown.qlqAmount));
 }
 
 function formatDateRange(startDate: string, endDate: string): string {

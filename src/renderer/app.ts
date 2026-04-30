@@ -814,10 +814,12 @@ function renderMain(snapshot: RenderSnapshot): void {
   if (statusBranchName) statusBranchName.textContent = store.name;
 
   const typeText = document.getElementById('businessTypeText');
+  const typeDropdown = document.getElementById('businessType');
   const storeTypeMeta = store.type ? BUSINESS_TYPES[store.type] : undefined;
   typeText.textContent = storeTypeMeta?.label ?? 'Chọn mô hình kinh doanh...';
-  document.querySelectorAll('#businessType .dropdown-item').forEach((el) => {
-    el.classList.toggle('active', el.dataset.value === store.type);
+  typeDropdown.dataset.value = store.type;
+  document.querySelectorAll('#businessType .x-dropdown__item').forEach((el) => {
+    el.classList.toggle('is-selected', el.dataset.value === store.type);
   });
 
   const areaInput = document.getElementById('areaInput');
@@ -827,36 +829,36 @@ function renderMain(snapshot: RenderSnapshot): void {
   document.getElementById('endDateText').textContent = formatDateStr(store.endDate);
 
   const accToggle = document.getElementById('accountToggle');
-  accToggle.classList.toggle('on', hasAccountFee);
+  accToggle.classList.toggle('is-on', hasAccountFee);
   accToggle.textContent = hasAccountFee ? 'BẬT' : 'TẮT';
   const accRight = document.getElementById('accountFeeRight');
 
   if (hasAccountFee) {
-    accRight.classList.remove('disabled');
+    accRight.classList.remove('is-disabled');
     document.getElementById('discountAccountVal').textContent = String(globalDiscounts.account);
     const accSlider = document.getElementById('discountAccount');
     if (document.activeElement !== accSlider) accSlider.value = String(globalDiscounts.account);
     accSlider.style.setProperty('--val', `${globalDiscounts.account}%`);
   } else {
-    accRight.classList.add('disabled');
+    accRight.classList.add('is-disabled');
   }
 
-  document.querySelectorAll('#boxModeControl .seg-btn').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.mode === boxMode);
+  document.querySelectorAll('#boxModeSeg .x-seg__btn').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.mode === boxMode);
   });
-  document.getElementById('boxQuantityRow').classList.toggle('hidden', boxMode === 'none');
+  document.getElementById('boxQuantityRow').toggleAttribute('hidden', boxMode === 'none');
   const boxInput = document.getElementById('boxCount');
   if (document.activeElement !== boxInput) boxInput.value = String(globalBoxCount);
 
   const boxDiscountRow = document.getElementById('boxDiscountRow');
   if (boxMode === 'buy') {
-    boxDiscountRow.classList.remove('hidden');
+    boxDiscountRow.removeAttribute('hidden');
     document.getElementById('discountBoxVal').textContent = String(globalDiscounts.box);
     const boxSlider = document.getElementById('discountBox');
     if (document.activeElement !== boxSlider) boxSlider.value = String(globalDiscounts.box);
     boxSlider.style.setProperty('--val', `${globalDiscounts.box}%`);
   } else {
-    boxDiscountRow.classList.add('hidden');
+    boxDiscountRow.setAttribute('hidden', '');
   }
 
   const boxPriceDesc = document.getElementById('boxPriceDesc');
@@ -864,51 +866,51 @@ function renderMain(snapshot: RenderSnapshot): void {
   else if (boxMode === 'rent') boxPriceDesc.textContent = '1.000.000 ₫ / thiết bị / năm · prorated · cấp mỗi chi nhánh';
   else boxPriceDesc.textContent = 'Chọn hình thức trang bị cho mỗi chi nhánh';
 
-  document.getElementById('qtgCoef').textContent = `Hệ số ${coef.toFixed(2)}`;
+  document.getElementById('qtgCoef').textContent = coef.toFixed(2);
   document.getElementById('qtgDur').textContent = `${duration.toFixed(1)}m`;
 
   const qtgToggle = document.getElementById('qtgToggle');
-  qtgToggle.classList.toggle('on', hasQTG);
+  qtgToggle.classList.toggle('is-on', hasQTG);
   qtgToggle.textContent = hasQTG ? 'BẬT' : 'TẮT';
-  const qtgRow = qtgToggle.closest('.copyright-row') ?? qtgToggle;
-  const qtgMid = qtgRow.querySelector('.copyright-mid');
-  const qtgRight = qtgRow.querySelector('.copyright-right');
+  const qtgRow = qtgToggle.closest('.x-row') ?? qtgToggle;
+  const qtgMid = qtgRow.querySelector('.x-row__rhs');
+  const qtgRight = qtgRow.querySelector('.x-row__amount');
 
   if (hasQTG) {
-    qtgMid.classList.remove('disabled');
-    qtgRight.classList.remove('disabled');
+    qtgMid.classList.remove('is-disabled');
+    qtgRight.classList.remove('is-disabled');
     document.getElementById('discountQTGVal').textContent = String(globalDiscounts.qtg);
     const qtgSlider = document.getElementById('discountQTG');
     if (document.activeElement !== qtgSlider) qtgSlider.value = String(globalDiscounts.qtg);
     qtgSlider.style.setProperty('--val', `${globalDiscounts.qtg}%`);
     animateNumber('qtgAmount', breakdown?.qtgAmount || 0);
   } else {
-    qtgMid.classList.add('disabled');
-    qtgRight.classList.add('disabled');
+    qtgMid.classList.add('is-disabled');
+    qtgRight.classList.add('is-disabled');
     animateNumber('qtgAmount', 0);
   }
 
-  document.getElementById('qlqCoef').textContent = `Hệ số ${coef.toFixed(2)}`;
+  document.getElementById('qlqCoef').textContent = coef.toFixed(2);
   document.getElementById('qlqDur').textContent = `${duration.toFixed(1)}m`;
 
   const qlqToggle = document.getElementById('qlqToggle');
-  qlqToggle.classList.toggle('on', hasQLQ);
+  qlqToggle.classList.toggle('is-on', hasQLQ);
   qlqToggle.textContent = hasQLQ ? 'BẬT' : 'TẮT';
-  const qlqRow = qlqToggle.closest('.copyright-row') ?? qlqToggle;
-  const qlqMid = qlqRow.querySelector('.copyright-mid');
-  const qlqRight = qlqRow.querySelector('.copyright-right');
+  const qlqRow = qlqToggle.closest('.x-row') ?? qlqToggle;
+  const qlqMid = qlqRow.querySelector('.x-row__rhs');
+  const qlqRight = qlqRow.querySelector('.x-row__amount');
 
   if (hasQLQ) {
-    qlqMid.classList.remove('disabled');
-    qlqRight.classList.remove('disabled');
+    qlqMid.classList.remove('is-disabled');
+    qlqRight.classList.remove('is-disabled');
     document.getElementById('discountQLQVal').textContent = String(globalDiscounts.qlq);
     const qlqSlider = document.getElementById('discountQLQ');
     if (document.activeElement !== qlqSlider) qlqSlider.value = String(globalDiscounts.qlq);
     qlqSlider.style.setProperty('--val', `${globalDiscounts.qlq}%`);
     animateNumber('qlqAmount', breakdown?.qlqAmount || 0);
   } else {
-    qlqMid.classList.add('disabled');
-    qlqRight.classList.add('disabled');
+    qlqMid.classList.add('is-disabled');
+    qlqRight.classList.add('is-disabled');
     animateNumber('qlqAmount', 0);
   }
 }
@@ -1008,32 +1010,32 @@ function buildCalendar(dateStr: string, wrapperEl: HTMLElement): void {
   let curMonth = date.getMonth();
   const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
 
-  const headTitle = wrapperEl.querySelector('.datepicker-month-year');
-  const grid = wrapperEl.querySelector('.datepicker-grid');
+  const headTitle = wrapperEl.querySelector('.x-datepicker__monthyear');
+  const grid = wrapperEl.querySelector('.x-datepicker__grid');
 
   const refreshGrid = () => {
     headTitle.textContent = `${monthNames[curMonth]}, ${curYear}`;
     grid.innerHTML = '';
 
-    const firstDay = new Date(curYear, curMonth, 1).getDay();
+    const firstDay = (new Date(curYear, curMonth, 1).getDay() + 6) % 7;
     const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
 
     let html = '';
-    for (let i = 0; i < firstDay; i += 1) html += '<div class="datepicker-cell dim"></div>';
+    for (let i = 0; i < firstDay; i += 1) html += '<div class="x-datepicker__cell is-dim"></div>';
 
     const today = new Date();
     for (let i = 1; i <= daysInMonth; i += 1) {
       const isToday = today.getDate() === i && today.getMonth() === curMonth && today.getFullYear() === curYear;
       const isSelected = date.getDate() === i && date.getMonth() === curMonth && date.getFullYear() === curYear;
       const cellDateStr = `${curYear}-${String(curMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      html += `<div class="datepicker-cell ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-date="${cellDateStr}">${i}</div>`;
+      html += `<div class="x-datepicker__cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" data-date="${cellDateStr}">${i}</div>`;
     }
     grid.innerHTML = html;
   };
   refreshGrid();
 
   if (!wrapperEl.dataset.bound) {
-    wrapperEl.querySelectorAll('.datepicker-nav').forEach((btn) => {
+    wrapperEl.querySelectorAll('.x-datepicker__nav').forEach((btn) => {
       btn.addEventListener('click', (event) => {
         event.stopPropagation();
         curMonth += parseInt(btn.dataset.dir ?? '0', 10);
@@ -1212,41 +1214,34 @@ function bindEvents() {
   document.getElementById('areaInput').addEventListener('input', (event) => updateActive('area', valueFromEvent(event)));
 
   const dd = document.getElementById('businessType');
-  const menu = dd.querySelector('.dropdown-menu');
   dd.addEventListener('click', (event) => {
-    const item = closestFromEvent(event, '.dropdown-item');
+    const item = closestFromEvent(event, '.x-dropdown__item');
     if (item) {
       updateActive('type', item.dataset.value ?? '');
+      dd.classList.remove('is-open');
+      return;
     }
-    const isOpen = dd.classList.contains('open');
-    if (!isOpen) {
-      dd.classList.add('open');
-      gsap.fromTo(menu, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.2 });
-    } else {
-      gsap.to(menu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => dd.classList.remove('open') });
-    }
+    dd.classList.toggle('is-open');
   });
 
   const setupDatePicker = (pickerId: string, field: Extract<StoreField, 'startDate' | 'endDate'>): void => {
     const pk = document.getElementById(pickerId);
-    const popup = pk.querySelector('.datepicker-popup');
     pk.addEventListener('click', (event) => {
-      const cell = closestFromEvent(event, '.datepicker-cell:not(.dim)');
+      const cell = closestFromEvent(event, '.x-datepicker__cell:not(.is-dim)');
       if (cell) {
         updateActive(field, cell.dataset.date ?? '');
-        gsap.to(popup, { opacity: 0, duration: 0.15, onComplete: () => pk.classList.remove('open') });
+        pk.classList.remove('is-open');
         return;
       }
-      if (closestFromEvent(event, '.datepicker-nav')) return;
+      if (closestFromEvent(event, '.x-datepicker__nav')) return;
 
-      const isOpen = pk.classList.contains('open');
+      const isOpen = pk.classList.contains('is-open');
       if (!isOpen) {
         const active = getActive();
         if (active) buildCalendar(active[field], pk);
-        pk.classList.add('open');
-        gsap.fromTo(popup, { opacity: 0, y: -5 }, { opacity: 1, y: 0, duration: 0.2 });
+        pk.classList.add('is-open');
       } else {
-        gsap.to(popup, { opacity: 0, y: -5, duration: 0.15, onComplete: () => pk.classList.remove('open') });
+        pk.classList.remove('is-open');
       }
     });
   };
@@ -1255,20 +1250,16 @@ function bindEvents() {
 
   document.addEventListener('click', (event) => {
     const clickTarget = event.target instanceof Node ? event.target : null;
-    if (!dd.contains(clickTarget) && dd.classList.contains('open')) {
-      gsap.to(menu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => dd.classList.remove('open') });
+    if (!dd.contains(clickTarget) && dd.classList.contains('is-open')) {
+      dd.classList.remove('is-open');
     }
     if (!bulkDd.contains(clickTarget) && bulkDd.classList.contains('open')) {
       gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
     }
     ['startDatePicker', 'endDatePicker'].forEach((id) => {
       const pk = document.getElementById(id);
-      if (!pk.contains(clickTarget) && pk.classList.contains('open')) {
-        gsap.to(pk.querySelector('.datepicker-popup'), {
-          opacity: 0,
-          duration: 0.15,
-          onComplete: () => pk.classList.remove('open')
-        });
+      if (!pk.contains(clickTarget) && pk.classList.contains('is-open')) {
+        pk.classList.remove('is-open');
       }
     });
   });
@@ -1303,8 +1294,8 @@ function bindEvents() {
     commitQuoteMutation();
   });
 
-  document.getElementById('boxModeControl').addEventListener('click', (event) => {
-    const btn = closestFromEvent(event, '.seg-btn');
+  document.getElementById('boxModeSeg').addEventListener('click', (event) => {
+    const btn = closestFromEvent(event, '.x-seg__btn');
     if (!btn) return;
     const nextBoxMode = btn.dataset.mode;
     if (nextBoxMode === 'none' || nextBoxMode === 'buy' || nextBoxMode === 'rent') {

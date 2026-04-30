@@ -102,71 +102,75 @@
               <span class="csection__idx">01</span>
               <span class="csection__title">Cơ sở vật chất</span>
               <span class="eyebrow">Facility Profile</span>
+              <span class="csection__total tnum" id="facilitySectionTotal">0.0m</span>
             </div>
             <div class="csection__body">
-              <div class="grid-12">
-                <div class="col-7">
-                  <div class="field-label">Mô hình kinh doanh</div>
-                  <div id="businessType" class="ableton-dropdown" data-value="" tabindex="0">
-                    <div class="dropdown-display">
-                      <span class="dropdown-text" id="businessTypeText">Chọn mô hình kinh doanh...</span>
-                      <span class="dropdown-arrow">▼</span>
+              <div class="csbody-grid csbody-grid--7-5">
+                <div class="x-field-row">
+                  <label class="x-field-row__label">Mô hình kinh doanh</label>
+                  <div id="businessType" class="x-dropdown" data-value="" tabindex="0"
+                    data-info="Business type|Chọn mô hình kinh doanh để áp dụng hệ số.|—">
+                    <div class="x-dropdown__display">
+                      <span class="x-dropdown__value" id="businessTypeText">Chọn mô hình kinh doanh...</span>
+                      <span class="x-dropdown__caret"></span>
                     </div>
-                    <div class="dropdown-menu">
-                      <div class="dropdown-item" data-value="cafe">Quán cà phê - giải khát</div>
-                      <div class="dropdown-item" data-value="restaurant">Nhà hàng, phòng hội thảo, hội nghị</div>
-                      <div class="dropdown-item" data-value="store">Cửa hàng, showroom</div>
-                      <div class="dropdown-item" data-value="gym">CLB thể dục, chăm sóc sức khỏe - thẩm mỹ</div>
-                      <div class="dropdown-item" data-value="entertainment">Khu vui chơi, giải trí</div>
-                      <div class="dropdown-item" data-value="mall">Trung tâm thương mại, cao ốc văn phòng</div>
-                      <div class="dropdown-item" data-value="supermarket">Siêu thị</div>
+                    <div class="x-dropdown__menu">
+                      <div class="x-dropdown__item" data-value="cafe">Quán cà phê - giải khát</div>
+                      <div class="x-dropdown__item" data-value="restaurant">Nhà hàng, phòng hội thảo, hội nghị</div>
+                      <div class="x-dropdown__item" data-value="store">Cửa hàng, showroom</div>
+                      <div class="x-dropdown__item" data-value="gym">CLB thể dục, chăm sóc sức khỏe - thẩm mỹ</div>
+                      <div class="x-dropdown__item" data-value="entertainment">Khu vui chơi, giải trí</div>
+                      <div class="x-dropdown__item" data-value="mall">Trung tâm thương mại, cao ốc văn phòng</div>
+                      <div class="x-dropdown__item" data-value="supermarket">Siêu thị</div>
                     </div>
                   </div>
                 </div>
-                <div class="col-5">
-                  <div class="field-label">Diện tích phát nhạc</div>
-                  <div class="field-suffix-wrap">
-                    <input id="areaInput" type="number" min="1" class="field-input" value="">
-                    <span class="field-suffix">m²</span>
+                <div class="x-field-row">
+                  <label class="x-field-row__label">Diện tích phát nhạc</label>
+                  <div class="x-suffix-wrap">
+                    <input id="areaInput" type="number" min="1" class="x-field x-field--num" value="">
+                    <span class="x-suffix">m²</span>
                   </div>
                 </div>
-                <div class="col-6">
-                  <div class="field-label">Bắt đầu</div>
-                  <div class="ableton-datepicker" id="startDatePicker" tabindex="0">
-                    <div class="datepicker-display">
-                      <span class="datepicker-value tnum" id="startDateText"></span>
-                      <span class="datepicker-icon">
+              </div>
+              <div class="csbody-grid csbody-grid--6-6" style="margin-top:14px;">
+                <div class="x-field-row">
+                  <label class="x-field-row__label">Bắt đầu</label>
+                  <div class="x-datepicker" id="startDatePicker" tabindex="0">
+                    <div class="x-datepicker__display">
+                      <span class="x-datepicker__value tnum" id="startDateText"></span>
+                      <span class="x-datepicker__icon">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                       </span>
                     </div>
-                    <div class="datepicker-popup">
-                      <div class="datepicker-header">
-                        <button class="datepicker-nav" data-dir="-1">◀</button>
-                        <span class="datepicker-month-year"></span>
-                        <button class="datepicker-nav" data-dir="1">▶</button>
+                    <div class="x-datepicker__popup">
+                      <div class="x-datepicker__head">
+                        <button type="button" class="x-datepicker__nav" data-dir="-1">‹</button>
+                        <span class="x-datepicker__monthyear"></span>
+                        <button type="button" class="x-datepicker__nav" data-dir="1">›</button>
                       </div>
-                      <div class="datepicker-weekdays"><span>CN</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span></div>
-                      <div class="datepicker-grid"></div>
+                      <div class="x-datepicker__weekdays"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
+                      <div class="x-datepicker__grid"></div>
                     </div>
                   </div>
                 </div>
-                <div class="col-6">
-                  <div class="field-label">Kết thúc</div>
-                  <div class="ableton-datepicker" id="endDatePicker" tabindex="0">
-                    <div class="datepicker-display">
-                      <span class="datepicker-value tnum" id="endDateText"></span>
-                      <span class="datepicker-icon">
+                <div class="x-field-row">
+                  <label class="x-field-row__label">Kết thúc</label>
+                  <div class="x-datepicker" id="endDatePicker" tabindex="0">
+                    <div class="x-datepicker__display">
+                      <span class="x-datepicker__value tnum" id="endDateText"></span>
+                      <span class="x-datepicker__icon">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
                       </span>
                     </div>
-                    <div class="datepicker-popup">
-                      <div class="datepicker-header">
-                        <button class="datepicker-nav" data-dir="-1">◀</button>
-                        <span class="datepicker-month-year"></span>
-                        <button class="datepicker-nav" data-dir="1">▶</button>
+                    <div class="x-datepicker__popup">
+                      <div class="x-datepicker__head">
+                        <button type="button" class="x-datepicker__nav" data-dir="-1">‹</button>
+                        <span class="x-datepicker__monthyear"></span>
+                        <button type="button" class="x-datepicker__nav" data-dir="1">›</button>
                       </div>
-                      <div class="datepicker-weekdays"><span>CN</span><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span></div>
-                      <div class="datepicker-grid"></div>
+                      <div class="x-datepicker__weekdays"><span>T2</span><span>T3</span><span>T4</span><span>T5</span><span>T6</span><span>T7</span><span>CN</span></div>
+                      <div class="x-datepicker__grid"></div>
                     </div>
                   </div>
                 </div>
@@ -181,60 +185,67 @@
               <span class="csection__idx">02</span>
               <span class="csection__title">Nền tảng & Thiết bị</span>
               <span class="eyebrow">Platform</span>
+              <span class="csection__total tnum" id="platformSectionTotal">0</span>
             </div>
             <div class="csection__body">
-              <!-- Account Fee -->
-              <div class="platform-row">
-                <div class="platform-left">
-                  <button class="toggle-btn on" id="accountToggle">BẬT</button>
-                  <div class="platform-info">
-                    <div class="platform-name">Phí tài khoản NCT</div>
-                    <div class="platform-desc">600.000 ₫ / năm · prorated theo chu kỳ</div>
+              <div class="x-row">
+                <div class="x-row__lhs">
+                  <button type="button" class="x-toggle-pill is-on" id="accountToggle"
+                    data-info="Account Fee toggle|Bật/tắt phí tài khoản NCT 600.000₫/năm.|—">BẬT</button>
+                  <div class="x-row__info">
+                    <div class="x-row__name">Phí tài khoản NCT</div>
+                    <div class="x-row__desc">600.000 ₫ / năm · prorated theo chu kỳ</div>
                   </div>
                 </div>
-                <div class="platform-right" id="accountFeeRight">
-                  <div class="fader-header">
-                    <span class="field-label">Chiết khấu (chung)</span>
-                    <div class="fader-val"><span id="discountAccountVal" class="value-box value-box-accent">0</span><span class="fader-pct">%</span></div>
+                <div class="x-row__rhs" id="accountFeeRight">
+                  <div class="x-fader-row">
+                    <span class="label">Chiết khấu</span>
+                    <span class="x-fader-readout">
+                      <span class="x-fader-readout__val tnum" id="discountAccountVal">0</span>
+                      <span class="x-fader-readout__unit">%</span>
+                    </span>
                   </div>
-                  <input id="discountAccount" type="range" min="0" max="100" step="5" value="0" class="fader fader-accent">
+                  <input id="discountAccount" type="range" min="0" max="100" step="5" value="0" class="x-fader"
+                    data-info="Discount · Account|Chiết khấu chung cho phí tài khoản.|—">
                 </div>
               </div>
 
-              <!-- Box Fee (Global) -->
-              <div class="platform-row">
-                <div class="platform-left">
-                  <div class="platform-info">
-                    <div class="platform-name">Box phát nhạc (streaming device)</div>
-                    <div class="platform-desc" id="boxPriceDesc">Chọn hình thức trang bị cho mỗi chi nhánh</div>
+              <div class="x-divider" style="margin: var(--s-4) 0;"></div>
+
+              <div class="x-row">
+                <div class="x-row__lhs">
+                  <div class="x-row__info">
+                    <div class="x-row__name">Box phát nhạc</div>
+                    <div class="x-row__desc" id="boxPriceDesc">Chọn hình thức trang bị cho mỗi chi nhánh</div>
                   </div>
                 </div>
-                <div class="platform-right">
-                  <div class="fader-header">
-                    <span class="field-label">Hình thức</span>
+                <div class="x-row__rhs">
+                  <div class="x-fader-row">
+                    <span class="label">Hình thức</span>
                   </div>
-                  <div class="segmented-control" id="boxModeControl">
-                    <button class="seg-btn active" data-mode="none"><span>KHÔNG</span></button>
-                    <button class="seg-btn" data-mode="buy"><span>MUA</span></button>
-                    <button class="seg-btn" data-mode="rent"><span>THUÊ</span></button>
+                  <div class="x-seg" id="boxModeSeg">
+                    <button type="button" class="x-seg__btn is-active" data-mode="none">Không</button>
+                    <button type="button" class="x-seg__btn" data-mode="buy">Mua</button>
+                    <button type="button" class="x-seg__btn" data-mode="rent">Thuê</button>
                   </div>
                   
-                  <div id="boxQuantityRow" class="box-quantity-row hidden">
-                    <div class="fader-header" style="margin-top:14px">
-                      <span class="field-label">Số lượng</span>
-                      <div class="box-counter">
-                        <button id="boxMinus" class="counter-btn">−</button>
-                        <input id="boxCount" type="number" min="1" value="1" class="counter-input tnum">
-                        <button id="boxPlus" class="counter-btn">+</button>
-                      </div>
+                  <div class="x-fader-row" id="boxQuantityRow" hidden style="margin-top:14px;">
+                    <span class="label">Số lượng</span>
+                    <div class="x-counter">
+                      <button type="button" id="boxMinus" class="x-counter__btn">−</button>
+                      <input id="boxCount" type="number" min="1" value="1" class="x-counter__input tnum">
+                      <button type="button" id="boxPlus" class="x-counter__btn">+</button>
                     </div>
                   </div>
-                  <div id="boxDiscountRow" class="hidden" style="margin-top: 14px;">
-                    <div class="fader-header">
-                      <span class="field-label">Chiết khấu (chung)</span>
-                      <div class="fader-val"><span id="discountBoxVal" class="value-box value-box-accent">0</span><span class="fader-pct">%</span></div>
+                  <div id="boxDiscountRow" hidden style="margin-top: 14px;">
+                    <div class="x-fader-row">
+                      <span class="label">Chiết khấu</span>
+                      <div class="x-fader-readout">
+                        <span id="discountBoxVal" class="x-fader-readout__val tnum">0</span>
+                        <span class="x-fader-readout__unit">%</span>
+                      </div>
                     </div>
-                    <input id="discountBox" type="range" min="0" max="100" step="5" value="0" class="fader fader-accent">
+                    <input id="discountBox" type="range" min="0" max="100" step="5" value="0" class="x-fader">
                   </div>
                 </div>
               </div>
@@ -248,62 +259,69 @@
               <span class="csection__idx">03</span>
               <span class="csection__title">Bản quyền</span>
               <span class="eyebrow">Nhà nước</span>
+              <span class="csection__total tnum" id="copyrightSectionTotal">0</span>
             </div>
             
             <div class="csection__body">
-              <!-- QTG -->
-              <div class="copyright-row">
-                <div class="copyright-left">
-                  <button class="toggle-btn on" id="qtgToggle">BẬT</button>
-                  <div class="copyright-info">
-                    <div class="copyright-name">Quyền Tác giả</div>
-                    <div class="copyright-meta">
+              <div class="x-row x-row--copyright">
+                <div class="x-row__lhs">
+                  <button type="button" class="x-toggle-pill is-on" id="qtgToggle"
+                    data-info="QTG toggle|Bật/tắt quyền tác giả VCPMC.|—">BẬT</button>
+                  <div class="x-row__info">
+                    <div class="x-row__name">Quyền Tác giả</div>
+                    <div class="x-row__desc">
                       <span>VCPMC</span><span class="dot">·</span>
-                      <span class="tnum" id="qtgCoef">Hệ số 1.75</span><span class="dot">·</span>
+                      <span>Hệ số <span class="tnum" id="qtgCoef">1.75</span></span><span class="dot">·</span>
                       <span class="tnum" id="qtgDur">12.0m</span>
                     </div>
                   </div>
                 </div>
-                <div class="copyright-mid">
-                  <div class="fader-header">
-                    <span class="field-label">Chiết khấu (chung)</span>
-                    <div class="fader-val"><span id="discountQTGVal" class="value-box value-box-accent">0</span><span
-                        class="fader-pct">%</span></div>
+                <div class="x-row__rhs">
+                  <div class="x-fader-row">
+                    <span class="label">Chiết khấu</span>
+                    <span class="x-fader-readout">
+                      <span id="discountQTGVal" class="x-fader-readout__val tnum">0</span>
+                      <span class="x-fader-readout__unit">%</span>
+                    </span>
                   </div>
-                  <input id="discountQTG" type="range" min="0" max="100" step="5" value="0" class="fader fader-accent">
+                  <input id="discountQTG" type="range" min="0" max="100" step="5" value="0" class="x-fader"
+                    data-info="Discount · QTG|Chiết khấu chung cho quyền tác giả.|—">
                 </div>
-                <div class="copyright-right">
-                  <div class="field-label">Thành tiền</div>
-                  <div class="copyright-amount tnum" id="qtgAmount">0 <span class="currency">₫</span></div>
+                <div class="x-row__amount">
+                  <div class="label">Thành tiền</div>
+                  <div class="x-vbox tnum" id="qtgAmount" style="font-size: var(--t-readout); padding: 4px 8px; min-width: 110px;">0</div>
                 </div>
               </div>
 
-              <div class="divider"></div>
+              <div class="x-divider" style="margin: var(--s-4) 0;"></div>
 
-              <!-- QLQ -->
-              <div class="copyright-row">
-                <div class="copyright-left">
-                  <button class="toggle-btn on" id="qlqToggle">BẬT</button>
-                  <div class="copyright-info">
-                    <div class="copyright-name">Quyền Liên quan</div>
-                    <div class="copyright-meta">
+              <div class="x-row x-row--copyright">
+                <div class="x-row__lhs">
+                  <button type="button" class="x-toggle-pill is-on" id="qlqToggle"
+                    data-info="QLQ toggle|Bật/tắt quyền liên quan NCT.|—">BẬT</button>
+                  <div class="x-row__info">
+                    <div class="x-row__name">Quyền Liên quan</div>
+                    <div class="x-row__desc">
                       <span>NCT</span><span class="dot">·</span>
-                      <span class="tnum" id="qlqCoef">Hệ số 1.75</span><span class="dot">·</span>
+                      <span>Hệ số <span class="tnum" id="qlqCoef">1.75</span></span><span class="dot">·</span>
                       <span class="tnum" id="qlqDur">12.0m</span>
                     </div>
                   </div>
                 </div>
-                <div class="copyright-mid">
-                  <div class="fader-header">
-                    <span class="field-label">Chiết khấu (chung)</span>
-                    <div class="fader-val"><span id="discountQLQVal" class="value-box value-box-accent">0</span><span
-                        class="fader-pct">%</span></div>
+                <div class="x-row__rhs">
+                  <div class="x-fader-row">
+                    <span class="label">Chiết khấu</span>
+                    <span class="x-fader-readout">
+                      <span id="discountQLQVal" class="x-fader-readout__val tnum">0</span>
+                      <span class="x-fader-readout__unit">%</span>
+                    </span>
                   </div>
-                  <input id="discountQLQ" type="range" min="0" max="100" step="5" value="0" class="fader fader-accent">
+                  <input id="discountQLQ" type="range" min="0" max="100" step="5" value="0" class="x-fader"
+                    data-info="Discount · QLQ|Chiết khấu chung cho quyền liên quan.|—">
                 </div>
-                <div class="copyright-right">
-                  <div class="field-label">Thành tiền</div>
-                  <div class="copyright-amount tnum" id="qlqAmount">0 <span class="currency">₫</span></div>
+                <div class="x-row__amount">
+                  <div class="label">Thành tiền</div>
+                  <div class="x-vbox tnum" id="qlqAmount" style="font-size: var(--t-readout); padding: 4px 8px; min-width: 110px;">0</div>
                 </div>
               </div>
             </div>
