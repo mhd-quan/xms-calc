@@ -1,12 +1,5 @@
 import type { RenderSnapshot } from '../app';
-
-const BRANCH_PALETTE = [
-  ['rust', 5],
-  ['amber', 5],
-  ['moss', 5],
-  ['teal', 5],
-  ['stone', 5]
-] as const;
+import { paletteVar } from './palette';
 
 export function renderTopbar(snapshot: RenderSnapshot): void {
   const activeStore = snapshot.activeStore;
@@ -16,13 +9,8 @@ export function renderTopbar(snapshot: RenderSnapshot): void {
 
   const colorEl = getElement('bcBranchColor');
   if (colorEl) {
-    colorEl.style.background = branchColor(snapshot.activeStoreIndex);
+    colorEl.style.background = paletteVar(snapshot.activeStoreIndex);
   }
-}
-
-function branchColor(index: number): string {
-  const [hue, step] = BRANCH_PALETTE[Math.max(0, index) % BRANCH_PALETTE.length] ?? BRANCH_PALETTE[0];
-  return `var(--p-${hue}-${step})`;
 }
 
 function setText(id: string, value: string): void {

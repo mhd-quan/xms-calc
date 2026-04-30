@@ -15,6 +15,9 @@ import {
 } from '../services/quote-payload';
 
 import gsap from './vendor/gsap-lite';
+import { formatVND } from './modules/format';
+import { paletteVar } from './modules/palette';
+import { renderSidebar } from './modules/render-sidebar';
 import { renderTopbar } from './modules/render-topbar';
 
 import type {
@@ -47,6 +50,11 @@ function closestFromEvent<T extends Element>(event: Event, selector: string): T 
 
 function optionalElement(id: string): HTMLElement | null {
   return document.getElementById(id) as HTMLElement | null;
+}
+
+function clearSidebarSearch(): void {
+  const searchInput = optionalElement('searchInput');
+  if (searchInput instanceof HTMLInputElement) searchInput.value = '';
 }
 
 function valueFromEvent(event: Event): string {
@@ -104,7 +112,6 @@ let pendingPersistSerialized: string | null = null;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 let persistPromise: Promise<unknown> = Promise.resolve();
 
-const formatVND = (n: number | string) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
 const HTML_ENTITIES: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -324,7 +331,7 @@ function hydrateEditorFromRevision(revision: QuoteRevision): void {
 
   stores = snapshot.stores.length ? snapshot.stores : [createStore(1)];
   activeTabId = stores[0]?.id || null;
-  document.getElementById('searchInput').value = '';
+  clearSidebarSearch();
 
   invalidateComputedQuote();
   draftSnapshotCache = null;
@@ -379,10 +386,14 @@ function readPreparedByFields(): PreparedByProfile {
 }
 
 function renderQuoteChrome() {
-  document.getElementById('historyQuoteCode').textContent = activeQuoteCode || '-';
-  document.getElementById('historyDisplayQuoteNumber').textContent = activeDisplayQuoteNumber || '-';
-  document.getElementById('historyRevisionLabel').textContent = revisionLabel(activeRevisionNumber);
-  document.getElementById('historyStatusChip').textContent = statusLabel(activeRevisionStatus);
+  const sidebarStatusText = optionalElement('quoteStatusText');
+  if (sidebarStatusText) sidebarStatusText.textContent = statusLabel(activeRevisionStatus);
+  const sidebarStatusChip = optionalElement('quoteStatusChip');
+  if (sidebarStatusChip) {
+    sidebarStatusChip.classList.toggle('x-chip--status-draft', activeRevisionStatus === 'draft');
+    sidebarStatusChip.classList.toggle('x-chip--status-sent', activeRevisionStatus === 'imported');
+    sidebarStatusChip.classList.toggle('x-chip--status-accepted', activeRevisionStatus === 'exported');
+  }
 
   const bottomQuoteCode = document.getElementById('bottomQuoteCode');
   if (bottomQuoteCode) bottomQuoteCode.textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
@@ -394,15 +405,17 @@ function renderQuoteChrome() {
   if (statusRevisionState) statusRevisionState.textContent = statusLabel(activeRevisionStatus);
 
   const revisionList = document.getElementById('revisionList');
-  revisionList.innerHTML = revisionsForQuote.map((revision) => `
-    <button class="revision-item${revision.id === activeRevisionId ? ' active' : ''}" data-revision-id="${revision.id}">
-      <div class="revision-item-main">
-        <strong>${escapeHTML(revision.displayQuoteNumber)}</strong>
-        <span>${escapeHTML(revisionLabel(revision.revisionNumber))}</span>
-      </div>
-      <span class="status-chip">${escapeHTML(statusLabel(revision.status))}</span>
-    </button>
-  `).join('');
+  if (revisionList) {
+    revisionList.innerHTML = revisionsForQuote.map((revision) => `
+      <button class="revision-item${revision.id === activeRevisionId ? ' active' : ''}" data-revision-id="${revision.id}">
+        <div class="revision-item-main">
+          <strong>${escapeHTML(revision.displayQuoteNumber)}</strong>
+          <span>${escapeHTML(revisionLabel(revision.revisionNumber))}</span>
+        </div>
+        <span class="status-chip">${escapeHTML(statusLabel(revision.status))}</span>
+      </button>
+    `).join('');
+  }
 }
 
 function openCustomerModal() {
@@ -631,7 +644,7 @@ function addStore() {
   }
   stores.push(store);
   activeTabId = store.id;
-  document.getElementById('searchInput').value = '';
+  clearSidebarSearch();
   commitQuoteMutation();
   gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.25 });
 }
@@ -703,7 +716,7 @@ function renderBulkRows(focusIndex: number | null = null): void {
   if (bulkAreas.length === 0) bulkAreas = [''];
   const startIndex = stores.length + 1;
   rowsEl.innerHTML = bulkAreas.map((value, index) => {
-    const color = STORE_COLORS[(startIndex + index - 1) % STORE_COLORS.length];
+    const color = paletteVar(startIndex + index - 1);
     return `
       <div class="bulk-row" data-index="${index}" style="--bulk-row-color: ${color}">
         <div class="bulk-index">${String(startIndex + index).padStart(2, '0')}</div>
@@ -759,11 +772,6 @@ function addBulkRows() {
   commitQuoteMutation();
 }
 
-const STORE_COLORS = [
-  '#D4715A', '#E9AD62', '#8EAF76', '#5AA89C', '#7177A8', '#A678A8',
-  '#968E82', '#C4604C', '#B8742E', '#678A4F', '#3F8F86', '#5C638F'
-];
-
 function animateNumber(elementId: string, newValue: number): void {
   const el = document.getElementById(elementId);
   if (!el) return;
@@ -791,52 +799,6 @@ function setNumberImmediate(elementId: string, newValue: number, options: { pref
   el._lastValue = newValue;
   if (el._tweenObj) gsap.killTweensOf(el._tweenObj);
   el.textContent = `${options.prefix || ''}${formatVND(newValue)}`;
-}
-
-function renderSidebar(snapshot: RenderSnapshot): void {
-  const search = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = stores.filter((store) => store.name.toLowerCase().includes(search));
-  const list = document.getElementById('storeList');
-  const clearBtn = document.getElementById('searchClear');
-  clearBtn.classList.toggle('hidden', !search);
-
-  let html = '';
-  if (filtered.length === 0) {
-    html = '<div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:32px;letter-spacing:0.04em">Không tìm thấy chi nhánh</div>';
-  } else {
-    const maxTotal = snapshot.maxStoreTotal;
-    html = filtered.map((store) => {
-      const realIdx = stores.indexOf(store);
-      const isActive = store.id === activeTabId;
-      const total = snapshot.breakdownsById.get(store.id)?.total || 0;
-      const color = STORE_COLORS[realIdx % STORE_COLORS.length];
-      const pct = Math.min(100, maxTotal ? (total / maxTotal) * 100 : 0);
-
-      return `<div class="store-item${isActive ? ' active' : ''}" data-id="${store.id}" data-name="${store.name}">
-        <div class="store-item-color" style="background-color: ${color}"></div>
-        <div class="store-item-content">
-          <div class="store-item-header">
-            <span class="store-item-badge" style="background-color: ${color}">${String(realIdx + 1).padStart(2, '0')}</span>
-            <span class="store-item-name">${store.name}</span>
-          </div>
-          <div class="store-item-meta">
-            <span>${store.type && BUSINESS_TYPES[store.type]?.short ? BUSINESS_TYPES[store.type]?.short : 'CHƯA CHỌN'}</span>
-            <span class="dot">·</span>
-            <span class="tnum">${store.area ? `${store.area}m²` : '--m²'}</span>
-          </div>
-          <div class="store-item-total">${formatVND(total)} ₫</div>
-          <div class="store-vu"><div class="store-vu-fill" style="width: ${pct}%; background-color: ${color}"></div></div>
-        </div>
-        ${stores.length > 1 ? `<button class="store-item-remove" data-remove="${store.id}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>` : ''}
-      </div>`;
-    }).join('');
-  }
-
-  if (list.innerHTML !== html) {
-    list.innerHTML = html;
-  }
 }
 
 function renderMain(snapshot: RenderSnapshot): void {
@@ -999,6 +961,8 @@ function createRenderSnapshot() {
   return {
     quote,
     breakdownsById,
+    stores,
+    activeTabId,
     activeStore,
     activeStoreIndex,
     activeBreakdown,
@@ -1136,21 +1100,27 @@ function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, ma
 }
 
 function bindEvents() {
-  document.getElementById('searchInput').addEventListener('input', () => render('sidebar'));
-  document.getElementById('searchClear').addEventListener('click', () => {
-    document.getElementById('searchInput').value = '';
-    render('sidebar');
-  });
+  const searchInput = optionalElement('searchInput');
+  const searchClear = optionalElement('searchClear');
+  if (searchInput instanceof HTMLInputElement) {
+    searchInput.addEventListener('input', () => render('sidebar'));
+  }
+  if (searchInput instanceof HTMLInputElement && searchClear) {
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      render('sidebar');
+    });
+  }
 
   document.getElementById('storeList').addEventListener('click', (event) => {
-    const removeBtn = closestFromEvent(event, '.store-item-remove');
+    const removeBtn = closestFromEvent(event, '[data-remove]');
     if (removeBtn) {
       event.stopPropagation();
       removeStore(parseFloat(removeBtn.dataset.remove ?? '0'));
       return;
     }
 
-    const item = closestFromEvent(event, '.store-item');
+    const item = closestFromEvent(event, '.x-track');
     if (!item) return;
     const newId = parseFloat(item.dataset.id ?? '0');
     if (newId !== activeTabId) {
@@ -1160,14 +1130,17 @@ function bindEvents() {
     }
   });
 
-  document.getElementById('revisionList').addEventListener('click', async (event) => {
-    const item = closestFromEvent(event, '[data-revision-id]');
-    if (!item) return;
-    const revisionId = Number(item.dataset.revisionId);
-    if (!revisionId || revisionId === activeRevisionId) return;
-    await flushDraftPersist();
-    await loadRevisionById(revisionId);
-  });
+  const revisionList = optionalElement('revisionList');
+  if (revisionList) {
+    revisionList.addEventListener('click', async (event) => {
+      const item = closestFromEvent(event, '[data-revision-id]');
+      if (!item) return;
+      const revisionId = Number(item.dataset.revisionId);
+      if (!revisionId || revisionId === activeRevisionId) return;
+      await flushDraftPersist();
+      await loadRevisionById(revisionId);
+    });
+  }
 
   document.getElementById('addStoreBtn').addEventListener('click', addStore);
 

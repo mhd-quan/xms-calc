@@ -36,74 +36,33 @@
 
     <!-- SIDEBAR -->
     <aside id="sidebar" class="sidebar">
-      <div class="sidebar-brand">
-        <div class="brand-row">
-          <svg class="brand-mark" width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="50" fill="#000" />
-            <defs>
-              <linearGradient id="nctG" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#CFF533" />
-                <stop offset="100%" stop-color="#44CCFF" />
-              </linearGradient>
-            </defs>
-            <ellipse cx="26" cy="50" rx="3.2" ry="13" fill="#BBF0FF" opacity=".9" />
-            <ellipse cx="38" cy="50" rx="3.2" ry="25" fill="url(#nctG)" />
-            <ellipse cx="50" cy="50" rx="3.2" ry="9" fill="#BBF0FF" opacity=".9" />
-            <ellipse cx="62" cy="50" rx="3.2" ry="25" fill="url(#nctG)" />
-            <ellipse cx="74" cy="50" rx="3.2" ry="13" fill="#BBF0FF" opacity=".9" />
-          </svg>
-          <div class="brand-text">
-            <div class="brand-name">XMUSIC STATION</div>
-            <div class="brand-sub">ROYALTY CALCULATOR</div>
-          </div>
-        </div>
-        <div class="brand-decree">
-          <span class="signal-dot"></span>
-          <span>ND 17/2023 · Phụ lục 2</span>
+      <div class="sidebar__head">
+        <div class="eyebrow">QUOTE CHAIN</div>
+        <span class="x-chip" id="quoteStatusChip">
+          <span class="x-chip__dot"></span>
+          <span id="quoteStatusText">DRAFT</span>
+        </span>
+      </div>
+
+      <div class="sidebar__customer">
+        <div class="sidebar__customer__name" id="sidebarCustomerName">—</div>
+        <div class="sidebar__customer__id">
+          <span id="sidebarCustomerId">—</span> · QUOTE <span id="sidebarQuoteCode">—</span>
         </div>
       </div>
 
-      <section class="quote-history-panel">
-        <div class="quote-history-head">
-          <div>
-            <div class="panel-label">Quote Chain</div>
-            <strong id="historyQuoteCode">-</strong>
-          </div>
-          <span id="historyStatusChip" class="status-chip">Draft</span>
-        </div>
-        <div class="quote-history-meta">
-          <span id="historyDisplayQuoteNumber">-</span>
-          <span id="historyRevisionLabel">Base</span>
-        </div>
-        <div id="revisionList" class="revision-list"></div>
-      </section>
-
-      <div class="sidebar-search">
-        <div class="search-wrap">
-          <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="1.8">
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-          <input id="searchInput" type="text" placeholder="Tìm cửa hàng" autocomplete="off">
-          <button id="searchClear" class="search-clear hidden">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M18 6 6 18M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
+      <div class="sidebar__group-label">
+        <span>Chi nhánh · <span id="branchCount">0</span></span>
+        <span class="count tnum" id="branchLineCount">0 lines</span>
       </div>
 
-      <div id="storeList" class="sidebar-list"></div>
+      <div id="storeList"></div>
 
-      <div class="sidebar-add">
-        <button id="addStoreBtn" class="add-store-btn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          <span>Thêm chi nhánh</span>
-        </button>
-      </div>
+      <button id="addStoreBtn" class="x-btn" style="width:100%; margin-top:12px; justify-content:flex-start; gap:8px;"
+        data-info="Add Branch|Thêm chi nhánh mới.|⌘N">
+        <span style="font-size:14px; line-height:1; margin-top:-2px;">+</span>
+        <span>Add branch</span>
+      </button>
     </aside>
 
     <!-- WORKBENCH -->
