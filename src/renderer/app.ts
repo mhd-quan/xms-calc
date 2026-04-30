@@ -19,6 +19,7 @@ import { formatVND } from './modules/format';
 import { paletteVar } from './modules/palette';
 import { renderSidebar } from './modules/render-sidebar';
 import { renderTopbar } from './modules/render-topbar';
+import { renderWorkbench } from './modules/render-workbench';
 
 import type {
   CalcOptions,
@@ -808,19 +809,9 @@ function renderMain(snapshot: RenderSnapshot): void {
   const breakdown = snapshot.activeBreakdown;
   const duration = breakdown?.duration ?? calculateDurationMonths(store.startDate, store.endDate);
   const coef = breakdown?.coef ?? calculateCoef(store.type, area);
-  const storeTotal = breakdown?.total || 0;
-  const storeIdx = snapshot.activeStoreIndex;
 
   const statusBranchName = document.getElementById('statusBranchName');
   if (statusBranchName) statusBranchName.textContent = store.name;
-
-  document.getElementById('storeIndex').textContent = `Chi nhánh ${String(storeIdx + 1).padStart(2, '0')} / ${String(stores.length).padStart(2, '0')}`;
-  const nameInput = document.getElementById('storeName');
-  if (document.activeElement !== nameInput) nameInput.value = store.name;
-
-  document.getElementById('statDuration').textContent = duration.toFixed(1);
-  document.getElementById('statCoef').textContent = coef.toFixed(2);
-  animateNumber('statStoreTotal', storeTotal);
 
   const typeText = document.getElementById('businessTypeText');
   const storeTypeMeta = store.type ? BUSINESS_TYPES[store.type] : undefined;
@@ -1002,7 +993,10 @@ function render(scope: RenderScope = 'all'): void {
     const snapshot = createRenderSnapshot();
     renderTopbar(snapshot);
     if (renderScope.has('sidebar')) renderSidebar(snapshot);
-    if (renderScope.has('main')) renderMain(snapshot);
+    if (renderScope.has('main')) {
+      renderWorkbench(snapshot);
+      renderMain(snapshot);
+    }
     if (renderScope.has('totals')) renderBottomBar(snapshot);
     renderScope.clear();
   });
@@ -1142,6 +1136,17 @@ function bindEvents() {
     });
   }
 
+  const cycleSeg = optionalElement('cycleSeg');
+  if (cycleSeg) {
+    cycleSeg.addEventListener('click', (event) => {
+      const button = closestFromEvent(event, '.x-seg__btn');
+      if (!button || !button.dataset.cycle) return;
+      cycleSeg.querySelectorAll('.x-seg__btn').forEach((el) => {
+        el.classList.toggle('is-active', el === button);
+      });
+    });
+  }
+
   document.getElementById('addStoreBtn').addEventListener('click', addStore);
 
   const bulkAddModal = document.getElementById('bulkAddModal');
@@ -1203,7 +1208,7 @@ function bindEvents() {
     renderBulkRows(nextIndex);
   });
 
-  document.getElementById('storeName').addEventListener('input', (event) => updateActive('name', valueFromEvent(event)));
+  document.getElementById('workBranchTitle').addEventListener('input', (event) => updateActive('name', valueFromEvent(event)));
   document.getElementById('areaInput').addEventListener('input', (event) => updateActive('area', valueFromEvent(event)));
 
   const dd = document.getElementById('businessType');
@@ -1268,11 +1273,12 @@ function bindEvents() {
     });
   });
 
-  document.querySelectorAll('.section-header').forEach((header) => {
+  document.querySelectorAll('.csection__head').forEach((header) => {
     header.addEventListener('click', () => {
-      const section = header.closest('.section');
+      const section = header.closest('.csection');
       if (!section) return;
-      const body = section.querySelector('.section-body');
+      const body = section.querySelector('.csection__body');
+      if (!body) return;
       const isCollapsed = section.classList.contains('collapsed');
 
       if (isCollapsed) {

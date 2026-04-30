@@ -67,40 +67,43 @@
 
     <!-- WORKBENCH -->
     <div class="work" id="mainContent">
-      <div class="content-scroll">
-        <div class="content-inner">
-          <!-- STORE HEADLINE -->
-          <div class="store-headline">
-            <div class="headline-eyebrow" id="storeIndex">Chi nhánh 01 / 01</div>
-            <div class="headline-row">
-              <input id="storeName" type="text" class="headline-name" value="Chi nhánh 1">
-              <div class="headline-stats">
-                <div class="stat-block">
-                  <div class="stat-label">Chu kỳ</div>
-                  <div class="stat-value"><span id="statDuration" class="value-box tnum">12.0</span><span class="stat-unit">tháng</span></div>
-                </div>
-                <div class="stat-block">
-                  <div class="stat-label">Hệ số</div>
-                  <div class="stat-value"><span id="statCoef" class="value-box tnum">1.75</span></div>
-                </div>
-                <div class="stat-block stat-hero">
-                  <div class="stat-label">Tổng (pre-VAT)</div>
-                  <div class="stat-value accent tnum" id="statStoreTotal">0 <span class="stat-unit">₫</span></div>
-                </div>
-              </div>
-            </div>
+      <div class="work__head">
+        <div class="work__identity">
+          <div class="work__subtitle">
+            <span class="x-breadcrumb__color" id="workBranchColor"></span>
+            <span id="workBranchBadge">B-01</span> ·
+            <span id="workStoreCount">1</span> STORES ·
+            <span id="workLineCount">3</span> LINES
           </div>
+          <input type="text" id="workBranchTitle" class="work__title" value="Chi nhánh 1"
+            data-info="Branch name|Đổi tên chi nhánh đang chọn.|—">
+        </div>
+        <div class="work__controls">
+          <div class="x-seg" id="cycleSeg" style="height:24px;">
+            <button type="button" class="x-seg__btn is-active" data-cycle="m" style="min-width:44px; font-size:9px;"
+              data-info="Per month|Hiển thị theo tháng.|M">Tháng</button>
+            <button type="button" class="x-seg__btn" data-cycle="q" style="min-width:44px; font-size:9px;"
+              data-info="Per quarter|Hiển thị theo quý.|Q">Quý</button>
+            <button type="button" class="x-seg__btn" data-cycle="y" style="min-width:44px; font-size:9px;"
+              data-info="Per year|Hiển thị theo năm.|Y">Năm</button>
+          </div>
+          <button type="button" class="x-btn" style="height:24px; font-size:9.5px;" id="workDateRangeBtn"
+            data-info="Date range|Khoảng ngày hiệu lực của chi nhánh đang chọn.|—">
+            <span class="tnum" id="workDateRangeText">—</span>
+          </button>
+        </div>
+      </div>
 
+      <div id="csectionList">
           <!-- SECTION 01 — FACILITY -->
-          <section class="section" id="section01">
-            <div class="section-header">
-              <button class="fold-toggle">▼</button>
-              <span class="section-idx">01</span>
-              <span class="section-title">Cơ sở vật chất</span>
-              <span class="section-line"></span>
-              <span class="section-sub">Facility Profile</span>
+          <section class="csection is-active" id="section01">
+            <div class="csection__head" data-section="01"
+              data-info="Section 01 · Cơ sở vật chất|Mô hình kinh doanh + diện tích + chu kỳ.|—">
+              <span class="csection__idx">01</span>
+              <span class="csection__title">Cơ sở vật chất</span>
+              <span class="eyebrow">Facility Profile</span>
             </div>
-            <div class="section-body">
+            <div class="csection__body">
               <div class="grid-12">
                 <div class="col-7">
                   <div class="field-label">Mô hình kinh doanh</div>
@@ -172,15 +175,14 @@
           </section>
 
           <!-- SECTION 02 — PLATFORM -->
-          <section class="section" id="section02">
-            <div class="section-header">
-              <button class="fold-toggle">▼</button>
-              <span class="section-idx">02</span>
-              <span class="section-title">Nền tảng & Thiết bị</span>
-              <span class="section-line"></span>
-              <span class="section-sub">Platform</span>
+          <section class="csection" id="section02">
+            <div class="csection__head" data-section="02"
+              data-info="Section 02 · Nền tảng & Thiết bị|Phí tài khoản + box phát nhạc.|—">
+              <span class="csection__idx">02</span>
+              <span class="csection__title">Nền tảng & Thiết bị</span>
+              <span class="eyebrow">Platform</span>
             </div>
-            <div class="section-body">
+            <div class="csection__body">
               <!-- Account Fee -->
               <div class="platform-row">
                 <div class="platform-left">
@@ -240,16 +242,15 @@
           </section>
 
           <!-- SECTION 03 — COPYRIGHT -->
-          <section class="section section-last" id="section03">
-            <div class="section-header">
-              <button class="fold-toggle">▼</button>
-              <span class="section-idx">03</span>
-              <span class="section-title">Bản quyền</span>
-              <span class="section-line"></span>
-              <span class="section-sub">Nhà nước</span>
+          <section class="csection" id="section03">
+            <div class="csection__head" data-section="03"
+              data-info="Section 03 · Bản quyền|Quyền tác giả + quyền liên quan.|—">
+              <span class="csection__idx">03</span>
+              <span class="csection__title">Bản quyền</span>
+              <span class="eyebrow">Nhà nước</span>
             </div>
             
-            <div class="section-body">
+            <div class="csection__body">
               <!-- QTG -->
               <div class="copyright-row">
                 <div class="copyright-left">
@@ -308,8 +309,16 @@
             </div>
           </section>
 
-        </div>
       </div>
+
+        <div class="work__section-actions">
+          <span class="eyebrow">Add new section</span>
+          <div class="work__section-action-buttons">
+            <button type="button" class="x-btn" style="font-size:9.5px;" id="btnAddSection">+ Section</button>
+            <button type="button" class="x-btn" style="font-size:9.5px;" id="btnDuplicateBranch"
+              data-info="Duplicate|Sao chép chi nhánh hiện tại.|⌘D">Duplicate branch</button>
+          </div>
+        </div>
     </div>
 
     <!-- BOTTOM BAR -->
