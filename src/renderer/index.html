@@ -341,60 +341,51 @@
 
     <!-- BOTTOM BAR -->
     <div class="bottombar">
-      <div class="bottombar-inner">
-        <div class="bottom-info-view">
-          <div class="bottom-info-head">
-            <span>XMS Calculator</span>
-            <span id="bottomStatusText" class="tnum">Draft</span>
-          </div>
-          <div class="bottom-info-desc">
-            <span id="bottomQuoteCode" class="tnum">XMS-000000-000</span>
-            <span class="dot">·</span>
-            <span id="bottomBranchCount" class="tnum">1 chi nhánh</span>
-            <span class="dot">·</span>
-            <span>ND 17/2023</span>
+      <div class="x-infoview" id="infoview">
+        <div class="x-infoview__head">
+          <span class="x-infoview__name" id="infoName">XMS Calculator</span>
+          <span class="x-infoview__shortcut" id="infoShortcut"></span>
+        </div>
+        <div class="x-infoview__desc" id="infoDesc">Hover bất kỳ control nào để xem mô tả + phím tắt.</div>
+      </div>
+
+      <div class="bottombar__breakdown">
+        <div class="bottombar__breakdown__cell" data-info="Quyền tác giả|Tổng phí VCPMC của toàn bộ chi nhánh.|—">
+          <div class="bottombar__breakdown__label">Q. Tác Giả</div>
+          <div class="bottombar__breakdown__val tnum" id="totalQTG">0 ₫</div>
+        </div>
+        <div class="bottombar__breakdown__cell" data-info="Quyền liên quan|Tổng phí NCT của toàn bộ chi nhánh.|—">
+          <div class="bottombar__breakdown__label">Q. Liên Quan</div>
+          <div class="bottombar__breakdown__val tnum" id="totalQLQ">0 ₫</div>
+        </div>
+        <div class="bottombar__breakdown__cell" data-info="Tài khoản|Phí tài khoản NCT prorated theo chu kỳ.|—">
+          <div class="bottombar__breakdown__label">Tài khoản</div>
+          <div class="bottombar__breakdown__val tnum" id="totalAccount">0 ₫</div>
+        </div>
+        <div class="bottombar__breakdown__cell" data-info="Box phát nhạc|Tổng chi phí thiết bị theo hình thức đã chọn.|—">
+          <div class="bottombar__breakdown__label">Box</div>
+          <div class="bottombar__breakdown__val tnum" id="totalBox">0 ₫</div>
+        </div>
+      </div>
+
+      <div class="bottombar__total" data-info="Grand total|Tổng thanh toán sau VAT của toàn bộ báo giá.|—">
+        <div class="bottombar__total__head">
+          <div class="bottombar__total__label">Grand total · monthly</div>
+          <div class="x-seg bottombar__vat" id="vatControl" data-info="VAT|Chọn thuế VAT áp dụng vào tổng thanh toán.|—">
+            <button type="button" class="x-seg__btn is-active" data-vat="0">0%</button>
+            <button type="button" class="x-seg__btn" data-vat="0.08">8%</button>
+            <button type="button" class="x-seg__btn" data-vat="0.1">10%</button>
           </div>
         </div>
-        <div class="bottom-breakdown">
-          <div class="bottom-item">
-            <div class="bottom-label">Q. Tác Giả</div>
-            <div class="bottom-val tnum" id="totalQTG">0</div>
-          </div>
-          <div class="bottom-item">
-            <div class="bottom-label">Q. Liên Quan</div>
-            <div class="bottom-val tnum" id="totalQLQ">0</div>
-          </div>
-          <div class="bottom-item">
-            <div class="bottom-label">Tài khoản</div>
-            <div class="bottom-val tnum" id="totalAccount">0</div>
-          </div>
-          <div class="bottom-item">
-            <div class="bottom-label">Box</div>
-            <div class="bottom-val tnum" id="totalBox">0</div>
-          </div>
+        <div class="bottombar__total__big">
+          <span class="tnum" id="grandTotal">0</span>
+          <span class="bottombar__total__currency">₫</span>
         </div>
-        <div class="bottom-subtotal">
-          <div class="bottom-sub-row" style="margin-bottom: 6px;">
-            <span class="bottom-label">Subtotal</span>
-            <span class="bottom-val tnum" id="subtotalVal">0</span>
-          </div>
-          <div class="bottom-sub-row">
-            <div class="segmented-control" id="vatControl">
-              <button class="seg-btn active" data-vat="0"><span>KHÔNG</span></button>
-              <button class="seg-btn" data-vat="0.08"><span>8%</span></button>
-              <button class="seg-btn" data-vat="0.1"><span>10%</span></button>
-            </div>
-            <span class="bottom-val tnum dim" id="vatVal">+0</span>
-          </div>
-        </div>
-        <div class="bottom-grand">
-          <div class="bottom-label">Tổng thanh toán</div>
-          <div class="grand-total">
-            <span class="grand-number tnum" id="grandTotal">0</span>
-            <span class="grand-currency">₫</span>
-          </div>
-          <div class="grand-vu-meter">
-            <div id="grandVuFill" style="position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--daw-orange); transition: width 400ms var(--ease-spring);"></div>
+        <div class="bottombar__total__vu">
+          <div class="x-vu" id="grandVu">
+            <div class="x-vu__fill"></div>
+            <div class="x-vu__ladder"></div>
+            <div class="x-vu__peak"></div>
           </div>
         </div>
       </div>

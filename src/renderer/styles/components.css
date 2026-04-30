@@ -620,7 +620,7 @@
   left: calc(var(--vu-peak) * 100%);
   width: 1px;
   background: var(--ink-1);
-  transition: left 200ms ease-out;
+  transition: left 200ms linear;
 }
 
 /* Vertical VU (for dense mixer columns) */

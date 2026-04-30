@@ -15,8 +15,10 @@ import {
 } from '../services/quote-payload';
 
 import gsap from './vendor/gsap-lite';
+import { attachInfoView } from './modules/controllers/infoview';
 import { formatVND } from './modules/format';
 import { paletteVar } from './modules/palette';
+import { renderBottombar } from './modules/render-bottombar';
 import { renderSidebar } from './modules/render-sidebar';
 import { renderTopbar } from './modules/render-topbar';
 import { renderWorkbench } from './modules/render-workbench';
@@ -794,14 +796,6 @@ function animateNumber(elementId: string, newValue: number): void {
   });
 }
 
-function setNumberImmediate(elementId: string, newValue: number, options: { prefix?: string } = {}): void {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  el._lastValue = newValue;
-  if (el._tweenObj) gsap.killTweensOf(el._tweenObj);
-  el.textContent = `${options.prefix || ''}${formatVND(newValue)}`;
-}
-
 function renderMain(snapshot: RenderSnapshot): void {
   const store = snapshot.activeStore;
   if (!store) return;
@@ -915,32 +909,6 @@ function renderMain(snapshot: RenderSnapshot): void {
   }
 }
 
-function renderBottomBar(snapshot: RenderSnapshot): void {
-  const { totals } = snapshot.quote;
-
-  animateNumber('totalQTG', totals.subtotalQTG);
-  animateNumber('totalQLQ', totals.subtotalQLQ);
-  animateNumber('totalAccount', totals.subtotalAccount);
-  animateNumber('totalBox', totals.subtotalBox);
-  animateNumber('subtotalVal', totals.subtotal);
-  setNumberImmediate('vatVal', totals.vat, { prefix: '+' });
-  animateNumber('grandTotal', totals.grand);
-
-  document.querySelectorAll('#vatControl .seg-btn').forEach((btn) => {
-    btn.classList.toggle('active', Number(btn.dataset.vat) === vatRate);
-  });
-
-  const ceiling = 50000000;
-  const fillPct = Math.min(100, (totals.grand / ceiling) * 100);
-  document.getElementById('grandVuFill').style.width = `${fillPct}%`;
-
-  const bottomBranchCount = document.getElementById('bottomBranchCount');
-  if (bottomBranchCount) bottomBranchCount.textContent = `${stores.length} chi nhánh`;
-
-  const statusLineCount = document.getElementById('statusLineCount');
-  if (statusLineCount) statusLineCount.textContent = `${stores.length} chi nhánh`;
-}
-
 function createRenderSnapshot() {
   const quote = getCurrentComputedQuote();
   const breakdownsById = new Map<number, ComputedQuote['stores'][number]>();
@@ -999,7 +967,7 @@ function render(scope: RenderScope = 'all'): void {
       renderWorkbench(snapshot);
       renderMain(snapshot);
     }
-    if (renderScope.has('totals')) renderBottomBar(snapshot);
+    if (renderScope.has('totals')) renderBottombar(snapshot);
     renderScope.clear();
   });
 }
@@ -1096,6 +1064,8 @@ function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, ma
 }
 
 function bindEvents() {
+  attachInfoView(document.body);
+
   const searchInput = optionalElement('searchInput');
   const searchClear = optionalElement('searchClear');
   if (searchInput instanceof HTMLInputElement) {
@@ -1340,7 +1310,7 @@ function bindEvents() {
   });
 
   document.getElementById('vatControl').addEventListener('click', (event) => {
-    const btn = closestFromEvent(event, '.seg-btn');
+    const btn = closestFromEvent(event, '.x-seg__btn');
     if (!btn) return;
     vatRate = Number(btn.dataset.vat);
     commitQuoteMutation('totals');

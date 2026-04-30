@@ -91,7 +91,7 @@ const TRANSITION_DURATION = /transition[^;]*\b(\d+)ms\b/g;
 const ALLOWED_TRANSITION_MS = new Set([0, 90, 140, 400]);
 
 function isAllowedTransitionException(line: string): boolean {
-  return line.includes('transition: left 200ms') && line.includes('ease-out');
+  return line.includes('transition: left 200ms') && line.includes('linear');
 }
 
 async function main(): Promise<void> {
