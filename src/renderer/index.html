@@ -16,7 +16,7 @@
     <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar__brand">
-        <span class="topbar__brandmark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <img class="topbar__logo" src="../../assets/brand/nct-logo-512.png" alt="NCT" width="24" height="24">
         <span>XMS // CALC</span>
       </div>
       <div class="topbar__breadcrumb x-breadcrumb">
@@ -38,10 +38,22 @@
         </span>
       </div>
       <div class="topbar__actions">
-        <button class="x-btn" id="btnCustomer" type="button" data-info="Customer|Mở dialog chỉnh sửa thông tin khách hàng.|⌘I">Customer</button>
-        <button class="x-btn" id="btnSettings" type="button" data-info="Settings|Mở dialog cài đặt người lập báo giá.|⌘,">Settings</button>
-        <button class="x-btn" id="btnBulkAdd" type="button" data-info="Bulk Add|Thêm nhiều chi nhánh cùng lúc với template.|⌘B">Bulk Add</button>
-        <button class="x-btn x-btn--primary" id="btnSave" type="button" data-info="Save Quote|Lưu báo giá hiện tại.|⌘S">Save</button>
+        <button class="x-btn" id="btnCustomer" type="button" data-info="Customer|Mở dialog chỉnh sửa thông tin khách hàng.|⌘I">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Customer
+        </button>
+        <button class="x-btn" id="btnSettings" type="button" data-info="Settings|Mở dialog cài đặt người lập báo giá.|⌘,">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Settings
+        </button>
+        <button class="x-btn" id="btnBulkAdd" type="button" data-info="Bulk Add|Thêm nhiều chi nhánh cùng lúc với template.|⌘B">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
+          Bulk Add
+        </button>
+        <button class="x-btn x-btn--primary" id="btnSave" type="button" data-info="Save Quote|Lưu báo giá hiện tại.|⌘S">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+          Save
+        </button>
       </div>
     </header>
 
@@ -208,8 +220,9 @@
                     <div class="x-row__desc">600.000 ₫ / năm · prorated theo chu kỳ</div>
                   </div>
                 </div>
-                <div class="x-row__rhs" id="accountFeeRight">
+              <div class="x-row__rhs" id="accountFeeRight">
                   <div class="x-discount-bank">
+                    <canvas class="x-knob__envelope" id="envelopeAccountKnob" width="80" height="32" aria-hidden="true"></canvas>
                     <button type="button" class="x-discount-toggle is-on" id="discountAccountApply" aria-pressed="true"
                       data-info="Apply Account Discount|Bật/tắt áp dụng discount tài khoản.|—">DISC</button>
                   <div class="x-knob" id="discountAccountKnob"
@@ -253,6 +266,7 @@
                   </div>
                   <div id="boxDiscountRow" hidden style="margin-top: 14px;">
                     <div class="x-discount-bank">
+                      <canvas class="x-knob__envelope" id="envelopeBoxKnob" width="80" height="32" aria-hidden="true"></canvas>
                       <button type="button" class="x-discount-toggle is-on" id="discountBoxApply" aria-pressed="true"
                         data-info="Apply Box Discount|Bật/tắt áp dụng discount thiết bị.|—">DISC</button>
                     <div class="x-knob" id="discountBoxKnob"
@@ -296,6 +310,7 @@
                 </div>
                 <div class="x-row__rhs">
                   <div class="x-discount-bank">
+                    <canvas class="x-knob__envelope" id="envelopeQTGKnob" width="80" height="32" aria-hidden="true"></canvas>
                     <button type="button" class="x-discount-toggle is-on" id="discountQTGApply" aria-pressed="true"
                       data-info="Apply QTG Discount|Bật/tắt áp dụng discount quyền tác giả.|—">DISC</button>
                   <div class="x-knob" id="discountQTGKnob"
@@ -331,6 +346,7 @@
                 </div>
                 <div class="x-row__rhs">
                   <div class="x-discount-bank">
+                    <canvas class="x-knob__envelope" id="envelopeQLQKnob" width="80" height="32" aria-hidden="true"></canvas>
                     <button type="button" class="x-discount-toggle is-on" id="discountQLQApply" aria-pressed="true"
                       data-info="Apply QLQ Discount|Bật/tắt áp dụng discount quyền liên quan.|—">DISC</button>
                   <div class="x-knob" id="discountQLQKnob"
@@ -423,7 +439,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.1</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.2</div>
     </div>
   </div>
 

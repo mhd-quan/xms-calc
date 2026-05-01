@@ -55,7 +55,8 @@ export function attachKnob(spec: KnobSpec): void {
     (event) => {
       event.preventDefault();
       const delta = -Math.sign(event.deltaY);
-      const nudge = event.shiftKey ? spec.step : spec.step;
+      // Shift = fine (1× step), normal = coarse (5× step)
+      const nudge = event.shiftKey ? spec.step : spec.step * 5;
       setKnob(spec.el, currentValue(spec) + delta * nudge, true);
     },
     { passive: false }
@@ -136,6 +137,10 @@ function setKnob(el: HTMLElement, value: number, fire = false): void {
   const readout = el.querySelector<HTMLElement>('.x-knob__readout');
   if (readout) readout.textContent = formatKnobValue(stepped, spec);
 
+  // Draw Ableton-style envelope on the paired canvas
+  const canvasId = 'envelope' + el.id.charAt(0).toUpperCase() + el.id.slice(1);
+  drawEnvelope(canvasId, norm);
+
   if (fire && stepped !== previous) spec.onChange(stepped);
 }
 
@@ -160,4 +165,84 @@ function formatKnobValue(value: number, spec: KnobSpec): string {
   const format = spec.el.dataset.format ?? 'int';
   const display = format === 'int' ? Math.round(value).toString() : value.toFixed(1);
   return `${display}${unit}`;
+}
+
+/**
+ * Draws an Ableton-style automation lane on the envelope canvas paired with
+ * the given knob. The line starts at top-left (0% discount = full price)
+ * and slopes downward as discount increases (norm=1 → line at bottom).
+ * @param canvasId - ID of the <canvas> element to draw on
+ * @param norm - normalised knob value 0..1 (0 = no discount, 1 = 100% discount)
+ */
+function drawEnvelope(canvasId: string, norm: number): void {
+  const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
+  if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
+
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const W = canvas.offsetWidth || canvas.width;
+  const H = canvas.offsetHeight || canvas.height;
+  canvas.width = W;
+  canvas.height = H;
+
+  // Colours from CSS variables (read once from :root)
+  const cs = getComputedStyle(document.documentElement);
+  const amber    = (cs.getPropertyValue('--active').trim()     || '#ffb43a');
+  const amberDim = (cs.getPropertyValue('--active-dim').trim() || 'rgba(255,180,58,0.14)');
+  const lineCol  = (cs.getPropertyValue('--line-2').trim()     || '#3c4047');
+  const inkDim   = (cs.getPropertyValue('--ink-4').trim()      || '#5d6168');
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Subtle grid lines (every 25%)
+  ctx.strokeStyle = lineCol;
+  ctx.lineWidth = 0.5;
+  ctx.globalAlpha = 0.45;
+  for (let i = 1; i < 4; i++) {
+    const x = Math.round(W * i / 4) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, H);
+    ctx.stroke();
+  }
+  // Horizontal midline
+  ctx.beginPath();
+  ctx.moveTo(0, Math.round(H / 2) + 0.5);
+  ctx.lineTo(W, Math.round(H / 2) + 0.5);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  // Envelope line coordinates
+  const pad   = 3;
+  const yTop  = pad;                         // 0% discount → line at top (full price)
+  const yEnd  = pad + (H - pad * 2) * norm;  // end Y scales with discount
+
+  // Gradient fill area under the line
+  ctx.beginPath();
+  ctx.moveTo(0, yTop);
+  ctx.lineTo(W, yEnd);
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fillStyle = amberDim;
+  ctx.fill();
+
+  // Main envelope line
+  ctx.beginPath();
+  ctx.moveTo(0, yTop);
+  ctx.lineTo(W, yEnd);
+  ctx.strokeStyle = norm > 0 ? amber : inkDim;
+  ctx.lineWidth = 1.5;
+  ctx.globalAlpha = norm > 0 ? 1 : 0.35;
+  ctx.stroke();
+
+  // Dot at end of line
+  if (norm > 0) {
+    ctx.beginPath();
+    ctx.arc(W - 2, yEnd, 2.2, 0, Math.PI * 2);
+    ctx.fillStyle = amber;
+    ctx.globalAlpha = 1;
+    ctx.fill();
+  }
 }

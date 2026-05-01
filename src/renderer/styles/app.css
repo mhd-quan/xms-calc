@@ -20,16 +20,16 @@
   align-items: center;
   /* Design A artboard literal: falls between --s-5 and --s-6. */
   gap: 14px;
-  padding: 0 var(--s-6) 0 88px;
+  padding: 0 var(--s-6) 0 72px;
   background: var(--shell-2);
   border-bottom: 1px solid var(--line-1);
 }
 
 .topbar__brand {
-  font-family: var(--font-num);
+  font-family: var(--font-display);
   font-size: var(--t-label);
   font-weight: 700;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.14em;
   color: var(--ink-1);
   display: flex;
   align-items: center;
@@ -37,7 +37,19 @@
   padding-right: 14px;
   border-right: 1px solid var(--line-1);
   height: 100%;
+  flex-shrink: 0;
 }
+
+/* NCT logo image in topbar */
+.topbar__logo {
+  display: block;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 0.92;
+  transition: opacity var(--t-quick);
+  flex-shrink: 0;
+}
+.topbar__logo:hover { opacity: 1; }
 
 .topbar__brandmark {
   display: inline-grid;
@@ -61,12 +73,12 @@
 
 @media (max-width: 980px) {
   .topbar {
-    padding-left: 76px;
+    padding-left: 72px;
     gap: var(--s-4);
   }
 
   .topbar__brand {
-    letter-spacing: 0.12em;
+    letter-spacing: 0.10em;
     padding-right: var(--s-4);
   }
 }
@@ -77,7 +89,14 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.topbar__actions { display: flex; align-items: center; gap: 6px; }
+.topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+/* Icon alignment inside topbar buttons */
+.topbar__actions .x-btn svg { flex-shrink: 0; }
 
 .topbar__revision {
   width: auto;
@@ -238,14 +257,14 @@
 
 .work__title {
   width: min(520px, 100%);
+  font-family: var(--font-display);
   font-size: 16px;
   font-weight: 600;
   color: var(--ink-1);
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   background: transparent;
   border: 1px solid transparent;
   outline: none;
-  font-family: var(--font-ui);
   padding: 2px 4px;
   margin-left: -4px;
   border-radius: var(--r-2);
@@ -334,18 +353,21 @@
 }
 
 .csection__title {
+  font-family: var(--font-display);
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-1);
   flex: 1;
+  letter-spacing: -0.01em;
 }
 
 .csection__total {
-  font-family: var(--font-num);
+  font-family: var(--font-display);
   font-variant-numeric: tabular-nums;
   font-size: 13px;
   font-weight: 600;
   color: var(--ink-1);
+  letter-spacing: -0.01em;
 }
 
 .csection.is-active .csection__total { color: var(--active); }
@@ -360,14 +382,14 @@
 .csbody-grid--6-6 { grid-template-columns: 1fr 1fr; }
 .x-row {
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(220px, 320px);
+  grid-template-columns: minmax(260px, 1fr) minmax(200px, 320px);
   gap: var(--s-6);
   align-items: flex-start;
   padding: var(--s-5) 0;
 }
 
 .x-row--copyright {
-  grid-template-columns: minmax(300px, 1fr) minmax(180px, 240px) minmax(150px, 220px);
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 240px) minmax(130px, 200px);
 }
 
 .x-row__lhs {
@@ -393,27 +415,21 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--s-5);
+  gap: var(--s-4);
   min-width: 0;
   width: 100%;
 }
 
-.x-discount-bank::before {
-  content: "";
-  flex: 1 1 34px;
-  min-width: 18px;
-  max-width: 80px;
-  height: 4px;
-  border-top: 1px solid var(--line-2);
-  border-bottom: 1px solid var(--line-1);
-  background: repeating-linear-gradient(
-    90deg,
-    var(--line-2) 0,
-    var(--line-2) 1px,
-    transparent 1px,
-    transparent 6px
-  );
-  opacity: 0.7;
+/* Envelope canvas — Ableton automation-lane style line display */
+.x-knob__envelope {
+  flex: 1 1 auto;
+  min-width: 56px;
+  max-width: 100px;
+  height: 32px;
+  background: var(--inset-0);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-2);
+  display: block;
 }
 
 .x-row__info { flex: 1; }
@@ -666,13 +682,14 @@
   display: flex;
   align-items: baseline;
   gap: var(--s-2);
-  font-family: var(--font-num);
+  font-family: var(--font-display);
   font-size: 26px;
   font-weight: 700;
   color: var(--active);
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   line-height: 1.05;
+  animation: hero-glow 3s ease-in-out infinite;
 }
 
 .bottombar__total__currency {
@@ -689,3 +706,42 @@
 
 /* Temporary state utility until Phase 10 moves modals to x-modal. */
 .hidden { display: none !important; }
+
+/* ─── MICRO-ANIMATIONS ────────────────────────────────────────────────── */
+@keyframes breathe {
+  0%, 100% { box-shadow: 0 0 0 1px var(--active), 0 0 4px var(--active-glow); }
+  50%       { box-shadow: 0 0 0 1px var(--active), 0 0 14px var(--active-glow), 0 0 28px rgba(255,180,58,0.10); }
+}
+
+@keyframes hero-glow {
+  0%, 100% { text-shadow: 0 0 6px var(--active-glow); }
+  50%       { text-shadow: 0 0 18px var(--active-glow), 0 0 36px rgba(255,180,58,0.14); }
+}
+
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Breathing on primary Save button */
+.x-btn--primary {
+  animation: breathe 3.2s ease-in-out infinite;
+}
+.x-btn--primary:hover,
+.x-btn--primary:active {
+  animation: none;
+}
+
+/* Section entrance stagger */
+.csection:nth-child(1) { animation: slide-in-up 0.28s ease-out 0.04s both; }
+.csection:nth-child(2) { animation: slide-in-up 0.28s ease-out 0.10s both; }
+.csection:nth-child(3) { animation: slide-in-up 0.28s ease-out 0.16s both; }
+.csection:nth-child(4) { animation: slide-in-up 0.28s ease-out 0.22s both; }
+
+/* Hover lift on x-btn */
+.x-btn:hover {
+  transform: translateY(-1px);
+}
+.x-btn:active {
+  transform: translateY(1px);
+}

@@ -124,7 +124,14 @@
   background: var(--active);
   color: var(--active-ink);
   border-color: var(--active);
+  animation: toggle-breathe 2.8s ease-in-out infinite;
 }
+@keyframes toggle-breathe {
+  0%, 100% { box-shadow: 0 0 0 1px var(--active-glow); }
+  50%       { box-shadow: 0 0 0 1px var(--active), 0 0 10px var(--active-glow); }
+}
+.x-toggle-pill.is-on:hover,
+.x-toggle-pill.is-on:active { animation: none; }
 .x-toggle-pill:active { transform: translateY(1px); }
 
 /* ════ SEGMENTED CONTROL ════════════════════════════════════════════════ */
@@ -195,7 +202,14 @@
 .x-knob.is-dragging .x-knob__dial { transform: scale(1.03); }
 .x-knob:focus-visible { outline: none; }
 .x-knob:focus-visible .x-knob__dial { box-shadow: var(--focus-glow); border-color: var(--active); }
-.x-knob.is-active .x-knob__dial { border-color: var(--active); }
+.x-knob.is-active .x-knob__dial {
+  border-color: var(--active);
+  animation: knob-glow 2.4s ease-in-out infinite;
+}
+@keyframes knob-glow {
+  0%, 100% { box-shadow: 0 0 0 1px var(--active-glow); }
+  50%       { box-shadow: 0 0 0 2px var(--active-glow), 0 0 10px rgba(255,180,58,0.20); }
+}
 .x-knob__svg { position: absolute; inset: 0; pointer-events: none; }
 .x-knob__indicator {
   position: absolute;
