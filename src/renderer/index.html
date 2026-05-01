@@ -198,15 +198,14 @@
                   </div>
                 </div>
                 <div class="x-row__rhs" id="accountFeeRight">
-                  <div class="x-fader-row">
-                    <span class="label">Chiết khấu</span>
-                    <span class="x-fader-readout">
-                      <span class="x-fader-readout__val tnum" id="discountAccountVal">0</span>
-                      <span class="x-fader-readout__unit">%</span>
-                    </span>
+                  <div class="x-knob" id="discountAccountKnob"
+                    data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
+                    tabindex="0"
+                    data-info="Discount · Account|Drag dọc · Shift = fine · Double-click reset · Wheel scroll.|—">
+                    <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
+                    <div class="x-knob__readout" id="discountAccountVal">0%</div>
+                    <div class="x-knob__label">Discount</div>
                   </div>
-                  <input id="discountAccount" type="range" min="0" max="100" step="5" value="0" class="x-fader"
-                    data-info="Discount · Account|Chiết khấu chung cho phí tài khoản.|—">
                 </div>
               </div>
 
@@ -238,14 +237,14 @@
                     </div>
                   </div>
                   <div id="boxDiscountRow" hidden style="margin-top: 14px;">
-                    <div class="x-fader-row">
-                      <span class="label">Chiết khấu</span>
-                      <div class="x-fader-readout">
-                        <span id="discountBoxVal" class="x-fader-readout__val tnum">0</span>
-                        <span class="x-fader-readout__unit">%</span>
-                      </div>
+                    <div class="x-knob" id="discountBoxKnob"
+                      data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
+                      tabindex="0"
+                      data-info="Discount · Box|Drag dọc · Shift = fine · Double-click reset · Wheel scroll.|—">
+                      <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
+                      <div class="x-knob__readout" id="discountBoxVal">0%</div>
+                      <div class="x-knob__label">Discount</div>
                     </div>
-                    <input id="discountBox" type="range" min="0" max="100" step="5" value="0" class="x-fader">
                   </div>
                 </div>
               </div>
@@ -277,15 +276,14 @@
                   </div>
                 </div>
                 <div class="x-row__rhs">
-                  <div class="x-fader-row">
-                    <span class="label">Chiết khấu</span>
-                    <span class="x-fader-readout">
-                      <span id="discountQTGVal" class="x-fader-readout__val tnum">0</span>
-                      <span class="x-fader-readout__unit">%</span>
-                    </span>
+                  <div class="x-knob" id="discountQTGKnob"
+                    data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
+                    tabindex="0"
+                    data-info="Discount · QTG|Drag dọc · Shift = fine · Double-click reset · Wheel scroll.|—">
+                    <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
+                    <div class="x-knob__readout" id="discountQTGVal">0%</div>
+                    <div class="x-knob__label">Discount</div>
                   </div>
-                  <input id="discountQTG" type="range" min="0" max="100" step="5" value="0" class="x-fader"
-                    data-info="Discount · QTG|Chiết khấu chung cho quyền tác giả.|—">
                 </div>
                 <div class="x-row__amount">
                   <div class="label">Thành tiền</div>
@@ -309,15 +307,14 @@
                   </div>
                 </div>
                 <div class="x-row__rhs">
-                  <div class="x-fader-row">
-                    <span class="label">Chiết khấu</span>
-                    <span class="x-fader-readout">
-                      <span id="discountQLQVal" class="x-fader-readout__val tnum">0</span>
-                      <span class="x-fader-readout__unit">%</span>
-                    </span>
+                  <div class="x-knob" id="discountQLQKnob"
+                    data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
+                    tabindex="0"
+                    data-info="Discount · QLQ|Drag dọc · Shift = fine · Double-click reset · Wheel scroll.|—">
+                    <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
+                    <div class="x-knob__readout" id="discountQLQVal">0%</div>
+                    <div class="x-knob__label">Discount</div>
                   </div>
-                  <input id="discountQLQ" type="range" min="0" max="100" step="5" value="0" class="x-fader"
-                    data-info="Discount · QLQ|Chiết khấu chung cho quyền liên quan.|—">
                 </div>
                 <div class="x-row__amount">
                   <div class="label">Thành tiền</div>

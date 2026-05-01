@@ -16,6 +16,7 @@ import {
 
 import gsap from './vendor/gsap-lite';
 import { attachInfoView } from './modules/controllers/infoview';
+import { attachKnob, setKnobValue } from './modules/controllers/knob';
 import { formatVND } from './modules/format';
 import { paletteVar } from './modules/palette';
 import { renderBottombar } from './modules/render-bottombar';
@@ -815,13 +816,10 @@ function renderMain(snapshot: RenderSnapshot): void {
   accToggle.classList.toggle('is-on', hasAccountFee);
   accToggle.textContent = hasAccountFee ? 'BẬT' : 'TẮT';
   const accRight = document.getElementById('accountFeeRight');
+  setKnobValue('discountAccountKnob', globalDiscounts.account);
 
   if (hasAccountFee) {
     accRight.classList.remove('is-disabled');
-    document.getElementById('discountAccountVal').textContent = String(globalDiscounts.account);
-    const accSlider = document.getElementById('discountAccount');
-    if (document.activeElement !== accSlider) accSlider.value = String(globalDiscounts.account);
-    accSlider.style.setProperty('--val', `${globalDiscounts.account}%`);
   } else {
     accRight.classList.add('is-disabled');
   }
@@ -834,12 +832,9 @@ function renderMain(snapshot: RenderSnapshot): void {
   if (document.activeElement !== boxInput) boxInput.value = String(globalBoxCount);
 
   const boxDiscountRow = document.getElementById('boxDiscountRow');
+  setKnobValue('discountBoxKnob', globalDiscounts.box);
   if (boxMode === 'buy') {
     boxDiscountRow.removeAttribute('hidden');
-    document.getElementById('discountBoxVal').textContent = String(globalDiscounts.box);
-    const boxSlider = document.getElementById('discountBox');
-    if (document.activeElement !== boxSlider) boxSlider.value = String(globalDiscounts.box);
-    boxSlider.style.setProperty('--val', `${globalDiscounts.box}%`);
   } else {
     boxDiscountRow.setAttribute('hidden', '');
   }
@@ -858,14 +853,11 @@ function renderMain(snapshot: RenderSnapshot): void {
   const qtgRow = qtgToggle.closest('.x-row') ?? qtgToggle;
   const qtgMid = qtgRow.querySelector('.x-row__rhs');
   const qtgRight = qtgRow.querySelector('.x-row__amount');
+  setKnobValue('discountQTGKnob', globalDiscounts.qtg);
 
   if (hasQTG) {
     qtgMid.classList.remove('is-disabled');
     qtgRight.classList.remove('is-disabled');
-    document.getElementById('discountQTGVal').textContent = String(globalDiscounts.qtg);
-    const qtgSlider = document.getElementById('discountQTG');
-    if (document.activeElement !== qtgSlider) qtgSlider.value = String(globalDiscounts.qtg);
-    qtgSlider.style.setProperty('--val', `${globalDiscounts.qtg}%`);
     animateNumber('qtgAmount', breakdown?.qtgAmount || 0);
   } else {
     qtgMid.classList.add('is-disabled');
@@ -882,14 +874,11 @@ function renderMain(snapshot: RenderSnapshot): void {
   const qlqRow = qlqToggle.closest('.x-row') ?? qlqToggle;
   const qlqMid = qlqRow.querySelector('.x-row__rhs');
   const qlqRight = qlqRow.querySelector('.x-row__amount');
+  setKnobValue('discountQLQKnob', globalDiscounts.qlq);
 
   if (hasQLQ) {
     qlqMid.classList.remove('is-disabled');
     qlqRight.classList.remove('is-disabled');
-    document.getElementById('discountQLQVal').textContent = String(globalDiscounts.qlq);
-    const qlqSlider = document.getElementById('discountQLQ');
-    if (document.activeElement !== qlqSlider) qlqSlider.value = String(globalDiscounts.qlq);
-    qlqSlider.style.setProperty('--val', `${globalDiscounts.qlq}%`);
     animateNumber('qlqAmount', breakdown?.qlqAmount || 0);
   } else {
     qlqMid.classList.add('is-disabled');
@@ -1279,24 +1268,25 @@ function bindEvents() {
   });
 
   const discountFieldById: Record<string, keyof GlobalDiscounts> = {
-    discountAccount: 'account',
-    discountBox: 'box',
-    discountQTG: 'qtg',
-    discountQLQ: 'qlq'
+    discountAccountKnob: 'account',
+    discountBoxKnob: 'box',
+    discountQTGKnob: 'qtg',
+    discountQLQKnob: 'qlq'
   };
   Object.keys(discountFieldById).forEach((id) => {
-    const sl = document.getElementById(id);
-    if (!sl) return;
-    const valText = document.getElementById(`${id}Val`);
-    sl.addEventListener('input', (event) => {
-      const discountField = discountFieldById[id];
-      if (!discountField) return;
-      globalDiscounts[discountField] = Number(valueFromEvent(event));
-      commitQuoteMutation();
-      if (valText) gsap.to(valText, { scale: 1.1, duration: 0.1 });
-    });
-    sl.addEventListener('change', () => {
-      if (valText) gsap.to(valText, { scale: 1, duration: 0.2, ease: 'back.out(2)' });
+    const knob = optionalElement(id);
+    const discountField = discountFieldById[id];
+    if (!knob || !discountField) return;
+    attachKnob({
+      el: knob,
+      min: 0,
+      max: 100,
+      step: 5,
+      defaultVal: 0,
+      onChange: (value) => {
+        globalDiscounts[discountField] = value;
+        commitQuoteMutation();
+      }
     });
   });
 
