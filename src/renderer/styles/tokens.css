@@ -54,13 +54,12 @@
   --vu-high:       #ef4444;  /* Clip */
 
   /* ─── TYPOGRAPHY ────────────────────────────────────────────────────── */
-  /* Inter — primary UI face (neo-grotesque, tabular figures, ss03 cv11) */
-  /* Space Grotesk — display/hero face (headings, hero values, section titles) */
+  /* Space Grotesk — single typeface for all UI (matches v1.7.0) */
   /* Atkinson Hyperlegible — dense labels & tiny text (max legibility) */
-  --font-ui:      'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
-  --font-display: 'Space Grotesk', 'Inter', 'Helvetica Neue', system-ui, sans-serif;
-  --font-label:   'Atkinson Hyperlegible', 'Inter', system-ui, sans-serif;
-  --font-num:     'Inter', 'SF Mono', ui-monospace, monospace;
+  --font-ui:      'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-display: 'Space Grotesk', system-ui, -apple-system, sans-serif;
+  --font-label:   'Atkinson Hyperlegible', 'Space Grotesk', system-ui, sans-serif;
+  --font-num:     'Space Grotesk', 'SF Mono', ui-monospace, monospace;
 
   /* Operational hierarchy (not editorial — dense, indexing-layer) */
   --t-tiny:       9.5px;   /* Mini-labels in dense controls */

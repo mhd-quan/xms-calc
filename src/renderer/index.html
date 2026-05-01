@@ -16,8 +16,7 @@
     <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar__brand">
-        <img class="topbar__logo" src="../../assets/brand/nct-logo-512.png" alt="NCT" width="24" height="24">
-        <span>XMS // CALC</span>
+        <img class="topbar__logo" src="./assets/nct-logo-512.png" alt="XMusic Station" width="28" height="28">
       </div>
       <div class="topbar__breadcrumb x-breadcrumb">
         <span class="x-breadcrumb__item" id="bcCustomer">Khách hàng chưa đặt</span>
@@ -38,21 +37,17 @@
         </span>
       </div>
       <div class="topbar__actions">
-        <button class="x-btn" id="btnCustomer" type="button" data-info="Customer|Mở dialog chỉnh sửa thông tin khách hàng.|⌘I">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          Customer
+        <button class="x-btn x-btn--icon" id="btnCustomer" type="button" title="Khách hàng" data-info="Khách hàng|Nhập tên công ty, người liên hệ, email và SĐT để in trên báo giá.|⌘I">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         </button>
-        <button class="x-btn" id="btnSettings" type="button" data-info="Settings|Mở dialog cài đặt người lập báo giá.|⌘,">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-          Settings
+        <button class="x-btn x-btn--icon" id="btnSettings" type="button" title="Cài đặt" data-info="Cài đặt|Thiết lập thông tin người lập báo giá: họ tên, chức danh, bộ phận.|⌘,">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0 .33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         </button>
-        <button class="x-btn" id="btnBulkAdd" type="button" data-info="Bulk Add|Thêm nhiều chi nhánh cùng lúc với template.|⌘B">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
-          Bulk Add
+        <button class="x-btn x-btn--icon" id="btnBulkAdd" type="button" title="Thêm hàng loạt" data-info="Thêm hàng loạt|Paste nhiều diện tích cùng lúc để tạo chi nhánh từ bảng tính.|⌘B">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
         </button>
-        <button class="x-btn x-btn--primary" id="btnSave" type="button" data-info="Save Quote|Lưu báo giá hiện tại.|⌘S">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
-          Save
+        <button class="x-btn x-btn--icon x-btn--primary" id="btnSave" type="button" title="Lưu" data-info="Lưu|Lưu toàn bộ dữ liệu báo giá, chi nhánh và cài đặt vào database.|⌘S">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
         </button>
       </div>
     </header>
@@ -214,7 +209,7 @@
               <div class="x-row">
                 <div class="x-row__lhs">
                   <button type="button" class="x-toggle-pill is-on" id="accountToggle"
-                    data-info="Account Fee toggle|Bật/tắt phí tài khoản NCT 600.000₫/năm.|—">BẬT</button>
+                    data-info="Tài khoản NCT|Phí duy trì tài khoản phần mềm NCT: 600.000₫/năm, prorated theo ngày bắt đầu – kết thúc.|—">BẬT</button>
                   <div class="x-row__info">
                     <div class="x-row__name">Phí tài khoản NCT</div>
                     <div class="x-row__desc">600.000 ₫ / năm · prorated theo chu kỳ</div>
@@ -224,11 +219,11 @@
                   <div class="x-discount-bank">
                     <canvas class="x-knob__envelope" id="envelopeAccountKnob" width="80" height="32" aria-hidden="true"></canvas>
                     <button type="button" class="x-discount-toggle is-on" id="discountAccountApply" aria-pressed="true"
-                      data-info="Apply Account Discount|Bật/tắt áp dụng discount tài khoản.|—">DISC</button>
+                      data-info="Chiết khấu Tài khoản|Bật/tắt chiết khấu cho phí tài khoản.|—">DISC</button>
                   <div class="x-knob" id="discountAccountKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
-                    data-info="Discount · Account|Drag dọc · Shift = fine · Double-click reset · Wheel scroll.|—">
+                    data-info="Chiết khấu · Account|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
                     <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                     <div class="x-knob__readout" id="discountAccountVal">0%</div>
                     <div class="x-knob__label">Discount</div>
@@ -244,19 +239,17 @@
                   <div class="x-row__info">
                     <div class="x-row__name">Box phát nhạc</div>
                     <div class="x-row__desc" id="boxPriceDesc">Chọn hình thức trang bị cho mỗi chi nhánh</div>
+                    <div style="margin-top: var(--s-4);">
+                      <div class="x-seg" id="boxModeSeg" data-info="Hình thức box|Chọn: Không trang bị, Mua (2tr/box, một lần), hoặc Thuê (1tr/box/năm).|—">
+                        <button type="button" class="x-seg__btn is-active" data-mode="none">Không</button>
+                        <button type="button" class="x-seg__btn" data-mode="buy">Mua</button>
+                        <button type="button" class="x-seg__btn" data-mode="rent">Thuê</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div class="x-row__rhs">
-                  <div class="x-fader-row">
-                    <span class="label">Hình thức</span>
-                  </div>
-                  <div class="x-seg" id="boxModeSeg">
-                    <button type="button" class="x-seg__btn is-active" data-mode="none">Không</button>
-                    <button type="button" class="x-seg__btn" data-mode="buy">Mua</button>
-                    <button type="button" class="x-seg__btn" data-mode="rent">Thuê</button>
-                  </div>
-                  
-                  <div class="x-fader-row" id="boxQuantityRow" hidden style="margin-top:14px;">
+                  <div class="x-fader-row" id="boxQuantityRow" hidden>
                     <span class="label">Số lượng</span>
                     <div class="x-counter">
                       <button type="button" id="boxMinus" class="x-counter__btn">−</button>
@@ -268,11 +261,11 @@
                     <div class="x-discount-bank">
                       <canvas class="x-knob__envelope" id="envelopeBoxKnob" width="80" height="32" aria-hidden="true"></canvas>
                       <button type="button" class="x-discount-toggle is-on" id="discountBoxApply" aria-pressed="true"
-                        data-info="Apply Box Discount|Bật/tắt áp dụng discount thiết bị.|—">DISC</button>
+                        data-info="Chiết khấu Box|Bật/tắt chiết khấu cho thiết bị phát nhạc.|—">DISC</button>
                     <div class="x-knob" id="discountBoxKnob"
                       data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                       tabindex="0"
-                      data-info="Discount · Box|Drag dọc · Shift = fine · Double-click reset · Wheel scroll.|—">
+                      data-info="Chiết khấu · Box|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
                       <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                       <div class="x-knob__readout" id="discountBoxVal">0%</div>
                       <div class="x-knob__label">Discount</div>
@@ -295,10 +288,10 @@
             </div>
             
             <div class="csection__body">
-              <div class="x-row x-row--copyright">
+              <div class="x-row">
                 <div class="x-row__lhs">
                   <button type="button" class="x-toggle-pill is-on" id="qtgToggle"
-                    data-info="QTG toggle|Bật/tắt quyền tác giả VCPMC.|—">BẬT</button>
+                    data-info="Quyền Tác giả|Phí bản quyền tác giả qua VCPMC. Tính theo diện tích × hệ số × thời gian.|—">BẬT</button>
                   <div class="x-row__info">
                     <div class="x-row__name">Quyền Tác giả</div>
                     <div class="x-row__desc">
@@ -312,29 +305,29 @@
                   <div class="x-discount-bank">
                     <canvas class="x-knob__envelope" id="envelopeQTGKnob" width="80" height="32" aria-hidden="true"></canvas>
                     <button type="button" class="x-discount-toggle is-on" id="discountQTGApply" aria-pressed="true"
-                      data-info="Apply QTG Discount|Bật/tắt áp dụng discount quyền tác giả.|—">DISC</button>
+                      data-info="Chiết khấu QTG|Bật/tắt chiết khấu quyền tác giả VCPMC.|—">DISC</button>
                   <div class="x-knob" id="discountQTGKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
-                    data-info="Discount · QTG|Drag dọc · Shift = fine · Double-click reset · Wheel scroll.|—">
+                    data-info="Chiết khấu · QTG|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
                     <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                     <div class="x-knob__readout" id="discountQTGVal">0%</div>
                     <div class="x-knob__label">Discount</div>
                   </div>
                   </div>
-                </div>
-                <div class="x-row__amount">
-                  <div class="label">Thành tiền</div>
-                  <div class="x-vbox tnum" id="qtgAmount" style="font-size: var(--t-readout); padding: 4px 8px; min-width: 110px;">0</div>
+                  <div class="x-row__inline-amount">
+                    <span class="x-row__inline-amount__val tnum" id="qtgAmount">0</span>
+                    <span class="x-row__inline-amount__unit">₫</span>
+                  </div>
                 </div>
               </div>
 
               <div class="x-divider" style="margin: var(--s-4) 0;"></div>
 
-              <div class="x-row x-row--copyright">
+              <div class="x-row">
                 <div class="x-row__lhs">
                   <button type="button" class="x-toggle-pill is-on" id="qlqToggle"
-                    data-info="QLQ toggle|Bật/tắt quyền liên quan NCT.|—">BẬT</button>
+                    data-info="Quyền Liên quan|Phí bản quyền liên quan qua NCT. Tính theo diện tích × hệ số × thời gian.|—">BẬT</button>
                   <div class="x-row__info">
                     <div class="x-row__name">Quyền Liên quan</div>
                     <div class="x-row__desc">
@@ -348,20 +341,20 @@
                   <div class="x-discount-bank">
                     <canvas class="x-knob__envelope" id="envelopeQLQKnob" width="80" height="32" aria-hidden="true"></canvas>
                     <button type="button" class="x-discount-toggle is-on" id="discountQLQApply" aria-pressed="true"
-                      data-info="Apply QLQ Discount|Bật/tắt áp dụng discount quyền liên quan.|—">DISC</button>
+                      data-info="Chiết khấu QLQ|Bật/tắt chiết khấu quyền liên quan NCT.|—">DISC</button>
                   <div class="x-knob" id="discountQLQKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
-                    data-info="Discount · QLQ|Drag dọc · Shift = fine · Double-click reset · Wheel scroll.|—">
+                    data-info="Chiết khấu · QLQ|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
                     <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                     <div class="x-knob__readout" id="discountQLQVal">0%</div>
                     <div class="x-knob__label">Discount</div>
                   </div>
                   </div>
-                </div>
-                <div class="x-row__amount">
-                  <div class="label">Thành tiền</div>
-                  <div class="x-vbox tnum" id="qlqAmount" style="font-size: var(--t-readout); padding: 4px 8px; min-width: 110px;">0</div>
+                  <div class="x-row__inline-amount">
+                    <span class="x-row__inline-amount__val tnum" id="qlqAmount">0</span>
+                    <span class="x-row__inline-amount__unit">₫</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -439,7 +432,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.2</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.3</div>
     </div>
   </div>
 

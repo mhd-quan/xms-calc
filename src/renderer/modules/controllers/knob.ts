@@ -138,8 +138,11 @@ function setKnob(el: HTMLElement, value: number, fire = false): void {
   if (readout) readout.textContent = formatKnobValue(stepped, spec);
 
   // Draw Ableton-style envelope on the paired canvas
-  const canvasId = 'envelope' + el.id.charAt(0).toUpperCase() + el.id.slice(1);
-  drawEnvelope(canvasId, norm);
+  // Knob IDs follow pattern "discount{Section}Knob" → canvas IDs are "envelope{Section}Knob"
+  const match = el.id.match(/^discount(\w+)Knob$/);
+  if (match) {
+    drawEnvelope('envelope' + match[1] + 'Knob', norm);
+  }
 
   if (fire && stepped !== previous) spec.onChange(stepped);
 }
