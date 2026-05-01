@@ -10,7 +10,7 @@ export type PaletteToken = {
 export function paletteToken(seed: number): PaletteToken {
   const normalizedSeed = Math.abs(Math.trunc(Number(seed) || 0));
   const hue = DEFAULT_HUES[normalizedSeed % DEFAULT_HUES.length] ?? DEFAULT_HUES[0];
-  const step = 2 + ((normalizedSeed * 2) % 4);
+  const step = 1 + (normalizedSeed % 3);
   return { hue, step };
 }
 

@@ -920,45 +920,49 @@ function renderMain(snapshot: RenderSnapshot): void {
 
   document.getElementById('qtgCoef').textContent = coef.toFixed(2);
   document.getElementById('qtgDur').textContent = `${duration.toFixed(1)}m`;
+  const qtgUnitPriceEl = document.getElementById('qtgUnitPrice');
+  if (qtgUnitPriceEl) qtgUnitPriceEl.textContent = formatVND(breakdown?.periodBase || 0);
 
   const qtgToggle = document.getElementById('qtgToggle');
   qtgToggle.classList.toggle('is-on', hasQTG);
   qtgToggle.textContent = hasQTG ? 'BẬT' : 'TẮT';
   const qtgRow = qtgToggle.closest('.x-row') ?? qtgToggle;
   const qtgMid = qtgRow.querySelector('.x-row__rhs');
-  const qtgRight = qtgRow.querySelector('.x-row__amount');
+  const qtgRight = qtgRow.querySelector('.x-row__inline-amount');
   renderDiscountApply('discountQTGApply', discountEnabled.qtg);
   setKnobValue('discountQTGKnob', globalDiscounts.qtg);
 
   if (hasQTG) {
-    qtgMid.classList.remove('is-disabled');
-    qtgRight.classList.remove('is-disabled');
+    qtgMid?.classList.remove('is-disabled');
+    qtgRight?.classList.remove('is-disabled');
     animateNumber('qtgAmount', cycleDisplayAmount(breakdown?.qtgAmount || 0, billingCycle));
   } else {
-    qtgMid.classList.add('is-disabled');
-    qtgRight.classList.add('is-disabled');
+    qtgMid?.classList.add('is-disabled');
+    qtgRight?.classList.add('is-disabled');
     animateNumber('qtgAmount', 0);
   }
 
   document.getElementById('qlqCoef').textContent = coef.toFixed(2);
   document.getElementById('qlqDur').textContent = `${duration.toFixed(1)}m`;
+  const qlqUnitPriceEl = document.getElementById('qlqUnitPrice');
+  if (qlqUnitPriceEl) qlqUnitPriceEl.textContent = formatVND(breakdown?.periodBase || 0);
 
   const qlqToggle = document.getElementById('qlqToggle');
   qlqToggle.classList.toggle('is-on', hasQLQ);
   qlqToggle.textContent = hasQLQ ? 'BẬT' : 'TẮT';
   const qlqRow = qlqToggle.closest('.x-row') ?? qlqToggle;
   const qlqMid = qlqRow.querySelector('.x-row__rhs');
-  const qlqRight = qlqRow.querySelector('.x-row__amount');
+  const qlqRight = qlqRow.querySelector('.x-row__inline-amount');
   renderDiscountApply('discountQLQApply', discountEnabled.qlq);
   setKnobValue('discountQLQKnob', globalDiscounts.qlq);
 
   if (hasQLQ) {
-    qlqMid.classList.remove('is-disabled');
-    qlqRight.classList.remove('is-disabled');
+    qlqMid?.classList.remove('is-disabled');
+    qlqRight?.classList.remove('is-disabled');
     animateNumber('qlqAmount', cycleDisplayAmount(breakdown?.qlqAmount || 0, billingCycle));
   } else {
-    qlqMid.classList.add('is-disabled');
-    qlqRight.classList.add('is-disabled');
+    qlqMid?.classList.add('is-disabled');
+    qlqRight?.classList.add('is-disabled');
     animateNumber('qlqAmount', 0);
   }
 }
