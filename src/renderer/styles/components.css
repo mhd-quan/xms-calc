@@ -292,7 +292,7 @@
 }
 /* Fill via background-gradient on the input; --val controls width. */
 .x-fader {
-  background: linear-gradient(var(--active), var(--active)) 0 / var(--val, 0%) 6px no-repeat;
+  background: linear-gradient(var(--active), var(--active)) 0 / var(--val, 0%) 4px no-repeat;
   background-origin: content-box;
   padding: 7px 0;
 }
@@ -320,7 +320,7 @@
 
 /* Variants */
 .x-fader--data {
-  background: linear-gradient(var(--data), var(--data)) 0 / var(--val, 0%) 6px no-repeat;
+  background: linear-gradient(var(--data), var(--data)) 0 / var(--val, 0%) 4px no-repeat;
   background-origin: content-box;
 }
 
