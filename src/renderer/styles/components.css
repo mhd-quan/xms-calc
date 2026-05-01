@@ -430,8 +430,7 @@
   pointer-events: none;
   max-height: 280px;
   overflow-y: auto;
-  /* Glass focus extension — not a drop shadow */
-  box-shadow: 0 0 0 1px var(--active-dim), 0 0 16px rgba(0,0,0,0.4);
+  box-shadow: 0 0 0 1px var(--active-dim);
 }
 .x-dropdown.is-open .x-dropdown__menu { opacity: 1; pointer-events: auto; }
 .x-dropdown__item {
@@ -491,7 +490,7 @@
   z-index: 100;
   opacity: 0;
   visibility: hidden;
-  box-shadow: 0 0 0 1px var(--active-dim), 0 0 20px rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 1px var(--active-dim);
 }
 .x-datepicker.is-open .x-datepicker__popup { opacity: 1; visibility: visible; }
 .x-datepicker__head {
@@ -620,7 +619,7 @@
   left: calc(var(--vu-peak) * 100%);
   width: 1px;
   background: var(--ink-1);
-  transition: left 200ms linear;
+  transition: left var(--t-meter) var(--ease-meter);
 }
 
 /* Vertical VU (for dense mixer columns) */

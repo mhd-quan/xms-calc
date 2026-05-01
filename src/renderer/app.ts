@@ -129,6 +129,8 @@ const HTML_ENTITIES: Record<string, string> = {
   "'": '&#39;'
 };
 const escapeHTML = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (char) => HTML_ENTITIES[char] ?? char);
+const MOTION_STRUCT_SECONDS = 0.14;
+const MOTION_METER_SECONDS = 0.4;
 
 function blankCustomer(): CustomerProfile {
   return {
@@ -645,7 +647,7 @@ function addStore() {
   activeTabId = store.id;
   clearSidebarSearch();
   commitQuoteMutation();
-  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.25 });
+  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: MOTION_STRUCT_SECONDS });
 }
 
 function removeStore(id: number): void {
@@ -658,7 +660,7 @@ function removeStore(id: number): void {
     height: 0,
     padding: 0,
     margin: 0,
-    duration: 0.2,
+    duration: MOTION_STRUCT_SECONDS,
     onComplete: () => {
       stores = stores.filter((store) => store.id !== id);
       if (activeTabId === id) activeTabId = stores[0]?.id ?? null;
@@ -795,7 +797,7 @@ function animateNumber(elementId: string, newValue: number): void {
   const tweenObj = el._tweenObj;
   gsap.to(tweenObj, {
     val: newValue,
-    duration: 0.4,
+    duration: MOTION_METER_SECONDS,
     ease: 'power2.out',
     onUpdate: () => {
       el.textContent = formatVND(tweenObj.val);
@@ -1035,7 +1037,7 @@ function bindEvents() {
     const newId = parseFloat(item.dataset.id ?? '0');
     if (newId !== activeTabId) {
       activeTabId = newId;
-      gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.2 });
+      gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: MOTION_STRUCT_SECONDS });
       render(['main', 'sidebar']);
     }
   });
@@ -1146,9 +1148,9 @@ function bindEvents() {
 
       if (isCollapsed) {
         section.classList.remove('collapsed');
-        gsap.fromTo(body, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.3, ease: 'power2.out' });
+        gsap.fromTo(body, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: MOTION_STRUCT_SECONDS, ease: 'power2.out' });
       } else {
-        gsap.to(body, { height: 0, opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => section.classList.add('collapsed') });
+        gsap.to(body, { height: 0, opacity: 0, duration: MOTION_STRUCT_SECONDS, ease: 'power2.out', onComplete: () => section.classList.add('collapsed') });
       }
     });
   });
