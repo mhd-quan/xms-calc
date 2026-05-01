@@ -5,6 +5,29 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.0] — 2026-05-02
+
+### Added
+- Dark Ableton renderer design system with `tokens.css`, `palette.css`, `components.css`, and app-level layout composition.
+- `x-*` component primitives for controls, dropdowns, datepicker, counters, knobs, VU meters, contextual InfoView, modals, and track rows.
+- 70-color branch palette for content-led branch identity.
+- Topbar quote-chain revision dropdown using reusable `x-track` rows.
+- Design policy checks for tokens, class namespaces, motion, radius, and shadow constraints.
+
+### Changed
+- Renderer shell migrated to a 4-zone desktop frame: topbar, sidebar/workbench, bottombar, and statusbar.
+- Calculation sections, branch list, bottom totals, and status surfaces now use the v1.8 Dark Ableton component contract.
+- Discount controls moved to the knob-bank interaction model with drag, wheel, shift fine-adjust, and double-click reset.
+- Context help moved into the persistent bottom-left InfoView.
+- Revision selection moved out of sidebar history UI and into the topbar breadcrumb.
+- `DESIGN.md` and `DESIGN-AUDIT.md` refreshed to match the implemented renderer system.
+
+### Removed
+- Legacy pulse/glow animations, elevation shadows, and non-canonical transition durations from renderer UI.
+- Superseded design documentation that described the pre-v1.8 renderer language.
+
+---
+
 ## [1.7.0] — 2026-04-25
 
 ### Added

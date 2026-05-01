@@ -125,9 +125,6 @@
   /* Defined inline as palette utility classes below. */
 }
 
-/* Font loads */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap');
-
 /* ─── BASE RESET ──────────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
