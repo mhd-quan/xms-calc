@@ -15,21 +15,8 @@
   <div id="app" class="app">
     <!-- TOP BAR -->
     <header class="topbar">
-      <div class="topbar__brand">
-        <img class="topbar__logo" src="./assets/nct-logo-512.png" alt="XMusic Station" width="28" height="28">
-      </div>
       <div class="topbar__breadcrumb x-breadcrumb">
         <span class="x-breadcrumb__item" id="bcCustomer">Khách hàng chưa đặt</span>
-        <span class="x-breadcrumb__sep">/</span>
-        <div id="revisionDropdown" class="x-dropdown x-breadcrumb__item topbar__revision tnum" tabindex="0" data-value=""
-          data-info="Quote revisions|Chọn revision trong quote chain hiện tại.|—">
-          <div class="x-dropdown__display topbar__revision__display">
-            <span id="bcQuote">—</span>
-            <span class="x-chip topbar__revision__badge" id="bcRevisionBadge">Base</span>
-            <span class="x-dropdown__caret"></span>
-          </div>
-          <div class="x-dropdown__menu topbar__revision__menu" id="revisionMenu"></div>
-        </div>
         <span class="x-breadcrumb__sep">/</span>
         <span class="x-breadcrumb__item is-current">
           <span class="x-breadcrumb__color" id="bcBranchColor"></span>
@@ -54,33 +41,60 @@
 
     <!-- SIDEBAR -->
     <aside id="sidebar" class="sidebar">
-      <div class="sidebar__head">
-        <div class="eyebrow">QUOTE CHAIN</div>
-        <span class="x-chip" id="quoteStatusChip">
-          <span class="x-chip__dot"></span>
-          <span id="quoteStatusText">DRAFT</span>
-        </span>
-      </div>
+      <div class="sidebar__fixed">
+        <div class="sidebar__brand">
+          <img class="sidebar__logo" src="./assets/nct-logo-512.png" alt="XMusic Station" width="34" height="34">
+          <div class="sidebar__brand-copy">
+            <div class="sidebar__brand-title">XMS Calculator</div>
+            <div class="sidebar__brand-subtitle">XMusic Station</div>
+          </div>
+        </div>
 
-      <div class="sidebar__customer">
-        <div class="sidebar__customer__name" id="sidebarCustomerName">—</div>
-        <div class="sidebar__customer__id">
-          <span id="sidebarCustomerId">—</span> · QUOTE <span id="sidebarQuoteCode">—</span>
+        <div class="sidebar__head">
+          <div class="eyebrow">QUOTE CHAIN</div>
+          <span class="x-chip" id="quoteStatusChip">
+            <span class="x-chip__dot"></span>
+            <span id="quoteStatusText">DRAFT</span>
+          </span>
+        </div>
+
+        <div class="sidebar__revision-wrap">
+          <div class="sidebar__revision-label">Quotation versions</div>
+          <div id="revisionDropdown" class="x-dropdown sidebar__revision topbar__revision tnum" tabindex="0" data-value=""
+            data-info="Quote revisions|Chọn revision trong quote chain hiện tại.|—">
+            <div class="x-dropdown__display topbar__revision__display">
+              <span id="bcQuote">—</span>
+              <span class="x-chip topbar__revision__badge" id="bcRevisionBadge">Base</span>
+              <span class="x-dropdown__caret"></span>
+            </div>
+            <div class="x-dropdown__menu topbar__revision__menu" id="revisionMenu"></div>
+          </div>
+        </div>
+
+        <div class="sidebar__customer">
+          <div class="sidebar__customer__name" id="sidebarCustomerName">—</div>
+          <div class="sidebar__customer__id">
+            <span id="sidebarCustomerId">—</span> · QUOTE <span id="sidebarQuoteCode">—</span>
+          </div>
+        </div>
+
+        <div class="sidebar__group-label">
+          <span>Chi nhánh · <span id="branchCount">0</span></span>
+          <span class="count tnum" id="branchLineCount">0 lines</span>
         </div>
       </div>
 
-      <div class="sidebar__group-label">
-        <span>Chi nhánh · <span id="branchCount">0</span></span>
-        <span class="count tnum" id="branchLineCount">0 lines</span>
+      <div class="sidebar__scroll">
+        <div id="storeList"></div>
       </div>
 
-      <div id="storeList"></div>
-
-      <button id="addStoreBtn" class="x-btn" style="width:100%; margin-top:12px; justify-content:flex-start; gap:8px;"
-        data-info="Add Branch|Thêm chi nhánh mới.|⌘N">
-        <span style="font-size:14px; line-height:1; margin-top:-2px;">+</span>
-        <span>Add branch</span>
-      </button>
+      <div class="sidebar__footer">
+        <button id="addStoreBtn" class="x-btn sidebar__add"
+          data-info="Add Branch|Thêm chi nhánh mới.|⌘N">
+          <span class="sidebar__add-icon">+</span>
+          <span>Add branch</span>
+        </button>
+      </div>
     </aside>
 
     <!-- WORKBENCH -->
@@ -432,7 +446,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.3</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.6</div>
     </div>
   </div>
 

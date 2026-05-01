@@ -2,6 +2,8 @@ import type { RenderSnapshot } from '../app';
 import type { RevisionStatus } from '../../shared/types';
 import { cycleLabel } from './billing-cycle';
 
+const APP_VERSION = '1.8.6';
+
 type StatusView = {
   label: string;
   dot: string;
@@ -13,7 +15,7 @@ export function renderStatusbar(snapshot: RenderSnapshot): void {
   setText('statusQuoteNumber', `QUOTE ${snapshot.activeDisplayQuoteNumber || '—'}`);
   setText('statusBranchSummary', branchSummary(snapshot.stores.length));
   setText('statusCycle', `CYCLE · ${cycleLabel(snapshot.billingCycle).toUpperCase()}`);
-  setText('statusVersion', 'XMS v1.8.1');
+  setText('statusVersion', `XMS v${APP_VERSION}`);
 
   const dot = getElement('statusDot');
   if (dot) dot.style.background = status.dot;

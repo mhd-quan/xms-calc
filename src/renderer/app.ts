@@ -925,18 +925,18 @@ function renderMain(snapshot: RenderSnapshot): void {
   qtgToggle.classList.toggle('is-on', hasQTG);
   qtgToggle.textContent = hasQTG ? 'BẬT' : 'TẮT';
   const qtgRow = qtgToggle.closest('.x-row') ?? qtgToggle;
-  const qtgMid = qtgRow.querySelector('.x-row__rhs');
-  const qtgRight = qtgRow.querySelector('.x-row__amount');
+  const qtgMid = qtgRow.querySelector<HTMLElement>('.x-row__rhs');
+  const qtgRight = qtgRow.querySelector<HTMLElement>('.x-row__inline-amount');
   renderDiscountApply('discountQTGApply', discountEnabled.qtg);
   setKnobValue('discountQTGKnob', globalDiscounts.qtg);
 
   if (hasQTG) {
-    qtgMid.classList.remove('is-disabled');
-    qtgRight.classList.remove('is-disabled');
+    qtgMid?.classList.remove('is-disabled');
+    qtgRight?.classList.remove('is-disabled');
     animateNumber('qtgAmount', cycleDisplayAmount(breakdown?.qtgAmount || 0, billingCycle));
   } else {
-    qtgMid.classList.add('is-disabled');
-    qtgRight.classList.add('is-disabled');
+    qtgMid?.classList.add('is-disabled');
+    qtgRight?.classList.add('is-disabled');
     animateNumber('qtgAmount', 0);
   }
 
@@ -947,18 +947,18 @@ function renderMain(snapshot: RenderSnapshot): void {
   qlqToggle.classList.toggle('is-on', hasQLQ);
   qlqToggle.textContent = hasQLQ ? 'BẬT' : 'TẮT';
   const qlqRow = qlqToggle.closest('.x-row') ?? qlqToggle;
-  const qlqMid = qlqRow.querySelector('.x-row__rhs');
-  const qlqRight = qlqRow.querySelector('.x-row__amount');
+  const qlqMid = qlqRow.querySelector<HTMLElement>('.x-row__rhs');
+  const qlqRight = qlqRow.querySelector<HTMLElement>('.x-row__inline-amount');
   renderDiscountApply('discountQLQApply', discountEnabled.qlq);
   setKnobValue('discountQLQKnob', globalDiscounts.qlq);
 
   if (hasQLQ) {
-    qlqMid.classList.remove('is-disabled');
-    qlqRight.classList.remove('is-disabled');
+    qlqMid?.classList.remove('is-disabled');
+    qlqRight?.classList.remove('is-disabled');
     animateNumber('qlqAmount', cycleDisplayAmount(breakdown?.qlqAmount || 0, billingCycle));
   } else {
-    qlqMid.classList.add('is-disabled');
-    qlqRight.classList.add('is-disabled');
+    qlqMid?.classList.add('is-disabled');
+    qlqRight?.classList.add('is-disabled');
     animateNumber('qlqAmount', 0);
   }
 }
