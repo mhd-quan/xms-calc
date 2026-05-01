@@ -18,6 +18,16 @@
       <div class="topbar__breadcrumb x-breadcrumb">
         <span class="x-breadcrumb__item" id="bcCustomer">Khách hàng chưa đặt</span>
         <span class="x-breadcrumb__sep">/</span>
+        <div id="revisionDropdown" class="x-dropdown x-breadcrumb__item topbar__revision tnum" tabindex="0" data-value=""
+          data-info="Quote revisions|Chọn revision trong quote chain hiện tại.|—">
+          <div class="x-dropdown__display topbar__revision__display">
+            <span id="bcQuote">—</span>
+            <span class="x-chip topbar__revision__badge" id="bcRevisionBadge">Base</span>
+            <span class="x-dropdown__caret"></span>
+          </div>
+          <div class="x-dropdown__menu topbar__revision__menu" id="revisionMenu"></div>
+        </div>
+        <span class="x-breadcrumb__sep">/</span>
         <span class="x-breadcrumb__item is-current">
           <span class="x-breadcrumb__color" id="bcBranchColor"></span>
           <span id="bcBranchName">—</span>
@@ -56,19 +66,6 @@
             <span class="x-chip__dot"></span>
             <span id="quoteStatusText">DRAFT</span>
           </span>
-        </div>
-
-        <div class="sidebar__revision-wrap">
-          <div class="sidebar__revision-label">Quotation versions</div>
-          <div id="revisionDropdown" class="x-dropdown sidebar__revision topbar__revision tnum" tabindex="0" data-value=""
-            data-info="Quote revisions|Chọn revision trong quote chain hiện tại.|—">
-            <div class="x-dropdown__display topbar__revision__display">
-              <span id="bcQuote">—</span>
-              <span class="x-chip topbar__revision__badge" id="bcRevisionBadge">Base</span>
-              <span class="x-dropdown__caret"></span>
-            </div>
-            <div class="x-dropdown__menu topbar__revision__menu" id="revisionMenu"></div>
-          </div>
         </div>
 
         <div class="sidebar__customer">
@@ -446,7 +443,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.6</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.7</div>
     </div>
   </div>
 

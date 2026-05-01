@@ -52,8 +52,9 @@
 
 .topbar__revision {
   width: auto;
-  min-width: 0;
-  flex: 0 1 auto;
+  min-width: 188px;
+  max-width: min(340px, 32vw);
+  flex: 0 1 260px;
   overflow: visible;
   color: var(--ink-2);
 }
@@ -61,10 +62,10 @@
 .topbar__revision__display {
   height: 24px;
   min-width: 0;
-  gap: var(--s-3);
-  padding: 0 var(--s-3);
-  background: transparent;
-  border-color: transparent;
+  gap: var(--s-4);
+  padding: 0 var(--s-3) 0 var(--s-4);
+  background: var(--inset-0);
+  border-color: var(--line-1);
   font: inherit;
   letter-spacing: inherit;
   text-transform: inherit;
@@ -88,6 +89,7 @@
 .topbar__revision__menu {
   width: 280px;
   right: auto;
+  left: 0;
   padding: var(--s-2);
   text-transform: none;
   letter-spacing: 0;
@@ -194,47 +196,6 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 6px var(--s-4);
-}
-
-.sidebar__revision-wrap {
-  margin-bottom: var(--s-4);
-}
-
-.sidebar__revision-label {
-  font-family: var(--font-label);
-  font-size: var(--t-tiny);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-  font-weight: 700;
-  padding: 0 6px var(--s-2);
-}
-
-.sidebar__revision.topbar__revision {
-  width: 100%;
-  min-width: 0;
-  flex: 0 0 auto;
-  overflow: visible;
-}
-
-.sidebar__revision .topbar__revision__display {
-  height: 30px;
-  justify-content: space-between;
-  background: var(--inset-0);
-  border-color: var(--line-1);
-  padding: 0 var(--s-4);
-}
-
-.sidebar__revision #bcQuote {
-  flex: 1 1 auto;
-}
-
-.sidebar__revision .topbar__revision__menu {
-  left: 0;
-  right: auto;
-  width: 100%;
-  max-height: 220px;
-  z-index: 140;
 }
 
 .sidebar__customer {
@@ -473,15 +434,15 @@
 .csbody-grid--6-6 { grid-template-columns: 1fr 1fr; }
 .x-row {
   display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(200px, 320px);
-  gap: var(--s-6);
+  grid-template-columns: minmax(360px, 1fr) minmax(460px, 660px);
+  gap: 42px;
   align-items: flex-start;
   padding: var(--s-5) 0;
 }
 
 .x-row__lhs {
   display: flex;
-  gap: var(--s-6);
+  gap: 42px;
   align-items: flex-start;
 }
 
@@ -516,17 +477,17 @@
 .x-discount-bank {
   display: inline-flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: var(--s-4);
+  justify-content: flex-start;
+  gap: 22px;
   min-width: 0;
-  width: 100%;
+  width: min(560px, 100%);
 }
 
 /* Envelope canvas — Ableton automation-lane style line display */
 .x-knob__envelope {
-  flex: 1 1 auto;
-  min-width: 56px;
-  max-width: 100px;
+  flex: 0 1 220px;
+  min-width: 170px;
+  max-width: 220px;
   height: 32px;
   background: var(--inset-0);
   border: 1px solid var(--line-1);
@@ -535,6 +496,15 @@
 }
 
 .x-row__info { flex: 1; }
+
+#boxQuantityRow {
+  justify-content: flex-end;
+  gap: 30px;
+}
+
+#boxQuantityRow .label {
+  flex: 0 0 auto;
+}
 
 .x-row__name {
   font-size: var(--t-control);
