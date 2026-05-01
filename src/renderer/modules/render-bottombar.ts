@@ -13,7 +13,6 @@ export function renderBottombar(snapshot: RenderSnapshot): void {
   setMoney('totalAccount', totals.subtotalAccount);
   setMoney('totalBox', totals.subtotalBox);
   setText('grandTotal', formatVND(totals.grand));
-  setText('statusLineCount', `${snapshot.stores.length} chi nhánh`);
 
   document.querySelectorAll<HTMLElement>('#vatControl .x-seg__btn').forEach((button) => {
     const buttonRate = Number(button.dataset.vat);

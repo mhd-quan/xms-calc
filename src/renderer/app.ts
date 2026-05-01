@@ -20,6 +20,7 @@ import { formatVND } from './modules/format';
 import { paletteVar } from './modules/palette';
 import { renderBottombar } from './modules/render-bottombar';
 import { renderSidebar } from './modules/render-sidebar';
+import { renderStatusbar } from './modules/render-statusbar';
 import { renderTopbar } from './modules/render-topbar';
 import { renderWorkbench } from './modules/render-workbench';
 
@@ -397,15 +398,6 @@ function renderQuoteChrome() {
     sidebarStatusChip.classList.toggle('x-chip--status-sent', activeRevisionStatus === 'imported');
     sidebarStatusChip.classList.toggle('x-chip--status-accepted', activeRevisionStatus === 'exported');
   }
-
-  const bottomQuoteCode = document.getElementById('bottomQuoteCode');
-  if (bottomQuoteCode) bottomQuoteCode.textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
-  const bottomStatusText = document.getElementById('bottomStatusText');
-  if (bottomStatusText) bottomStatusText.textContent = statusLabel(activeRevisionStatus);
-  const statusQuoteNumber = document.getElementById('statusQuoteNumber');
-  if (statusQuoteNumber) statusQuoteNumber.textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
-  const statusRevisionState = document.getElementById('statusRevisionState');
-  if (statusRevisionState) statusRevisionState.textContent = statusLabel(activeRevisionStatus);
 
   const revisionList = document.getElementById('revisionList');
   if (revisionList) {
@@ -804,9 +796,6 @@ function renderMain(snapshot: RenderSnapshot): void {
   const duration = breakdown?.duration ?? calculateDurationMonths(store.startDate, store.endDate);
   const coef = breakdown?.coef ?? calculateCoef(store.type, area);
 
-  const statusBranchName = document.getElementById('statusBranchName');
-  if (statusBranchName) statusBranchName.textContent = store.name;
-
   const typeText = document.getElementById('businessTypeText');
   const typeDropdown = document.getElementById('businessType');
   const storeTypeMeta = store.type ? BUSINESS_TYPES[store.type] : undefined;
@@ -962,6 +951,7 @@ function render(scope: RenderScope = 'all'): void {
     }
     const snapshot = createRenderSnapshot();
     renderTopbar(snapshot);
+    renderStatusbar(snapshot);
     if (renderScope.has('sidebar')) renderSidebar(snapshot);
     if (renderScope.has('main')) {
       renderWorkbench(snapshot);
@@ -1116,6 +1106,7 @@ function bindEvents() {
       cycleSeg.querySelectorAll('.x-seg__btn').forEach((el) => {
         el.classList.toggle('is-active', el === button);
       });
+      renderStatusbar(createRenderSnapshot());
     });
   }
 
