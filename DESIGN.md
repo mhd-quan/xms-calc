@@ -1,110 +1,148 @@
-# Ableton Live Design Language Specification (DESIGN.md)
+# XMS Calculator Design System
 
-## 1. Design Philosophy
-The Ableton Live interface is built on the principles of **high-density functionalism**, **flat hierarchy**, and **non-destructive visual focus**. It is designed for professional music production and live performance, where clarity, precision, and speed are paramount.
+## 1. Direction
 
-- **Non-Standardized UI:** Eschews OS-native widgets for custom, high-performance elements.
-- **Context-Aware Layout:** A modular "Shell" architecture where panels collapse and expand based on workflow.
-- **Color as Information:** Color is rarely decorative; it denotes track grouping, clip status, or parameter activity.
+XMS Calculator v1.8 uses a Dark Ableton operating language: dense, flat,
+instrument-grade controls for quote calculation work. The UI is not a marketing
+surface. It is a single-window desktop tool optimized for scanning, repeated
+editing, and fast quote-chain decisions.
 
----
+The source of truth for renderer UI is:
 
-## 2. Visual Foundation
+- `src/renderer/styles/tokens.css`
+- `src/renderer/styles/palette.css`
+- `src/renderer/styles/components.css`
+- Layout composition in `src/renderer/styles/app.css`
 
-### 2.1 Color Palette (Dark Theme / Neutral)
-The interface uses a multi-layered gray-scale system with high-saturation functional accents.
+The active app variant is `XMS v1.8 - Dark Ableton`.
 
-| Category | Hex/Value | Usage |
-| :--- | :--- | :--- |
-| **Background (Deep)** | `#212121` | Main background, empty spaces. |
-| **Panel Surface** | `#323232` | Device racks, browser background. |
-| **Control Surface** | `#454545` | Buttons, knobs, sliders (inactive). |
-| **Borders/Dividers** | `#1a1a1a` | Hairline separators (1px). |
-| **Text (Primary)** | `#cccccc` | Main labels, active values. |
-| **Text (Secondary)** | `#8a8a8a` | Units, inactive labels, headers. |
+## 2. Color Palette
 
-**Functional Accents:**
-- **Active State:** Vibrant Orange (`#ff9e00`) / Yellow (`#f2ca30`).
-- **Signal/Audio:** Green (`#00ffc8`) to Red (`#ff4d4d`) for meters.
-- **Automation:** Red/Pink (`#e04a4a`).
-- **Selection:** Light Gray/Blueish Highlight.
+### 2.1 Structural Neutrals
 
-### 2.2 Typography
-- **Font Family:** A custom, condensed sans-serif (e.g., *Ableton Sans* or a tight-kerning *Inter/Helvetica* variant).
-- **Sizing:**
-    - Small: 9-10px (Labels, secondary info).
-    - Medium: 11-12px (Main UI text).
-    - Large: 14px (Track names, large readouts).
-- **Style:** Always crisp, no anti-aliasing issues. High contrast against dark backgrounds. Uppercase is used frequently for section headers.
+Depth is created through adjacent charcoal layers and 1px borders, not elevation
+shadows.
 
-### 2.3 Iconography
-- **Style:** 1px stroke weight, strictly geometric.
-- **Geometry:** 12x12px or 16x16px bounding boxes.
-- **Icons:** Folders, play/stop triangles, circle/record buttons, and custom waveforms.
+| Token | Value | Contract |
+|---|---:|---|
+| `--shell-0` | `#1a1c20` | Outermost app frame, status bar |
+| `--shell-1` | `#22252a` | Default workbench and track row base |
+| `--shell-2` | `#2a2d33` | Sidebar, topbar, bottom bar, popup bodies |
+| `--shell-3` | `#32363d` | Active rows and section headers |
+| `--shell-4` | `#3c4047` | Hover and pressed neutral state |
+| `--shell-5` | `#494e57` | Medium stroke or disabled active state |
+| `--inset-0` | `#14161a` | Recessed inputs and data fields |
+| `--inset-1` | `#0e1014` | Deep troughs and meter bases |
 
----
+### 2.2 Lines And Ink
 
-## 3. UI Components & Patterns
+| Token | Value | Contract |
+|---|---:|---|
+| `--line-1` | `#2e3138` | Default hairline separator |
+| `--line-2` | `#3c4047` | Strong control border |
+| `--line-3` | `#5b6069` | Strong neutral focus border |
+| `--ink-1` | `#e6e8ec` | Primary text and active labels |
+| `--ink-2` | `#b6bac1` | Secondary labels |
+| `--ink-3` | `#878c95` | Units, meta text, tertiary labels |
+| `--ink-4` | `#5d6168` | Disabled and dim text |
+| `--ink-5` | `#3f434a` | Ghost dividers and low-emphasis dots |
 
-### 3.1 The "Control" Pattern (Knobs & Sliders)
-- **Knobs:** Radial progress indicators around a central point.
-- **Sliders:** Minimalist vertical/horizontal bars with a numeric readout usually nearby.
-- **Interaction:** Single-click to select, click-drag to adjust. Double-click returns to default.
+### 2.3 Semantic Accents
 
-### 3.2 Buttons
-- **Toggle Buttons:** Flat rectangles. Background changes from dark to bright (usually orange/yellow) when active.
-- **Momentary Buttons:** Inset effect or color change on hover.
+| Token | Value | Contract |
+|---|---:|---|
+| `--active` | `#ffb43a` | Primary selected state, CTA fill, focus border |
+| `--active-hover` | `#ffc257` | Hover over active fill |
+| `--active-press` | `#f0a420` | Pressed active fill |
+| `--active-dim` | `rgba(255, 180, 58, 0.14)` | Active tint and overlay ring |
+| `--active-glow` | `rgba(255, 180, 58, 0.28)` | Approved focus glow extension |
+| `--active-ink` | `#1a1410` | Text on active fill |
+| `--data` | `#5cd4c4` | Secondary data accent and sent state |
+| `--alert` | `#ff5c5c` | Error and rejected state only |
+| `--vu-low` | `#4ade80` | Safe meter range |
+| `--vu-mid` | `#fde047` | Caution meter range |
+| `--vu-high` | `#ef4444` | High meter range |
 
-### 3.3 Panels & Layout (Modular Grid)
-- **Header:** Global transport controls (Tempo, Signature, CPU meter).
-- **Center:** The Workspace (Session View grid or Arrangement View timeline).
-- **Bottom:** Detail View (Instrument/Effect racks).
-- **Left/Side:** Browser (Samples, Plugins, Instruments).
-- **Separators:** 1-2px draggable borders.
+### 2.4 70-Color Branch Palette
 
----
+Branch identity colors are content accents, not chrome. The matrix is
+`--p-{stone,rust,amber,moss,teal,indigo,mauve}-{1..10}`: seven hue families,
+ten steps each. Use these for branch rails, badges, swatches, and track rows.
+Do not use them for global button states, focus, or app frame color.
 
-## 4. Specific Design Requirements (Constraints)
+## 3. Typography
 
-1. **Pixel-Perfect Alignment:** All elements must align to a strict grid. There are no rounded corners (or extremely minimal, e.g., 2px for buttons).
-2. **High Information Density:** Maximum UI surface area should be usable. Minimize whitespace.
-3. **Responsive Scaling:** UI components must scale linearly without losing text legibility.
-4. **Visual Hierarchy via Contrast:** Active parameters should "pop" against the muted gray background.
-5. **No Drop Shadows:** The UI is completely flat. Depth is created through value changes (lighter/darker grays) and thin borders.
+The renderer uses three font roles:
 
----
+| Token | Stack | Usage |
+|---|---|---|
+| `--font-ui` | `Inter`, system UI fallback | Primary controls and labels |
+| `--font-label` | `Atkinson Hyperlegible`, `Inter` fallback | Eyebrows, dense labels, microcopy |
+| `--font-num` | `Inter`, `SF Mono`, monospace fallback | Tabular numbers and quote identifiers |
 
-## 5. Interaction Design
-- **Single-Window Workflow:** Avoid pop-up windows. Content should appear in the lower Detail View or the Side Browser.
-- **Hover States:** Subtle brightening of buttons or borders to indicate interactivity.
-- **Drag & Drop:** The UI is built around dragging samples/effects from the browser into tracks/racks.
+The body must keep `font-feature-settings: 'tnum' 1, 'cv11' 1, 'ss03' 1`.
+Letter spacing is controlled by `--track-*` tokens and must not be negative in
+compact UI containers.
 
----
+## 4. Components
 
-## 6. XMS Calculator Live Variant
+### 4.1 Component Contract
 
-The shipped calculator UI is a specific operating skin for XMS, not a generic Ableton clone. It keeps the Ableton logic but biases the shell toward charcoal and amber, with pear and blue confined to the brand mark / identity linework rather than repeated chrome states.
+Reusable component selectors live in `components.css` and use the `x-*`
+namespace. Layout and workflow selectors live in `app.css` and may use
+`app`, `topbar`, `sidebar`, `work`, `bottombar`, `csection`, `line`, and
+feature-specific descendants.
 
-### 6.1 Live App Tokens
+Shared primitives:
 
-| Token | Value | Usage |
-| :--- | :--- | :--- |
-| `--bg-root` | `#1a1c20` | App frame / outer canvas |
-| `--bg-surface` | `#22252a` | Sidebar, panels, dropdown bodies |
-| `--bg-elevated` | `#2a2d33` | Active rows, section headers |
-| `--bg-inset` | `#14161a` | Inputs and recessed tracks |
-| `--text-primary` | `#e6e8ec` | Main labels and values |
-| `--text-secondary` | `#b6bac1` | Secondary labels and metadata |
-| `--daw-orange` | `#FFB43A` | Active, focus, confirm, export-ready states |
-| `--data` | `#5cd4c4` | Muted data trace for low-volume summary markers |
+- `x-btn`: rectangular command, toggle, and primary action buttons.
+- `x-field`, `x-field-row`, `x-suffix-wrap`: form controls and labels.
+- `x-dropdown`: menu chooser with keyboard selection and active left rail.
+- `x-datepicker`: 240px calendar popup, Monday-first grid, keyboard navigation.
+- `x-counter`: 26px +/- controls with spinbutton input semantics.
+- `x-knob`: vertical drag, wheel, shift fine-adjust, double-click reset.
+- `x-vu`: real-time meter with 400ms peak hold/decay behavior.
+- `x-infoview`: bottom-left contextual help driven by `[data-info]`.
+- `x-modal`: modal frame with focus trap and scrim separation.
+- `x-track`: reusable row pattern for branches and revision dropdown items.
 
-### 6.2 Live Rules
+### 4.2 Quote Chain UI
 
-- Rectangular controls stay at 3px radius or below.
-- Floating surfaces stay flat and border-led; no elevation shadow.
-- Amber owns active/focus in the shell.
-- Pear and blue do not own repeated states; they remain in the XMS mark and rare identity linework.
-- Store colors are muted and varied, not neon-heavy, and never use pear/blue as the default first tracks.
-- Workbench density follows the Direction A mockup: compact topbar, bordered calculation sections, bottom info/status layers.
-- Bottom and status bars span the entire application frame; sidebar and workbench stop above them.
-- Faders use amber active fill with a right-side value box, matching the Design Language fader pattern.
+The sidebar remains compact: quote chain eyebrow, active revision chip, customer
+summary, and branch track list. Revision selection lives in the topbar
+breadcrumb quote item. The dropdown reuses `x-dropdown__menu`,
+`x-dropdown__item`, and `x-track`; the active revision must be marked
+`.is-selected`.
+
+## 5. Constraints
+
+- Token namespace is closed. Additions require updating token policy and this
+  document in the same change.
+- Radius ceiling is 2px for controls and 3px for panels/modals. Circular dots
+  are the only exception.
+- Box shadow is limited to `--focus-glow` and the documented glass focus ring.
+  There are no elevation shadows.
+- Motion durations are limited to `0ms`, `90ms`, `140ms`, and `400ms`.
+- Active amber is reserved for selected state, primary CTA, focus, and active
+  meter/readout signals.
+- The app shell is dense by default. Avoid decorative cards, hero sections,
+  floating page panels, or copy that explains the UI inside the UI.
+
+## 6. Glass Focus Extension
+
+The only approved decorative departure from strict flatness is the glass focus
+extension:
+
+- `--focus-glow`: active border plus 8px active glow for focused controls.
+- `box-shadow: 0 0 0 1px var(--active-dim)`: popup and modal panel ring.
+
+This is a focus affordance, not elevation. It must not be used for hover chrome,
+ambient glow, decorative panels, or inactive surfaces.
+
+## 7. PDF Output Variant
+
+The quote PDF template remains a separate light output variant. It is optimized
+for exported documents, printing, and client review. Do not force the dark app
+palette into `src/templates/quote/`. Shared brand tone is achieved through
+layout discipline, typography hierarchy, and quote identity metadata rather than
+matching renderer colors.

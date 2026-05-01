@@ -1,0 +1,186 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   XMS DESIGN LANGUAGE — Foundation Tokens
+   v1.0 — Instrument-grade interface for late-night precision work
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── STRUCTURAL NEUTRALS (charcoal-slate, instrument shell) ─────────── */
+  /* Adjacency-based depth: 6–16 RGB points between layers, no shadows. */
+  --shell-0:  #1a1c20;  /* App frame / outermost */
+  --shell-1:  #22252a;  /* Default surface (workbench) */
+  --shell-2:  #2a2d33;  /* Panel surface (sidebar, bottom bar) */
+  --shell-3:  #32363d;  /* Elevated row / active section header */
+  --shell-4:  #3c4047;  /* Hover / pressed neutral */
+  --shell-5:  #494e57;  /* Stroke-medium / disabled-active */
+
+  --inset-0:  #14161a;  /* Recessed field / data trough */
+  --inset-1:  #0e1014;  /* Deep recess (VU base) */
+
+  --line-1:   #2e3138;  /* Hairline divider */
+  --line-2:   #3c4047;  /* Stronger divider / control border */
+  --line-3:   #5b6069;  /* Strong stroke / focus border (neutral) */
+
+  /* ─── TEXT ──────────────────────────────────────────────────────────── */
+  --ink-1:    #e6e8ec;  /* Primary text (avoid #fff: halation) */
+  --ink-2:    #b6bac1;  /* Secondary labels */
+  --ink-3:    #878c95;  /* Tertiary / units */
+  --ink-4:    #5d6168;  /* Disabled / dim */
+  --ink-5:    #3f434a;  /* Hairline ghost */
+
+  /* ─── SEMANTIC ACCENTS (Ableton-style restraint) ────────────────────── */
+  /* Active state — single hero accent. Used for: armed transport, active
+     mode, primary focus, selected row indicator. Tennessee-amber (warmer
+     than safety-amber, less playful than mustard). */
+  --active:        #ffb43a;  /* Amber-active */
+  --active-hover:  #ffc257;
+  --active-press:  #f0a420;
+  --active-dim:    rgba(255, 180, 58, 0.14);   /* Field tint when active */
+  --active-glow:   rgba(255, 180, 58, 0.28);   /* Focus glow extension */
+  --active-ink:    #1a1410;                     /* Text on amber fill */
+
+  /* Data accent — secondary cool, used SPARINGLY for value/data scrubbing,
+     real-time readouts, modulation traces. */
+  --data:          #5cd4c4;  /* Soft cyan */
+  --data-dim:      rgba(92, 212, 196, 0.12);
+  --data-glow:     rgba(92, 212, 196, 0.22);
+
+  /* Alert — reserved, sparse, errors only */
+  --alert:         #ff5c5c;
+  --alert-dim:     rgba(255, 92, 92, 0.14);
+
+  /* VU meter gradient (green → yellow → red, real-time signal) */
+  --vu-low:        #4ade80;  /* Safe */
+  --vu-mid:        #fde047;  /* Caution */
+  --vu-high:       #ef4444;  /* Clip */
+
+  /* ─── TYPOGRAPHY ────────────────────────────────────────────────────── */
+  /* Inter — primary UI face (neo-grotesque, tabular figures, ss03 cv11) */
+  /* Atkinson Hyperlegible — dense labels & tiny text (max legibility) */
+  --font-ui:    'Inter', 'Helvetica Neue', system-ui, -apple-system, sans-serif;
+  --font-label: 'Atkinson Hyperlegible', 'Inter', system-ui, sans-serif;
+  --font-num:   'Inter', 'SF Mono', ui-monospace, monospace;
+
+  /* Operational hierarchy (not editorial — dense, indexing-layer) */
+  --t-tiny:       9.5px;   /* Mini-labels in dense controls */
+  --t-label:      11px;    /* Standard parameter labels */
+  --t-body:       12px;    /* Body, dropdown items */
+  --t-control:    13px;    /* Field input, primary control text */
+  --t-section:    14px;    /* Section titles, dialog headers */
+  --t-readout:    18px;    /* Numeric readouts (hero values) */
+  --t-display:    34px;    /* Grand total / hero number */
+
+  --lh-tight:     1.0;
+  --lh-control:   1.2;
+  --lh-body:      1.45;
+
+  --track-tight:   0.01em;     /* Numeric */
+  --track-default: 0;
+  --track-label:   0.14em;     /* UPPERCASE labels */
+  --track-eyebrow: 0.22em;     /* Eyebrow / caps headers */
+
+  /* ─── SPACING (4px grid; controls land on whole pixels) ─────────────── */
+  --s-0:  0;
+  --s-1:  1px;     /* Hairline */
+  --s-2:  2px;     /* Tight inner padding */
+  --s-3:  4px;     /* Base unit */
+  --s-4:  8px;     /* Standard gap */
+  --s-5:  12px;    /* Section internal */
+  --s-6:  16px;    /* Section gap */
+  --s-7:  20px;
+  --s-8:  24px;    /* Major divider */
+  --s-9:  32px;
+  --s-10: 48px;    /* Page rhythm */
+
+  /* Row heights (instrument-panel discipline) */
+  --row-tight:    22px;   /* Browser / list rows */
+  --row-default:  28px;   /* Standard control row */
+  --row-input:    32px;   /* Field input */
+  --row-button:   28px;   /* Top bar buttons */
+
+  /* ─── RADII (square-first; 0–2px only) ──────────────────────────────── */
+  --r-0: 0;
+  --r-1: 1px;
+  --r-2: 2px;     /* Standard for buttons, fields, value boxes */
+  --r-3: 3px;     /* Hard ceiling — modals, panels */
+  --r-pill: 999px; /* RESERVED — only for circular dots/marks */
+
+  /* ─── MOTION ────────────────────────────────────────────────────────── */
+  /* Hover/active transitions: 0ms (instant feedback, instrument feel) */
+  /* Structural change: 140ms cubic-bezier for show/hide panels */
+  /* Value transitions: 400ms spring for VU/meter only */
+  --t-instant: 0ms;
+  --t-quick:   90ms;
+  --t-struct:  140ms;
+  --t-meter:   400ms;
+  --ease-out:  cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-meter: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  /* ─── FOCUS (Glass Focus Extension — documented departure) ──────────── */
+  /* The single approved decoration. Border + 1px outer ring + glow. */
+  --focus-ring: 0 0 0 1px var(--active), 0 0 0 3px var(--active-dim);
+  --focus-glow: 0 0 0 1px var(--active), 0 0 8px var(--active-glow);
+
+  /* ─── CHI NHÁNH PALETTE ─────────────────────────────────────────────── */
+  /* 70-color matrix — pastel mid-saturation, content-led (not chrome). */
+  /* Defined inline as palette utility classes below. */
+}
+
+/* ─── BASE RESET ──────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background: var(--shell-0);
+  color: var(--ink-1);
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: 'tnum' 1, 'cv11' 1, 'ss03' 1;
+}
+
+::selection { background: var(--active); color: var(--active-ink); }
+
+.tnum, .num { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum' 1; }
+
+/* Webkit scrollbar — minimal, instrument-style */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--shell-4);
+  border: 2px solid var(--shell-1);
+  border-radius: var(--r-2);
+}
+::-webkit-scrollbar-thumb:hover { background: var(--shell-5); }
+::-webkit-scrollbar-corner { background: transparent; }
+
+/* Typography utilities */
+.eyebrow {
+  font-family: var(--font-label);
+  font-size: var(--t-tiny);
+  letter-spacing: var(--track-eyebrow);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 700;
+}
+.label {
+  font-family: var(--font-label);
+  font-size: var(--t-label);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-2);
+  font-weight: 700;
+}
+.title {
+  font-family: var(--font-ui);
+  font-size: var(--t-section);
+  font-weight: 600;
+  color: var(--ink-1);
+  letter-spacing: -0.005em;
+}
+
+/* Hide spinner on number inputs */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }

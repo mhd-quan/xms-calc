@@ -27,11 +27,13 @@ const baseOptions: CalcOptions = {
   baseSalary: 2340000,
   vatRate: 0.1,
   boxMode: 'none',
+  billingCycle: 'y',
   globalBoxCount: 1,
   hasAccountFee: true,
   hasQTG: true,
   hasQLQ: true,
-  globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 }
+  globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
+  discountEnabled: { account: true, box: true, qtg: true, qlq: true }
 };
 
 const cafeStore: Store = {
@@ -103,6 +105,21 @@ test('VAT is derived from the shared subtotal', () => {
   moneyEqual(totals.subtotal, totals.subtotalQTG + totals.subtotalQLQ + totals.subtotalAccount + totals.subtotalBox);
   moneyEqual(totals.vat, totals.subtotal * 0.08);
   moneyEqual(totals.grand, totals.subtotal * 1.08);
+});
+
+test('discount toggles preserve values but control whether they apply', () => {
+  const withDiscount = calculateStoreBreakdown(cafeStore, {
+    ...baseOptions,
+    globalDiscounts: { ...baseOptions.globalDiscounts, qtg: 50 }
+  });
+  const disabledDiscount = calculateStoreBreakdown(cafeStore, {
+    ...baseOptions,
+    globalDiscounts: { ...baseOptions.globalDiscounts, qtg: 50 },
+    discountEnabled: { ...baseOptions.discountEnabled, qtg: false }
+  });
+
+  moneyEqual(withDiscount.qtgAmount, 3217500);
+  moneyEqual(disabledDiscount.qtgAmount, 6435000);
 });
 
 test('buildQuotePayload creates export-safe metadata and enriched store rows', () => {

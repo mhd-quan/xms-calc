@@ -8,6 +8,7 @@ export type BusinessType =
   | 'supermarket';
 
 export type BoxMode = 'none' | 'buy' | 'rent';
+export type BillingCycle = 'm' | 'q' | 'y';
 
 export type RevisionStatus = 'draft' | 'imported' | 'exported';
 
@@ -31,15 +32,24 @@ export interface GlobalDiscounts {
   qlq: number;
 }
 
+export interface DiscountToggles {
+  account: boolean;
+  box: boolean;
+  qtg: boolean;
+  qlq: boolean;
+}
+
 export interface CalcOptions {
   baseSalary: number;
   vatRate: number;
   boxMode: BoxMode;
+  billingCycle: BillingCycle;
   globalBoxCount: number;
   hasAccountFee: boolean;
   hasQTG: boolean;
   hasQLQ: boolean;
   globalDiscounts: GlobalDiscounts;
+  discountEnabled: DiscountToggles;
 }
 
 export interface Store {

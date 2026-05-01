@@ -22,21 +22,31 @@ type DiscountInput = {
   qlq?: number;
 };
 
+type DiscountToggleInput = {
+  account?: boolean;
+  box?: boolean;
+  qtg?: boolean;
+  qlq?: boolean;
+};
+
 export type CalculatorOptionsInput = {
   baseSalary?: number;
   vatRate?: number;
   boxMode?: 'none' | 'buy' | 'rent';
+  billingCycle?: 'm' | 'q' | 'y';
   globalBoxCount?: number;
   hasAccountFee?: boolean;
   hasQTG?: boolean;
   hasQLQ?: boolean;
   globalDiscounts?: DiscountInput;
+  discountEnabled?: DiscountToggleInput;
 };
 
 type NormalizedOptions = {
   baseSalary: number;
   vatRate: number;
   boxMode: 'none' | 'buy' | 'rent';
+  billingCycle: 'm' | 'q' | 'y';
   globalBoxCount: number;
   hasAccountFee: boolean;
   hasQTG: boolean;
@@ -46,6 +56,12 @@ type NormalizedOptions = {
     box: number;
     qtg: number;
     qlq: number;
+  };
+  discountEnabled: {
+    account: boolean;
+    box: boolean;
+    qtg: boolean;
+    qlq: boolean;
   };
 };
 
@@ -138,10 +154,13 @@ export function calculateDurationMonths(start: string, end: string): number {
 
 function normalizeOptions(options: CalculatorOptionsInput = {}): NormalizedOptions {
   const discounts = options.globalDiscounts || {};
+  const discountEnabled = options.discountEnabled || {};
+  const billingCycle = options.billingCycle === 'm' || options.billingCycle === 'q' ? options.billingCycle : 'y';
   return {
     baseSalary: Number(options.baseSalary) || DEFAULT_BASE_SALARY,
     vatRate: Number(options.vatRate) || 0,
     boxMode: options.boxMode || 'none',
+    billingCycle,
     globalBoxCount: Math.max(1, Number(options.globalBoxCount) || 1),
     hasAccountFee: options.hasAccountFee !== false,
     hasQTG: options.hasQTG !== false,
@@ -151,8 +170,18 @@ function normalizeOptions(options: CalculatorOptionsInput = {}): NormalizedOptio
       box: clampDiscount(discounts.box),
       qtg: clampDiscount(discounts.qtg),
       qlq: clampDiscount(discounts.qlq)
+    },
+    discountEnabled: {
+      account: discountEnabled.account !== false,
+      box: discountEnabled.box !== false,
+      qtg: discountEnabled.qtg !== false,
+      qlq: discountEnabled.qlq !== false
     }
   };
+}
+
+function effectiveDiscount(opts: NormalizedOptions, key: keyof NormalizedOptions['globalDiscounts']): number {
+  return opts.discountEnabled[key] ? opts.globalDiscounts[key] : 0;
 }
 
 export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOptionsInput = {}) {
@@ -163,15 +192,15 @@ export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOp
   const yearly = coef * opts.baseSalary;
   const periodBase = (yearly / 12) * duration;
 
-  const qtgAmount = opts.hasQTG ? periodBase * (1 - opts.globalDiscounts.qtg / 100) : 0;
-  const qlqAmount = opts.hasQLQ ? periodBase * (1 - opts.globalDiscounts.qlq / 100) : 0;
+  const qtgAmount = opts.hasQTG ? periodBase * (1 - effectiveDiscount(opts, 'qtg') / 100) : 0;
+  const qlqAmount = opts.hasQLQ ? periodBase * (1 - effectiveDiscount(opts, 'qlq') / 100) : 0;
   const accountAmount = opts.hasAccountFee
-    ? (ACCOUNT_FEE_YEARLY / 12) * duration * (1 - opts.globalDiscounts.account / 100)
+    ? (ACCOUNT_FEE_YEARLY / 12) * duration * (1 - effectiveDiscount(opts, 'account') / 100)
     : 0;
 
   let boxAmount = 0;
   if (opts.boxMode === 'buy') {
-    boxAmount = BOX_BUY_PRICE * opts.globalBoxCount * (1 - opts.globalDiscounts.box / 100);
+    boxAmount = BOX_BUY_PRICE * opts.globalBoxCount * (1 - effectiveDiscount(opts, 'box') / 100);
   } else if (opts.boxMode === 'rent') {
     boxAmount = (BOX_RENT_YEARLY / 12) * duration * opts.globalBoxCount;
   }

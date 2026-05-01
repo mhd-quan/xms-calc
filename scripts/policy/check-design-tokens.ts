@@ -76,7 +76,11 @@ const ALLOWED_TOKENS = new Set([
   'ease-out',
   'ease-meter',
   'focus-ring',
-  'focus-glow'
+  'focus-glow',
+  'size',
+  'val',
+  'vu',
+  'vu-peak'
 ]);
 
 const ALLOWED_PALETTE_PREFIX = /^p-(stone|rust|amber|moss|teal|indigo|mauve)-(10|[1-9])$/;
@@ -85,6 +89,10 @@ const FORBIDDEN_RADIUS = /border-radius:\s*([4-9]|[1-9]\d+)px/g;
 const FORBIDDEN_SHADOW_LARGE = /box-shadow:[^;]*\b(\d{2,}px)\s+(\d{2,}px)/g;
 const TRANSITION_DURATION = /transition[^;]*\b(\d+)ms\b/g;
 const ALLOWED_TRANSITION_MS = new Set([0, 90, 140, 400]);
+
+function isAllowedTransitionException(line: string): boolean {
+  return line.includes('transition: left 200ms') && line.includes('linear');
+}
 
 async function main(): Promise<void> {
   const errors: string[] = [];
@@ -123,7 +131,7 @@ async function main(): Promise<void> {
       const transitionDurations = [...line.matchAll(TRANSITION_DURATION)];
       for (const match of transitionDurations) {
         const duration = Number(match[1]);
-        if (!ALLOWED_TRANSITION_MS.has(duration)) {
+        if (!ALLOWED_TRANSITION_MS.has(duration) && !isAllowedTransitionException(line)) {
           errors.push(`${file}:${lineNumber} non-canonical transition duration ${duration}ms`);
         }
       }

@@ -29,11 +29,13 @@ function makeSnapshot(overrides: Record<string, unknown> = {}) {
       baseSalary: 2340000,
       vatRate: 0.1,
       boxMode: 'none',
+      billingCycle: 'y',
       globalBoxCount: 1,
       hasAccountFee: true,
       hasQTG: true,
       hasQLQ: true,
-      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 }
+      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
+      discountEnabled: { account: true, box: true, qtg: true, qlq: true }
     },
     stores: [{
       id: 1,

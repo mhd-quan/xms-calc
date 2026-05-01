@@ -15,10 +15,26 @@ import {
 } from '../services/quote-payload';
 
 import gsap from './vendor/gsap-lite';
+import { attachCounter } from './modules/controllers/counter';
+import { attachDatepicker } from './modules/controllers/datepicker';
+import { attachDropdown } from './modules/controllers/dropdown';
+import { attachInfoView } from './modules/controllers/infoview';
+import { attachKnob, setKnobValue } from './modules/controllers/knob';
+import { cycleDisplayAmount } from './modules/billing-cycle';
+import { formatVND } from './modules/format';
+import { paletteVar } from './modules/palette';
+import { renderBottombar } from './modules/render-bottombar';
+import { bindModalFrame, hideModal, showModal } from './modules/render-modals';
+import { revisionLabel, statusLabel } from './modules/render-revisions';
+import { renderSidebar } from './modules/render-sidebar';
+import { renderStatusbar } from './modules/render-statusbar';
+import { renderTopbar } from './modules/render-topbar';
+import { renderWorkbench } from './modules/render-workbench';
 
 import type {
   CalcOptions,
   CustomerProfile,
+  DiscountToggles,
   GlobalDiscounts,
   ImportActionKey,
   ImportPreview,
@@ -31,7 +47,7 @@ import type {
 } from '../shared/types';
 
 type ComputedQuote = ReturnType<typeof calculateTotals>;
-type RenderSnapshot = ReturnType<typeof createRenderSnapshot>;
+export type RenderSnapshot = ReturnType<typeof createRenderSnapshot>;
 
 type RenderScopeKey = 'sidebar' | 'main' | 'totals';
 type RenderScope = RenderScopeKey | 'all' | RenderScope[];
@@ -44,8 +60,29 @@ function closestFromEvent<T extends Element>(event: Event, selector: string): T 
   return target.closest(selector) as T | null;
 }
 
+function optionalElement(id: string): HTMLElement | null {
+  return document.getElementById(id) as HTMLElement | null;
+}
+
+function clearSidebarSearch(): void {
+  const searchInput = optionalElement('searchInput');
+  if (searchInput instanceof HTMLInputElement) searchInput.value = '';
+}
+
 function valueFromEvent(event: Event): string {
   return event.target instanceof HTMLElement ? String(event.target.value) : '';
+}
+
+function createStoreId(): number {
+  return Date.now() + Math.floor(Math.random() * 1000000);
+}
+
+function resolveStoreId(value: string | undefined): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  const matched = stores.find((store) => String(store.id) === value || store.id === parsed);
+  if (matched) return matched.id;
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function asErrorMessage(error: unknown, fallback: string): string {
@@ -53,6 +90,7 @@ function asErrorMessage(error: unknown, fallback: string): string {
 }
 let baseSalary: number = DEFAULT_BASE_SALARY;
 let vatRate: number = 0;
+let billingCycle: CalcOptions['billingCycle'] = 'y';
 let stores: Store[] = [];
 let activeTabId: number | null = null;
 
@@ -67,6 +105,13 @@ let globalDiscounts: GlobalDiscounts = {
   box: 0,
   qtg: 0,
   qlq: 0
+};
+
+let discountEnabled: DiscountToggles = {
+  account: true,
+  box: true,
+  qtg: true,
+  qlq: true
 };
 
 let bulkType: Store['type'] | '' = '';
@@ -99,7 +144,6 @@ let pendingPersistSerialized: string | null = null;
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 let persistPromise: Promise<unknown> = Promise.resolve();
 
-const formatVND = (n: number | string) => new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0));
 const HTML_ENTITIES: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -108,6 +152,8 @@ const HTML_ENTITIES: Record<string, string> = {
   "'": '&#39;'
 };
 const escapeHTML = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (char) => HTML_ENTITIES[char] ?? char);
+const MOTION_STRUCT_SECONDS = 0.14;
+const MOTION_METER_SECONDS = 0.4;
 
 function blankCustomer(): CustomerProfile {
   return {
@@ -129,26 +175,18 @@ function blankPreparedBy(): PreparedByProfile {
   };
 }
 
-function statusLabel(status: RevisionStatus): string {
-  if (status === 'exported') return 'Exported';
-  if (status === 'imported') return 'Imported';
-  return 'Draft';
-}
-
-function revisionLabel(revisionNumber: number): string {
-  return Number(revisionNumber) > 0 ? `R${revisionNumber}` : 'Base';
-}
-
 function getCalcOptions(): CalcOptions {
   return {
     baseSalary,
     vatRate,
+    billingCycle,
     boxMode,
     globalBoxCount,
     hasAccountFee,
     hasQTG,
     hasQLQ,
-    globalDiscounts: { ...globalDiscounts }
+    globalDiscounts: { ...globalDiscounts },
+    discountEnabled: { ...discountEnabled }
   };
 }
 
@@ -167,12 +205,14 @@ function buildInitialDraftSnapshot(): QuoteSnapshot {
     calcOptions: normalizeCalcOptions({
       baseSalary: DEFAULT_BASE_SALARY,
       vatRate: 0,
+      billingCycle: 'y',
       boxMode: 'none',
       globalBoxCount: 1,
       hasAccountFee: true,
       hasQTG: true,
       hasQLQ: true,
-      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 }
+      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
+      discountEnabled: { account: true, box: true, qtg: true, qlq: true }
     }),
     stores: [createStore(1)],
     totals: {}
@@ -310,16 +350,18 @@ function hydrateEditorFromRevision(revision: QuoteRevision): void {
 
   baseSalary = snapshot.calcOptions.baseSalary;
   vatRate = snapshot.calcOptions.vatRate;
+  billingCycle = snapshot.calcOptions.billingCycle;
   boxMode = snapshot.calcOptions.boxMode;
   globalBoxCount = snapshot.calcOptions.globalBoxCount;
   hasAccountFee = snapshot.calcOptions.hasAccountFee;
   hasQTG = snapshot.calcOptions.hasQTG;
   hasQLQ = snapshot.calcOptions.hasQLQ;
   globalDiscounts = { ...snapshot.calcOptions.globalDiscounts };
+  discountEnabled = { ...snapshot.calcOptions.discountEnabled };
 
   stores = snapshot.stores.length ? snapshot.stores : [createStore(1)];
   activeTabId = stores[0]?.id || null;
-  document.getElementById('searchInput').value = '';
+  clearSidebarSearch();
 
   invalidateComputedQuote();
   draftSnapshotCache = null;
@@ -374,68 +416,45 @@ function readPreparedByFields(): PreparedByProfile {
 }
 
 function renderQuoteChrome() {
-  document.getElementById('historyQuoteCode').textContent = activeQuoteCode || '-';
-  document.getElementById('historyDisplayQuoteNumber').textContent = activeDisplayQuoteNumber || '-';
-  document.getElementById('historyRevisionLabel').textContent = revisionLabel(activeRevisionNumber);
-  document.getElementById('historyStatusChip').textContent = statusLabel(activeRevisionStatus);
-
-  document.getElementById('activeQuoteNumber').textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
-  document.getElementById('activeRevisionBadge').textContent = revisionLabel(activeRevisionNumber);
-  document.getElementById('activeRevisionStatusText').textContent = statusLabel(activeRevisionStatus);
-  const bottomQuoteCode = document.getElementById('bottomQuoteCode');
-  if (bottomQuoteCode) bottomQuoteCode.textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
-  const bottomStatusText = document.getElementById('bottomStatusText');
-  if (bottomStatusText) bottomStatusText.textContent = statusLabel(activeRevisionStatus);
-  const statusQuoteNumber = document.getElementById('statusQuoteNumber');
-  if (statusQuoteNumber) statusQuoteNumber.textContent = activeDisplayQuoteNumber || 'XMS-000000-000';
-  const statusRevisionState = document.getElementById('statusRevisionState');
-  if (statusRevisionState) statusRevisionState.textContent = statusLabel(activeRevisionStatus);
-
-  const revisionList = document.getElementById('revisionList');
-  revisionList.innerHTML = revisionsForQuote.map((revision) => `
-    <button class="revision-item${revision.id === activeRevisionId ? ' active' : ''}" data-revision-id="${revision.id}">
-      <div class="revision-item-main">
-        <strong>${escapeHTML(revision.displayQuoteNumber)}</strong>
-        <span>${escapeHTML(revisionLabel(revision.revisionNumber))}</span>
-      </div>
-      <span class="status-chip">${escapeHTML(statusLabel(revision.status))}</span>
-    </button>
-  `).join('');
+  const sidebarStatusText = optionalElement('quoteStatusText');
+  if (sidebarStatusText) sidebarStatusText.textContent = revisionLabel(activeRevisionNumber);
+  const sidebarStatusChip = optionalElement('quoteStatusChip');
+  if (sidebarStatusChip) {
+    sidebarStatusChip.classList.toggle('x-chip--status-draft', activeRevisionStatus === 'draft');
+    sidebarStatusChip.classList.toggle('x-chip--status-sent', activeRevisionStatus === 'imported');
+    sidebarStatusChip.classList.toggle('x-chip--status-accepted', activeRevisionStatus === 'exported');
+    sidebarStatusChip.dataset.info = `Active revision|${activeDisplayQuoteNumber || activeQuoteCode || '—'} · ${statusLabel(activeRevisionStatus)}|—`;
+  }
 }
 
 function openCustomerModal() {
   setCustomerFields(customerProfile);
-  document.getElementById('customerModal').classList.remove('hidden');
-  requestAnimationFrame(() => document.getElementById('customerCompany').focus());
+  showModal('customerModal', '#customerCompany');
 }
 
 function closeCustomerModal() {
-  document.getElementById('customerModal').classList.add('hidden');
+  hideModal('customerModal');
 }
 
 function openSettingsModal() {
   setSettingsFields(preparedByProfile);
-  document.getElementById('settingsModal').classList.remove('hidden');
+  showModal('settingsModal', '#settingName');
 }
 
 function closeSettingsModal() {
-  document.getElementById('settingsModal').classList.add('hidden');
+  hideModal('settingsModal');
 }
 
 function closeImportPreviewModal() {
   activeImportPreview = null;
   selectedImportAction = null;
-  document.getElementById('importPreviewModal').classList.add('hidden');
-}
-
-function closeQuoteActionsMenu() {
-  document.getElementById('quoteActionsMenu')?.classList.remove('open');
+  hideModal('importPreviewModal');
 }
 
 function renderImportActionOptions(preview: ImportPreview): void {
   const container = document.getElementById('importActionOptions');
   container.innerHTML = preview.actions.map((action) => `
-    <button class="import-action-option${action.key === selectedImportAction ? ' active' : ''}" data-action="${action.key}">
+    <button class="x-btn import-action-option${action.key === selectedImportAction ? ' is-active' : ''}" type="button" data-action="${action.key}" style="justify-content:flex-start; width:100%;">
       <strong>${escapeHTML(action.label)}</strong>
     </button>
   `).join('');
@@ -453,7 +472,7 @@ function openImportPreviewModal(preview: ImportPreview): void {
   document.getElementById('importPreviewCompatibility').textContent = preview.preview.manifestCompatibility;
   document.getElementById('importPreviewSummary').textContent = preview.summary;
   renderImportActionOptions(preview);
-  document.getElementById('importPreviewModal').classList.remove('hidden');
+  showModal('importPreviewModal', '#confirmImportPreview');
 }
 
 async function loadRevisionById(revisionId: number): Promise<void> {
@@ -526,9 +545,11 @@ async function exportActiveQuote() {
   scheduleDraftPersist();
   await flushDraftPersist();
 
-  const exportBtn = document.getElementById('exportBtn');
-  exportBtn.style.opacity = '0.5';
-  exportBtn.style.pointerEvents = 'none';
+  const exportBtn = optionalElement('btnSave');
+  if (exportBtn) {
+    exportBtn.style.opacity = '0.5';
+    exportBtn.style.pointerEvents = 'none';
+  }
 
   try {
     const result = await window.electronAPI.exportQuote({
@@ -543,8 +564,10 @@ async function exportActiveQuote() {
     console.error(error);
     alert(asErrorMessage(error, 'Error exporting PDF'));
   } finally {
-    exportBtn.style.opacity = '1';
-    exportBtn.style.pointerEvents = 'auto';
+    if (exportBtn) {
+      exportBtn.style.opacity = '1';
+      exportBtn.style.pointerEvents = 'auto';
+    }
   }
 }
 
@@ -553,7 +576,39 @@ function performExport() {
     openSettingsModal();
     return;
   }
-  openCustomerModal();
+  if (!customerProfile.companyName) {
+    openCustomerModal();
+    return;
+  }
+  void exportActiveQuote();
+}
+
+function saveCustomerProfile(): void {
+  customerProfile = readCustomerFields();
+  invalidateDraftSnapshot();
+  markChromeDirty();
+  closeCustomerModal();
+  render('sidebar');
+  scheduleDraftPersist();
+}
+
+async function saveCurrentDraft(): Promise<void> {
+  const saveBtn = optionalElement('btnSave');
+  if (saveBtn) {
+    saveBtn.style.opacity = '0.65';
+    saveBtn.style.pointerEvents = 'none';
+  }
+
+  try {
+    invalidateDraftSnapshot();
+    scheduleDraftPersist();
+    await flushDraftPersist();
+  } finally {
+    if (saveBtn) {
+      saveBtn.style.opacity = '1';
+      saveBtn.style.pointerEvents = 'auto';
+    }
+  }
 }
 
 function toLocalYMD(date: Date): string {
@@ -581,7 +636,7 @@ function formatDateStr(ymd: string): string {
 
 function createStore(index: number): Store {
   return {
-    id: Date.now() + Math.random(),
+    id: createStoreId(),
     name: `Chi nhánh ${index}`,
     type: '',
     area: '',
@@ -610,9 +665,24 @@ function addStore() {
   }
   stores.push(store);
   activeTabId = store.id;
-  document.getElementById('searchInput').value = '';
+  clearSidebarSearch();
   commitQuoteMutation();
-  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: 0.25 });
+  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: MOTION_STRUCT_SECONDS });
+}
+
+function duplicateActiveStore(): void {
+  const active = getActive();
+  if (!active) return;
+  const store: Store = {
+    ...active,
+    id: createStoreId(),
+    name: `${active.name || 'Chi nhánh'} copy`
+  };
+  stores.push(store);
+  activeTabId = store.id;
+  clearSidebarSearch();
+  commitQuoteMutation();
+  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: MOTION_STRUCT_SECONDS });
 }
 
 function removeStore(id: number): void {
@@ -625,7 +695,7 @@ function removeStore(id: number): void {
     height: 0,
     padding: 0,
     margin: 0,
-    duration: 0.2,
+    duration: MOTION_STRUCT_SECONDS,
     onComplete: () => {
       stores = stores.filter((store) => store.id !== id);
       if (activeTabId === id) activeTabId = stores[0]?.id ?? null;
@@ -671,9 +741,19 @@ function renderBulkType() {
   const bulkTypeMeta = bulkType ? BUSINESS_TYPES[bulkType] : undefined;
   text.textContent = bulkTypeMeta?.label ?? 'Chọn mô hình...';
   dd.dataset.value = bulkType;
-  dd.querySelectorAll('.dropdown-item').forEach((el) => {
-    el.classList.toggle('active', el.dataset.value === bulkType);
+  dd.querySelectorAll('.x-dropdown__item').forEach((el) => {
+    el.classList.toggle('is-selected', el.dataset.value === bulkType);
   });
+}
+
+function updateBulkSummary(): void {
+  const filledRows = getFilledBulkRows().length;
+  document.getElementById('bulkRowCount').textContent = `${filledRows} rows`;
+  const applyButton = optionalElement('applyBulkAdd');
+  if (applyButton) {
+    const label = filledRows === 1 ? 'store' : 'stores';
+    applyButton.textContent = filledRows > 0 ? `Add ${filledRows} ${label}` : 'Add stores';
+  }
 }
 
 function renderBulkRows(focusIndex: number | null = null): void {
@@ -682,16 +762,17 @@ function renderBulkRows(focusIndex: number | null = null): void {
   if (bulkAreas.length === 0) bulkAreas = [''];
   const startIndex = stores.length + 1;
   rowsEl.innerHTML = bulkAreas.map((value, index) => {
-    const color = STORE_COLORS[(startIndex + index - 1) % STORE_COLORS.length];
+    const color = paletteVar(startIndex + index - 1);
     return `
-      <div class="bulk-row" data-index="${index}" style="--bulk-row-color: ${color}">
-        <div class="bulk-index">${String(startIndex + index).padStart(2, '0')}</div>
-        <div class="bulk-area-wrap">
-          <input class="bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="Nhập diện tích">
+      <div class="x-field-row" data-index="${index}" style="border-left: 2px solid ${color}; padding-left: var(--s-3);">
+        <label class="x-field-row__label" for="bulkArea${index}">STORE ${String(startIndex + index).padStart(2, '0')}</label>
+        <div class="x-suffix-wrap">
+          <input id="bulkArea${index}" class="x-field x-field--num bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="0">
+          <span class="x-suffix">m²</span>
         </div>
       </div>`;
   }).join('');
-  document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
+  updateBulkSummary();
   if (focusIndex !== null) {
     requestAnimationFrame(() => {
       const input = rowsEl.querySelector(`.bulk-area-input[data-index="${focusIndex}"]`);
@@ -709,12 +790,12 @@ function openBulkAddModal() {
   bulkAreas = [''];
   renderBulkType();
   renderBulkRows(0);
-  document.getElementById('bulkAddModal').classList.remove('hidden');
+  showModal('bulkAddModal', '#bulkBusinessType');
 }
 
 function closeBulkAddModal() {
-  document.getElementById('bulkAddModal').classList.add('hidden');
-  document.getElementById('bulkBusinessType').classList.remove('open');
+  hideModal('bulkAddModal');
+  document.getElementById('bulkBusinessType').classList.remove('is-open');
 }
 
 function addBulkRows() {
@@ -738,11 +819,6 @@ function addBulkRows() {
   commitQuoteMutation();
 }
 
-const STORE_COLORS = [
-  '#D4715A', '#E9AD62', '#8EAF76', '#5AA89C', '#7177A8', '#A678A8',
-  '#968E82', '#C4604C', '#B8742E', '#678A4F', '#3F8F86', '#5C638F'
-];
-
 function animateNumber(elementId: string, newValue: number): void {
   const el = document.getElementById(elementId);
   if (!el) return;
@@ -756,66 +832,12 @@ function animateNumber(elementId: string, newValue: number): void {
   const tweenObj = el._tweenObj;
   gsap.to(tweenObj, {
     val: newValue,
-    duration: 0.4,
+    duration: MOTION_METER_SECONDS,
     ease: 'power2.out',
     onUpdate: () => {
       el.textContent = formatVND(tweenObj.val);
     }
   });
-}
-
-function setNumberImmediate(elementId: string, newValue: number, options: { prefix?: string } = {}): void {
-  const el = document.getElementById(elementId);
-  if (!el) return;
-  el._lastValue = newValue;
-  if (el._tweenObj) gsap.killTweensOf(el._tweenObj);
-  el.textContent = `${options.prefix || ''}${formatVND(newValue)}`;
-}
-
-function renderSidebar(snapshot: RenderSnapshot): void {
-  const search = document.getElementById('searchInput').value.toLowerCase();
-  const filtered = stores.filter((store) => store.name.toLowerCase().includes(search));
-  const list = document.getElementById('storeList');
-  const clearBtn = document.getElementById('searchClear');
-  clearBtn.classList.toggle('hidden', !search);
-
-  let html = '';
-  if (filtered.length === 0) {
-    html = '<div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:32px;letter-spacing:0.04em">Không tìm thấy chi nhánh</div>';
-  } else {
-    const maxTotal = snapshot.maxStoreTotal;
-    html = filtered.map((store) => {
-      const realIdx = stores.indexOf(store);
-      const isActive = store.id === activeTabId;
-      const total = snapshot.breakdownsById.get(store.id)?.total || 0;
-      const color = STORE_COLORS[realIdx % STORE_COLORS.length];
-      const pct = Math.min(100, maxTotal ? (total / maxTotal) * 100 : 0);
-
-      return `<div class="store-item${isActive ? ' active' : ''}" data-id="${store.id}" data-name="${store.name}">
-        <div class="store-item-color" style="background-color: ${color}"></div>
-        <div class="store-item-content">
-          <div class="store-item-header">
-            <span class="store-item-badge" style="background-color: ${color}">${String(realIdx + 1).padStart(2, '0')}</span>
-            <span class="store-item-name">${store.name}</span>
-          </div>
-          <div class="store-item-meta">
-            <span>${store.type && BUSINESS_TYPES[store.type]?.short ? BUSINESS_TYPES[store.type]?.short : 'CHƯA CHỌN'}</span>
-            <span class="dot">·</span>
-            <span class="tnum">${store.area ? `${store.area}m²` : '--m²'}</span>
-          </div>
-          <div class="store-item-total">${formatVND(total)} ₫</div>
-          <div class="store-vu"><div class="store-vu-fill" style="width: ${pct}%; background-color: ${color}"></div></div>
-        </div>
-        ${stores.length > 1 ? `<button class="store-item-remove" data-remove="${store.id}">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M18 6 6 18M6 6l12 12"/></svg>
-        </button>` : ''}
-      </div>`;
-    }).join('');
-  }
-
-  if (list.innerHTML !== html) {
-    list.innerHTML = html;
-  }
 }
 
 function renderMain(snapshot: RenderSnapshot): void {
@@ -825,30 +847,18 @@ function renderMain(snapshot: RenderSnapshot): void {
   const breakdown = snapshot.activeBreakdown;
   const duration = breakdown?.duration ?? calculateDurationMonths(store.startDate, store.endDate);
   const coef = breakdown?.coef ?? calculateCoef(store.type, area);
-  const storeTotal = breakdown?.total || 0;
-  const storeIdx = snapshot.activeStoreIndex;
 
-  document.getElementById('salaryDisplay').textContent = `${formatVND(baseSalary)} ₫`;
-  document.getElementById('locationCount').textContent = `${stores.length} loc`;
-  const color = STORE_COLORS[storeIdx % STORE_COLORS.length] ?? '#D4715A';
-  document.getElementById('activeBranchColor').style.backgroundColor = color;
-  document.getElementById('activeBranchName').textContent = store.name;
-  const statusBranchName = document.getElementById('statusBranchName');
-  if (statusBranchName) statusBranchName.textContent = store.name;
-
-  document.getElementById('storeIndex').textContent = `Chi nhánh ${String(storeIdx + 1).padStart(2, '0')} / ${String(stores.length).padStart(2, '0')}`;
-  const nameInput = document.getElementById('storeName');
-  if (document.activeElement !== nameInput) nameInput.value = store.name;
-
-  document.getElementById('statDuration').textContent = duration.toFixed(1);
-  document.getElementById('statCoef').textContent = coef.toFixed(2);
-  animateNumber('statStoreTotal', storeTotal);
+  document.querySelectorAll('#cycleSeg .x-seg__btn').forEach((button) => {
+    button.classList.toggle('is-active', button instanceof HTMLElement && button.dataset.cycle === billingCycle);
+  });
 
   const typeText = document.getElementById('businessTypeText');
+  const typeDropdown = document.getElementById('businessType');
   const storeTypeMeta = store.type ? BUSINESS_TYPES[store.type] : undefined;
   typeText.textContent = storeTypeMeta?.label ?? 'Chọn mô hình kinh doanh...';
-  document.querySelectorAll('#businessType .dropdown-item').forEach((el) => {
-    el.classList.toggle('active', el.dataset.value === store.type);
+  typeDropdown.dataset.value = store.type;
+  document.querySelectorAll('#businessType .x-dropdown__item').forEach((el) => {
+    el.classList.toggle('is-selected', el.dataset.value === store.type);
   });
 
   const areaInput = document.getElementById('areaInput');
@@ -858,36 +868,32 @@ function renderMain(snapshot: RenderSnapshot): void {
   document.getElementById('endDateText').textContent = formatDateStr(store.endDate);
 
   const accToggle = document.getElementById('accountToggle');
-  accToggle.classList.toggle('on', hasAccountFee);
+  accToggle.classList.toggle('is-on', hasAccountFee);
   accToggle.textContent = hasAccountFee ? 'BẬT' : 'TẮT';
   const accRight = document.getElementById('accountFeeRight');
+  renderDiscountApply('discountAccountApply', discountEnabled.account);
+  setKnobValue('discountAccountKnob', globalDiscounts.account);
 
   if (hasAccountFee) {
-    accRight.classList.remove('disabled');
-    document.getElementById('discountAccountVal').textContent = String(globalDiscounts.account);
-    const accSlider = document.getElementById('discountAccount');
-    if (document.activeElement !== accSlider) accSlider.value = String(globalDiscounts.account);
-    accSlider.style.setProperty('--val', `${globalDiscounts.account}%`);
+    accRight.classList.remove('is-disabled');
   } else {
-    accRight.classList.add('disabled');
+    accRight.classList.add('is-disabled');
   }
 
-  document.querySelectorAll('#boxModeControl .seg-btn').forEach((btn) => {
-    btn.classList.toggle('active', btn.dataset.mode === boxMode);
+  document.querySelectorAll('#boxModeSeg .x-seg__btn').forEach((btn) => {
+    btn.classList.toggle('is-active', btn.dataset.mode === boxMode);
   });
-  document.getElementById('boxQuantityRow').classList.toggle('hidden', boxMode === 'none');
+  document.getElementById('boxQuantityRow').toggleAttribute('hidden', boxMode === 'none');
   const boxInput = document.getElementById('boxCount');
   if (document.activeElement !== boxInput) boxInput.value = String(globalBoxCount);
 
   const boxDiscountRow = document.getElementById('boxDiscountRow');
+  renderDiscountApply('discountBoxApply', discountEnabled.box);
+  setKnobValue('discountBoxKnob', globalDiscounts.box);
   if (boxMode === 'buy') {
-    boxDiscountRow.classList.remove('hidden');
-    document.getElementById('discountBoxVal').textContent = String(globalDiscounts.box);
-    const boxSlider = document.getElementById('discountBox');
-    if (document.activeElement !== boxSlider) boxSlider.value = String(globalDiscounts.box);
-    boxSlider.style.setProperty('--val', `${globalDiscounts.box}%`);
+    boxDiscountRow.removeAttribute('hidden');
   } else {
-    boxDiscountRow.classList.add('hidden');
+    boxDiscountRow.setAttribute('hidden', '');
   }
 
   const boxPriceDesc = document.getElementById('boxPriceDesc');
@@ -895,79 +901,57 @@ function renderMain(snapshot: RenderSnapshot): void {
   else if (boxMode === 'rent') boxPriceDesc.textContent = '1.000.000 ₫ / thiết bị / năm · prorated · cấp mỗi chi nhánh';
   else boxPriceDesc.textContent = 'Chọn hình thức trang bị cho mỗi chi nhánh';
 
-  document.getElementById('qtgCoef').textContent = `Hệ số ${coef.toFixed(2)}`;
+  document.getElementById('qtgCoef').textContent = coef.toFixed(2);
   document.getElementById('qtgDur').textContent = `${duration.toFixed(1)}m`;
 
   const qtgToggle = document.getElementById('qtgToggle');
-  qtgToggle.classList.toggle('on', hasQTG);
+  qtgToggle.classList.toggle('is-on', hasQTG);
   qtgToggle.textContent = hasQTG ? 'BẬT' : 'TẮT';
-  const qtgRow = qtgToggle.closest('.copyright-row') ?? qtgToggle;
-  const qtgMid = qtgRow.querySelector('.copyright-mid');
-  const qtgRight = qtgRow.querySelector('.copyright-right');
+  const qtgRow = qtgToggle.closest('.x-row') ?? qtgToggle;
+  const qtgMid = qtgRow.querySelector('.x-row__rhs');
+  const qtgRight = qtgRow.querySelector('.x-row__amount');
+  renderDiscountApply('discountQTGApply', discountEnabled.qtg);
+  setKnobValue('discountQTGKnob', globalDiscounts.qtg);
 
   if (hasQTG) {
-    qtgMid.classList.remove('disabled');
-    qtgRight.classList.remove('disabled');
-    document.getElementById('discountQTGVal').textContent = String(globalDiscounts.qtg);
-    const qtgSlider = document.getElementById('discountQTG');
-    if (document.activeElement !== qtgSlider) qtgSlider.value = String(globalDiscounts.qtg);
-    qtgSlider.style.setProperty('--val', `${globalDiscounts.qtg}%`);
-    animateNumber('qtgAmount', breakdown?.qtgAmount || 0);
+    qtgMid.classList.remove('is-disabled');
+    qtgRight.classList.remove('is-disabled');
+    animateNumber('qtgAmount', cycleDisplayAmount(breakdown?.qtgAmount || 0, billingCycle));
   } else {
-    qtgMid.classList.add('disabled');
-    qtgRight.classList.add('disabled');
+    qtgMid.classList.add('is-disabled');
+    qtgRight.classList.add('is-disabled');
     animateNumber('qtgAmount', 0);
   }
 
-  document.getElementById('qlqCoef').textContent = `Hệ số ${coef.toFixed(2)}`;
+  document.getElementById('qlqCoef').textContent = coef.toFixed(2);
   document.getElementById('qlqDur').textContent = `${duration.toFixed(1)}m`;
 
   const qlqToggle = document.getElementById('qlqToggle');
-  qlqToggle.classList.toggle('on', hasQLQ);
+  qlqToggle.classList.toggle('is-on', hasQLQ);
   qlqToggle.textContent = hasQLQ ? 'BẬT' : 'TẮT';
-  const qlqRow = qlqToggle.closest('.copyright-row') ?? qlqToggle;
-  const qlqMid = qlqRow.querySelector('.copyright-mid');
-  const qlqRight = qlqRow.querySelector('.copyright-right');
+  const qlqRow = qlqToggle.closest('.x-row') ?? qlqToggle;
+  const qlqMid = qlqRow.querySelector('.x-row__rhs');
+  const qlqRight = qlqRow.querySelector('.x-row__amount');
+  renderDiscountApply('discountQLQApply', discountEnabled.qlq);
+  setKnobValue('discountQLQKnob', globalDiscounts.qlq);
 
   if (hasQLQ) {
-    qlqMid.classList.remove('disabled');
-    qlqRight.classList.remove('disabled');
-    document.getElementById('discountQLQVal').textContent = String(globalDiscounts.qlq);
-    const qlqSlider = document.getElementById('discountQLQ');
-    if (document.activeElement !== qlqSlider) qlqSlider.value = String(globalDiscounts.qlq);
-    qlqSlider.style.setProperty('--val', `${globalDiscounts.qlq}%`);
-    animateNumber('qlqAmount', breakdown?.qlqAmount || 0);
+    qlqMid.classList.remove('is-disabled');
+    qlqRight.classList.remove('is-disabled');
+    animateNumber('qlqAmount', cycleDisplayAmount(breakdown?.qlqAmount || 0, billingCycle));
   } else {
-    qlqMid.classList.add('disabled');
-    qlqRight.classList.add('disabled');
+    qlqMid.classList.add('is-disabled');
+    qlqRight.classList.add('is-disabled');
     animateNumber('qlqAmount', 0);
   }
 }
 
-function renderBottomBar(snapshot: RenderSnapshot): void {
-  const { totals } = snapshot.quote;
-
-  animateNumber('totalQTG', totals.subtotalQTG);
-  animateNumber('totalQLQ', totals.subtotalQLQ);
-  animateNumber('totalAccount', totals.subtotalAccount);
-  animateNumber('totalBox', totals.subtotalBox);
-  animateNumber('subtotalVal', totals.subtotal);
-  setNumberImmediate('vatVal', totals.vat, { prefix: '+' });
-  animateNumber('grandTotal', totals.grand);
-
-  document.querySelectorAll('#vatControl .seg-btn').forEach((btn) => {
-    btn.classList.toggle('active', Number(btn.dataset.vat) === vatRate);
-  });
-
-  const ceiling = 50000000;
-  const fillPct = Math.min(100, (totals.grand / ceiling) * 100);
-  document.getElementById('grandVuFill').style.width = `${fillPct}%`;
-
-  const bottomBranchCount = document.getElementById('bottomBranchCount');
-  if (bottomBranchCount) bottomBranchCount.textContent = `${stores.length} chi nhánh`;
-
-  const statusLineCount = document.getElementById('statusLineCount');
-  if (statusLineCount) statusLineCount.textContent = `${stores.length} chi nhánh`;
+function renderDiscountApply(id: string, isEnabled: boolean): void {
+  const button = optionalElement(id);
+  if (!button) return;
+  button.classList.toggle('is-on', isEnabled);
+  button.setAttribute('aria-pressed', String(isEnabled));
+  button.textContent = isEnabled ? 'DISC' : 'OFF';
 }
 
 function createRenderSnapshot() {
@@ -983,10 +967,20 @@ function createRenderSnapshot() {
   return {
     quote,
     breakdownsById,
+    stores,
+    activeTabId,
     activeStore,
     activeStoreIndex,
     activeBreakdown,
-    maxStoreTotal
+    maxStoreTotal,
+    customer: customerProfile,
+    billingCycle,
+    activeQuoteCode,
+    activeDisplayQuoteNumber,
+    activeRevisionId,
+    activeRevisionNumber,
+    activeRevisionStatus,
+    revisionsForQuote
   };
 }
 
@@ -1015,60 +1009,16 @@ function render(scope: RenderScope = 'all'): void {
       chromeDirty = false;
     }
     const snapshot = createRenderSnapshot();
+    renderTopbar(snapshot);
+    renderStatusbar(snapshot);
     if (renderScope.has('sidebar')) renderSidebar(snapshot);
-    if (renderScope.has('main')) renderMain(snapshot);
-    if (renderScope.has('totals')) renderBottomBar(snapshot);
+    if (renderScope.has('main')) {
+      renderWorkbench(snapshot);
+      renderMain(snapshot);
+    }
+    if (renderScope.has('totals')) renderBottombar(snapshot);
     renderScope.clear();
   });
-}
-
-function buildCalendar(dateStr: string, wrapperEl: HTMLElement): void {
-  const date = new Date(dateStr);
-  let curYear = date.getFullYear();
-  let curMonth = date.getMonth();
-  const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
-
-  const headTitle = wrapperEl.querySelector('.datepicker-month-year');
-  const grid = wrapperEl.querySelector('.datepicker-grid');
-
-  const refreshGrid = () => {
-    headTitle.textContent = `${monthNames[curMonth]}, ${curYear}`;
-    grid.innerHTML = '';
-
-    const firstDay = new Date(curYear, curMonth, 1).getDay();
-    const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-
-    let html = '';
-    for (let i = 0; i < firstDay; i += 1) html += '<div class="datepicker-cell dim"></div>';
-
-    const today = new Date();
-    for (let i = 1; i <= daysInMonth; i += 1) {
-      const isToday = today.getDate() === i && today.getMonth() === curMonth && today.getFullYear() === curYear;
-      const isSelected = date.getDate() === i && date.getMonth() === curMonth && date.getFullYear() === curYear;
-      const cellDateStr = `${curYear}-${String(curMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      html += `<div class="datepicker-cell ${isToday ? 'today' : ''} ${isSelected ? 'selected' : ''}" data-date="${cellDateStr}">${i}</div>`;
-    }
-    grid.innerHTML = html;
-  };
-  refreshGrid();
-
-  if (!wrapperEl.dataset.bound) {
-    wrapperEl.querySelectorAll('.datepicker-nav').forEach((btn) => {
-      btn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        curMonth += parseInt(btn.dataset.dir ?? '0', 10);
-        if (curMonth < 0) {
-          curMonth = 11;
-          curYear -= 1;
-        } else if (curMonth > 11) {
-          curMonth = 0;
-          curYear += 1;
-        }
-        refreshGrid();
-      });
-    });
-    wrapperEl.dataset.bound = 'true';
-  }
 }
 
 function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, max = Infinity): void {
@@ -1114,73 +1064,85 @@ function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, ma
 }
 
 function bindEvents() {
-  document.getElementById('searchInput').addEventListener('input', () => render('sidebar'));
-  document.getElementById('searchClear').addEventListener('click', () => {
-    document.getElementById('searchInput').value = '';
-    render('sidebar');
-  });
+  attachInfoView(document.body);
+
+  const searchInput = optionalElement('searchInput');
+  const searchClear = optionalElement('searchClear');
+  if (searchInput instanceof HTMLInputElement) {
+    searchInput.addEventListener('input', () => render('sidebar'));
+  }
+  if (searchInput instanceof HTMLInputElement && searchClear) {
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      render('sidebar');
+    });
+  }
 
   document.getElementById('storeList').addEventListener('click', (event) => {
-    const removeBtn = closestFromEvent(event, '.store-item-remove');
+    const removeBtn = closestFromEvent(event, '[data-remove]');
     if (removeBtn) {
       event.stopPropagation();
-      removeStore(parseFloat(removeBtn.dataset.remove ?? '0'));
+      const removeId = resolveStoreId(removeBtn.dataset.remove);
+      if (removeId !== null) removeStore(removeId);
       return;
     }
 
-    const item = closestFromEvent(event, '.store-item');
+    const item = closestFromEvent(event, '.x-track');
     if (!item) return;
-    const newId = parseFloat(item.dataset.id ?? '0');
-    if (newId !== activeTabId) {
+    const newId = resolveStoreId(item.dataset.id);
+    if (newId !== null && newId !== activeTabId) {
       activeTabId = newId;
-      gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: 0.2 });
+      gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: MOTION_STRUCT_SECONDS });
       render(['main', 'sidebar']);
     }
   });
 
-  document.getElementById('revisionList').addEventListener('click', async (event) => {
-    const item = closestFromEvent(event, '[data-revision-id]');
-    if (!item) return;
-    const revisionId = Number(item.dataset.revisionId);
-    if (!revisionId || revisionId === activeRevisionId) return;
-    await flushDraftPersist();
-    await loadRevisionById(revisionId);
-  });
+  const revisionDropdown = optionalElement('revisionDropdown');
+  if (revisionDropdown) {
+    attachDropdown({
+      el: revisionDropdown,
+      onSelect: (value) => {
+        const revisionId = Number(value);
+        if (!revisionId || revisionId === activeRevisionId) return;
+        void (async () => {
+          await flushDraftPersist();
+          await loadRevisionById(revisionId);
+        })();
+      }
+    });
+  }
+
+  const cycleSeg = optionalElement('cycleSeg');
+  if (cycleSeg) {
+    cycleSeg.addEventListener('click', (event) => {
+      const button = closestFromEvent(event, '.x-seg__btn');
+      if (!button || !button.dataset.cycle) return;
+      if (button.dataset.cycle === 'm' || button.dataset.cycle === 'q' || button.dataset.cycle === 'y') {
+        billingCycle = button.dataset.cycle;
+        invalidateDraftSnapshot();
+        render(['main', 'totals']);
+        scheduleDraftPersist();
+      }
+    });
+  }
 
   document.getElementById('addStoreBtn').addEventListener('click', addStore);
-  const quoteActionsMenu = document.getElementById('quoteActionsMenu');
-  const quoteActionsBtn = document.getElementById('quoteActionsBtn');
-  quoteActionsBtn.addEventListener('click', (event) => {
-    event.stopPropagation();
-    quoteActionsMenu.classList.toggle('open');
-  });
-  quoteActionsMenu.querySelector('.quote-actions-dropdown').addEventListener('click', (event) => {
-    event.stopPropagation();
-  });
+  optionalElement('btnDuplicateBranch')?.addEventListener('click', duplicateActiveStore);
 
-  const bulkAddModal = document.getElementById('bulkAddModal');
   const bulkDd = document.getElementById('bulkBusinessType');
-  const bulkMenu = bulkDd.querySelector('.dropdown-menu');
   const bulkRowsEl = document.getElementById('bulkRows');
 
-  document.getElementById('bulkAddBtn').addEventListener('click', openBulkAddModal);
+  document.getElementById('btnBulkAdd').addEventListener('click', openBulkAddModal);
   document.getElementById('closeBulkAdd').addEventListener('click', closeBulkAddModal);
   document.getElementById('cancelBulkAdd').addEventListener('click', closeBulkAddModal);
   document.getElementById('applyBulkAdd').addEventListener('click', addBulkRows);
-  bulkAddModal.querySelector('.modal-overlay').addEventListener('click', closeBulkAddModal);
+  bindModalFrame('bulkAddModal', closeBulkAddModal);
 
-  bulkDd.addEventListener('click', (event) => {
-    const item = closestFromEvent(event, '.dropdown-item');
-    if (item) {
-      bulkType = item.dataset.value ?? '';
+  attachDropdown({
+    el: bulkDd,
+    onSelect: (value) => {
+      bulkType = value;
       renderBulkType();
-    }
-    const isOpen = bulkDd.classList.contains('open');
-    if (!isOpen) {
-      bulkDd.classList.add('open');
-      gsap.fromTo(bulkMenu, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.2 });
-    } else {
-      gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
     }
   });
 
@@ -1188,7 +1150,7 @@ function bindEvents() {
     const input = closestFromEvent(event, '.bulk-area-input');
     if (!input) return;
     bulkAreas[Number(input.dataset.index)] = input.value;
-    document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
+    updateBulkSummary();
   });
 
   bulkRowsEl.addEventListener('keydown', (event) => {
@@ -1217,107 +1179,39 @@ function bindEvents() {
     renderBulkRows(nextIndex);
   });
 
-  const salaryDisplay = document.getElementById('salaryDisplay');
-  const salaryInput = document.getElementById('salaryInput');
-  salaryDisplay.addEventListener('click', () => {
-    salaryDisplay.classList.add('hidden');
-    salaryInput.classList.remove('hidden');
-    salaryInput.value = String(baseSalary);
-    salaryInput.focus();
-    salaryInput.select();
-  });
-  const closeSalary = () => {
-    baseSalary = Number(salaryInput.value) || baseSalary;
-    salaryDisplay.textContent = `${formatVND(baseSalary)} ₫`;
-    salaryInput.classList.add('hidden');
-    salaryDisplay.classList.remove('hidden');
-    commitQuoteMutation();
-  };
-  salaryInput.addEventListener('blur', closeSalary);
-  salaryInput.addEventListener('keydown', (event) => {
-    if (event.key === 'Enter') closeSalary();
-  });
-
-  document.getElementById('storeName').addEventListener('input', (event) => updateActive('name', valueFromEvent(event)));
+  document.getElementById('workBranchTitle').addEventListener('input', (event) => updateActive('name', valueFromEvent(event)));
   document.getElementById('areaInput').addEventListener('input', (event) => updateActive('area', valueFromEvent(event)));
 
-  const dd = document.getElementById('businessType');
-  const menu = dd.querySelector('.dropdown-menu');
-  dd.addEventListener('click', (event) => {
-    const item = closestFromEvent(event, '.dropdown-item');
-    if (item) {
-      updateActive('type', item.dataset.value ?? '');
-    }
-    const isOpen = dd.classList.contains('open');
-    if (!isOpen) {
-      dd.classList.add('open');
-      gsap.fromTo(menu, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.2 });
-    } else {
-      gsap.to(menu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => dd.classList.remove('open') });
-    }
+  const businessTypeDropdown = document.getElementById('businessType');
+  attachDropdown({
+    el: businessTypeDropdown,
+    onSelect: (value) => updateActive('type', value)
   });
 
-  const setupDatePicker = (pickerId: string, field: Extract<StoreField, 'startDate' | 'endDate'>): void => {
-    const pk = document.getElementById(pickerId);
-    const popup = pk.querySelector('.datepicker-popup');
-    pk.addEventListener('click', (event) => {
-      const cell = closestFromEvent(event, '.datepicker-cell:not(.dim)');
-      if (cell) {
-        updateActive(field, cell.dataset.date ?? '');
-        gsap.to(popup, { opacity: 0, duration: 0.15, onComplete: () => pk.classList.remove('open') });
-        return;
-      }
-      if (closestFromEvent(event, '.datepicker-nav')) return;
-
-      const isOpen = pk.classList.contains('open');
-      if (!isOpen) {
-        const active = getActive();
-        if (active) buildCalendar(active[field], pk);
-        pk.classList.add('open');
-        gsap.fromTo(popup, { opacity: 0, y: -5 }, { opacity: 1, y: 0, duration: 0.2 });
-      } else {
-        gsap.to(popup, { opacity: 0, y: -5, duration: 0.15, onComplete: () => pk.classList.remove('open') });
-      }
-    });
-  };
-  setupDatePicker('startDatePicker', 'startDate');
-  setupDatePicker('endDatePicker', 'endDate');
-
-  document.addEventListener('click', (event) => {
-    const clickTarget = event.target instanceof Node ? event.target : null;
-    if (!quoteActionsMenu.contains(clickTarget)) {
-      closeQuoteActionsMenu();
-    }
-    if (!dd.contains(clickTarget) && dd.classList.contains('open')) {
-      gsap.to(menu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => dd.classList.remove('open') });
-    }
-    if (!bulkDd.contains(clickTarget) && bulkDd.classList.contains('open')) {
-      gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
-    }
-    ['startDatePicker', 'endDatePicker'].forEach((id) => {
-      const pk = document.getElementById(id);
-      if (!pk.contains(clickTarget) && pk.classList.contains('open')) {
-        gsap.to(pk.querySelector('.datepicker-popup'), {
-          opacity: 0,
-          duration: 0.15,
-          onComplete: () => pk.classList.remove('open')
-        });
-      }
-    });
+  attachDatepicker({
+    el: document.getElementById('startDatePicker'),
+    getValue: () => getActive()?.startDate ?? '',
+    onSelect: (value) => updateActive('startDate', value)
+  });
+  attachDatepicker({
+    el: document.getElementById('endDatePicker'),
+    getValue: () => getActive()?.endDate ?? '',
+    onSelect: (value) => updateActive('endDate', value)
   });
 
-  document.querySelectorAll('.section-header').forEach((header) => {
+  document.querySelectorAll('.csection__head').forEach((header) => {
     header.addEventListener('click', () => {
-      const section = header.closest('.section');
+      const section = header.closest('.csection');
       if (!section) return;
-      const body = section.querySelector('.section-body');
+      const body = section.querySelector('.csection__body');
+      if (!body) return;
       const isCollapsed = section.classList.contains('collapsed');
 
       if (isCollapsed) {
         section.classList.remove('collapsed');
-        gsap.fromTo(body, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.3, ease: 'power2.out' });
+        gsap.fromTo(body, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: MOTION_STRUCT_SECONDS, ease: 'power2.out' });
       } else {
-        gsap.to(body, { height: 0, opacity: 0, duration: 0.3, ease: 'power2.out', onComplete: () => section.classList.add('collapsed') });
+        gsap.to(body, { height: 0, opacity: 0, duration: MOTION_STRUCT_SECONDS, ease: 'power2.out', onComplete: () => section.classList.add('collapsed') });
       }
     });
   });
@@ -1335,8 +1229,8 @@ function bindEvents() {
     commitQuoteMutation();
   });
 
-  document.getElementById('boxModeControl').addEventListener('click', (event) => {
-    const btn = closestFromEvent(event, '.seg-btn');
+  document.getElementById('boxModeSeg').addEventListener('click', (event) => {
+    const btn = closestFromEvent(event, '.x-seg__btn');
     if (!btn) return;
     const nextBoxMode = btn.dataset.mode;
     if (nextBoxMode === 'none' || nextBoxMode === 'buy' || nextBoxMode === 'rent') {
@@ -1345,43 +1239,57 @@ function bindEvents() {
     commitQuoteMutation();
   });
 
-  document.getElementById('boxMinus').addEventListener('click', () => {
-    globalBoxCount = Math.max(1, globalBoxCount - 1);
-    commitQuoteMutation();
-  });
-  document.getElementById('boxPlus').addEventListener('click', () => {
-    globalBoxCount += 1;
-    commitQuoteMutation();
-  });
-  document.getElementById('boxCount').addEventListener('input', (event) => {
-    globalBoxCount = Math.max(1, Number(valueFromEvent(event)) || 1);
-    commitQuoteMutation();
+  attachCounter({
+    input: document.getElementById('boxCount') as HTMLInputElement,
+    minus: document.getElementById('boxMinus'),
+    plus: document.getElementById('boxPlus'),
+    min: 1,
+    max: 1000,
+    onChange: (value) => {
+      globalBoxCount = value;
+      commitQuoteMutation();
+    }
   });
 
   const discountFieldById: Record<string, keyof GlobalDiscounts> = {
-    discountAccount: 'account',
-    discountBox: 'box',
-    discountQTG: 'qtg',
-    discountQLQ: 'qlq'
+    discountAccountKnob: 'account',
+    discountBoxKnob: 'box',
+    discountQTGKnob: 'qtg',
+    discountQLQKnob: 'qlq'
   };
-  Object.keys(discountFieldById).forEach((id) => {
-    const sl = document.getElementById(id);
-    if (!sl) return;
-    const valText = document.getElementById(`${id}Val`);
-    sl.addEventListener('input', (event) => {
-      const discountField = discountFieldById[id];
-      if (!discountField) return;
-      globalDiscounts[discountField] = Number(valueFromEvent(event));
+  const discountApplyById: Record<string, keyof DiscountToggles> = {
+    discountAccountApply: 'account',
+    discountBoxApply: 'box',
+    discountQTGApply: 'qtg',
+    discountQLQApply: 'qlq'
+  };
+  Object.keys(discountApplyById).forEach((id) => {
+    optionalElement(id)?.addEventListener('click', () => {
+      const field = discountApplyById[id];
+      if (!field) return;
+      discountEnabled[field] = !discountEnabled[field];
       commitQuoteMutation();
-      if (valText) gsap.to(valText, { scale: 1.1, duration: 0.1 });
     });
-    sl.addEventListener('change', () => {
-      if (valText) gsap.to(valText, { scale: 1, duration: 0.2, ease: 'back.out(2)' });
+  });
+  Object.keys(discountFieldById).forEach((id) => {
+    const knob = optionalElement(id);
+    const discountField = discountFieldById[id];
+    if (!knob || !discountField) return;
+    attachKnob({
+      el: knob,
+      min: 0,
+      max: 100,
+      step: 1,
+      defaultVal: 0,
+      onChange: (value) => {
+        globalDiscounts[discountField] = value;
+        commitQuoteMutation();
+      }
     });
   });
 
   document.getElementById('vatControl').addEventListener('click', (event) => {
-    const btn = closestFromEvent(event, '.seg-btn');
+    const btn = closestFromEvent(event, '.x-seg__btn');
     if (!btn) return;
     vatRate = Number(btn.dataset.vat);
     commitQuoteMutation('totals');
@@ -1389,32 +1297,36 @@ function bindEvents() {
 
   setupScrubbableInput('areaInput', 1, 1, 10000);
   setupScrubbableInput('boxCount', 1, 1, 1000);
-  setupScrubbableInput('salaryInput', 10000, 1000000, 50000000);
 
-  document.getElementById('newQuoteBtn').addEventListener('click', async () => {
-    closeQuoteActionsMenu();
-    await createNewQuote();
+  optionalElement('newQuoteBtn')?.addEventListener('click', () => {
+    void createNewQuote();
   });
-  document.getElementById('newRevisionBtn').addEventListener('click', async () => {
-    closeQuoteActionsMenu();
-    await createNewRevision();
+  optionalElement('newRevisionBtn')?.addEventListener('click', () => {
+    void createNewRevision();
   });
-  document.getElementById('importPdfBtn').addEventListener('click', async () => {
-    closeQuoteActionsMenu();
-    await importQuoteFromPdf();
+  optionalElement('importPdfBtn')?.addEventListener('click', () => {
+    void importQuoteFromPdf();
   });
-  document.getElementById('exportBtn').addEventListener('click', performExport);
+  document.getElementById('btnCustomer').addEventListener('click', openCustomerModal);
+  document.getElementById('btnSave').addEventListener('click', () => {
+    void saveCurrentDraft();
+  });
 
   window.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'e') {
       event.preventDefault();
       performExport();
     }
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+      event.preventDefault();
+      void saveCurrentDraft();
+    }
   });
 
-  document.getElementById('settingsBtn').addEventListener('click', openSettingsModal);
+  document.getElementById('btnSettings').addEventListener('click', openSettingsModal);
   document.getElementById('closeSettings').addEventListener('click', closeSettingsModal);
-  document.getElementById('settingsModal').querySelector('.modal-overlay').addEventListener('click', closeSettingsModal);
+  document.getElementById('cancelSettings').addEventListener('click', closeSettingsModal);
+  bindModalFrame('settingsModal', closeSettingsModal);
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
     preparedByProfile = readPreparedByFields();
     invalidateDraftSnapshot();
@@ -1425,18 +1337,18 @@ function bindEvents() {
 
   document.getElementById('closeCustomerModal').addEventListener('click', closeCustomerModal);
   document.getElementById('cancelCustomerModal').addEventListener('click', closeCustomerModal);
-  document.getElementById('customerModal').querySelector('.modal-overlay').addEventListener('click', closeCustomerModal);
-  document.getElementById('confirmCustomerExport').addEventListener('click', exportActiveQuote);
-  document.getElementById('customerModal').addEventListener('keydown', async (event) => {
+  bindModalFrame('customerModal', closeCustomerModal);
+  document.getElementById('confirmCustomerExport').addEventListener('click', saveCustomerProfile);
+  document.getElementById('customerModal').addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      await exportActiveQuote();
+      saveCustomerProfile();
     }
   });
 
   document.getElementById('closeImportPreviewModal').addEventListener('click', closeImportPreviewModal);
   document.getElementById('cancelImportPreview').addEventListener('click', closeImportPreviewModal);
-  document.getElementById('importPreviewModal').querySelector('.modal-overlay').addEventListener('click', closeImportPreviewModal);
+  bindModalFrame('importPreviewModal', closeImportPreviewModal);
   document.getElementById('importActionOptions').addEventListener('click', (event) => {
     const action = closestFromEvent(event, '[data-action]');
     if (!action) return;

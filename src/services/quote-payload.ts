@@ -41,6 +41,10 @@ function isBoxMode(value: unknown): value is BoxMode {
   return value === 'none' || value === 'buy' || value === 'rent';
 }
 
+function isBillingCycle(value: unknown): value is CalcOptions['billingCycle'] {
+  return value === 'm' || value === 'q' || value === 'y';
+}
+
 function normalizeProfile(profile?: ProfileInput | CustomerProfile | Record<string, unknown>): CustomerProfile {
   return {
     companyName: String(profile?.companyName || '').trim(),
@@ -76,8 +80,10 @@ function normalizeStores(stores: Array<Partial<Store> | Record<string, unknown>>
 
 function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string, unknown> = {}): CalcOptions {
   const discounts = (calcOptions?.globalDiscounts as Partial<CalcOptions['globalDiscounts']> | undefined) || {};
+  const discountEnabled = (calcOptions?.discountEnabled as Partial<CalcOptions['discountEnabled']> | undefined) || {};
   return {
     boxMode: isBoxMode(calcOptions?.boxMode) ? calcOptions.boxMode : 'none',
+    billingCycle: isBillingCycle(calcOptions?.billingCycle) ? calcOptions.billingCycle : 'y',
     globalBoxCount: Math.max(1, Number(calcOptions?.globalBoxCount) || 1),
     hasAccountFee: calcOptions?.hasAccountFee !== false,
     hasQTG: calcOptions?.hasQTG !== false,
@@ -87,6 +93,12 @@ function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string,
       box: Number(discounts.box) || 0,
       qtg: Number(discounts.qtg) || 0,
       qlq: Number(discounts.qlq) || 0
+    },
+    discountEnabled: {
+      account: discountEnabled.account !== false,
+      box: discountEnabled.box !== false,
+      qtg: discountEnabled.qtg !== false,
+      qlq: discountEnabled.qlq !== false
     },
     baseSalary: Number(calcOptions?.baseSalary) || 2340000,
     vatRate: Number(calcOptions?.vatRate) || 0

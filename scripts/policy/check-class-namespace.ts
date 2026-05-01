@@ -1,23 +1,28 @@
 #!/usr/bin/env node
 import { glob, readFile } from 'node:fs/promises';
 
-const ALLOWED_CLASS = /^(x-|app$|app--|topbar|sidebar|work|bottombar|csection|line|csbody-grid|eyebrow$|label$|tnum$|dot$|count$|hidden$|is-)/;
+const ALLOWED_CLASS = /^(x-|app$|app--|topbar|sidebar|work|bottombar|csection|line|csbody-grid|palette-matrix|eyebrow$|label$|title$|tnum$|num$|dot$|count$|hidden$|is-)/;
 const SELECTOR_BLOCK = /([^{}]+)\{/g;
 const CLASS_NAME = /\.([_a-zA-Z][_a-zA-Z0-9-]*)/g;
+const COMMENT_BLOCK = /\/\*[\s\S]*?\*\//g;
+const IMPORT_RULE = /@import[^;]+;/g;
 
 async function main(): Promise<void> {
   const errors: string[] = [];
 
   for await (const file of glob('src/renderer/styles/*.css')) {
     const content = await readFile(file, 'utf8');
-    const lines = content.split('\n');
+    const lintContent = content
+      .replace(COMMENT_BLOCK, (match) => match.replace(/[^\n]/g, ' '))
+      .replace(IMPORT_RULE, (match) => match.replace(/[^\n]/g, ' '));
+    const lines = lintContent.split('\n');
 
-    for (const match of content.matchAll(SELECTOR_BLOCK)) {
+    for (const match of lintContent.matchAll(SELECTOR_BLOCK)) {
       const selector = match[1]?.trim();
       if (!selector || selector.startsWith('@')) continue;
 
       const offset = match.index ?? 0;
-      const lineNumber = content.slice(0, offset).split('\n').length;
+      const lineNumber = lintContent.slice(0, offset).split('\n').length;
       for (const classMatch of selector.matchAll(CLASS_NAME)) {
         const className = classMatch[1];
         if (className && !ALLOWED_CLASS.test(className)) {

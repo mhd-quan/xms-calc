@@ -1,0 +1,112 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   CHI NHÁNH PALETTE — 70 colors, Ableton-style track colors
+   7 hue families × 10 lightness/saturation steps = 70 swatches.
+   Pastel mid-saturation. Use as track accents, NOT as chrome.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* HUE 1 — STONE (neutral warm) */
+  --p-stone-1: #c9c4ba;  --p-stone-2: #b9b3a6;  --p-stone-3: #a8a195;
+  --p-stone-4: #968e82;  --p-stone-5: #847d72;  --p-stone-6: #736d63;
+  --p-stone-7: #625d54;  --p-stone-8: #534e47;  --p-stone-9: #45413b;
+  --p-stone-10:#383530;
+
+  /* HUE 2 — RUST (warm red-orange) */
+  --p-rust-1: #f0a89a;   --p-rust-2: #e89683;   --p-rust-3: #df836b;
+  --p-rust-4: #d4715a;   --p-rust-5: #c4604c;   --p-rust-6: #ad5340;
+  --p-rust-7: #944635;   --p-rust-8: #7a3a2c;   --p-rust-9: #5e2e23;
+  --p-rust-10:#43221a;
+
+  /* HUE 3 — AMBER (warm yellow-orange — note: state.active is amber) */
+  --p-amber-1: #f5d29a;  --p-amber-2: #efbf7e;  --p-amber-3: #e9ad62;
+  --p-amber-4: #e09a48;  --p-amber-5: #d18738;  --p-amber-6: #b8742e;
+  --p-amber-7: #9c6125;  --p-amber-8: #804e1d;  --p-amber-9: #623b16;
+  --p-amber-10:#46290f;
+
+  /* HUE 4 — MOSS (muted green) */
+  --p-moss-1: #b8d2a4;   --p-moss-2: #a3c08c;   --p-moss-3: #8eaf76;
+  --p-moss-4: #7a9d61;   --p-moss-5: #678a4f;   --p-moss-6: #547640;
+  --p-moss-7: #446232;   --p-moss-8: #364e26;   --p-moss-9: #283b1c;
+  --p-moss-10:#1c2b13;
+
+  /* HUE 5 — TEAL (cool cyan-green — also data accent family) */
+  --p-teal-1: #a5d4cd;   --p-teal-2: #8cc6bd;   --p-teal-3: #72b8ad;
+  --p-teal-4: #5aa89c;   --p-teal-5: #459789;   --p-teal-6: #338577;
+  --p-teal-7: #257164;   --p-teal-8: #1c5d51;   --p-teal-9: #14483f;
+  --p-teal-10:#0d342d;
+
+  /* HUE 6 — INDIGO (cool violet) */
+  --p-indigo-1: #b6b9d6;  --p-indigo-2: #9ea2c8;  --p-indigo-3: #878cb8;
+  --p-indigo-4: #7177a8;  --p-indigo-5: #5d6398;  --p-indigo-6: #4d5285;
+  --p-indigo-7: #3f4470;  --p-indigo-8: #33365b;  --p-indigo-9: #272946;
+  --p-indigo-10:#1c1d33;
+
+  /* HUE 7 — MAUVE (warm violet/pink) */
+  --p-mauve-1: #d6b8c5;  --p-mauve-2: #c8a1b3;  --p-mauve-3: #b88ba2;
+  --p-mauve-4: #a87691;  --p-mauve-5: #97637f;  --p-mauve-6: #84536d;
+  --p-mauve-7: #70445b;  --p-mauve-8: #5b3749;  --p-mauve-9: #462b39;
+  --p-mauve-10:#321f29;
+}
+
+/* ─── PALETTE GRID UTILITY ─────────────────────────────────────────────── */
+.palette-matrix {
+  display: grid;
+  grid-template-columns: 80px repeat(10, 1fr);
+  gap: 2px;
+  font-family: var(--font-label);
+}
+.palette-matrix__hue-label {
+  display: flex;
+  align-items: center;
+  font-size: var(--t-tiny);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 700;
+}
+.palette-matrix__step-label {
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-4);
+  font-weight: 700;
+  padding: 2px 0;
+}
+.palette-matrix__swatch {
+  aspect-ratio: 1.6;
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-2);
+  cursor: pointer;
+  position: relative;
+  transition: transform 90ms var(--ease-out), border-color 90ms;
+}
+.palette-matrix__swatch:hover {
+  border-color: var(--ink-1);
+  transform: scale(1.08);
+  z-index: 2;
+}
+.palette-matrix__swatch.is-selected {
+  border-color: var(--active);
+  box-shadow: var(--focus-glow);
+  z-index: 3;
+}
+.palette-matrix__swatch::after {
+  content: attr(data-token);
+  position: absolute;
+  bottom: -18px;
+  left: 0; right: 0;
+  text-align: center;
+  font-family: var(--font-num);
+  font-size: 8px;
+  color: var(--ink-1);
+  background: var(--shell-3);
+  padding: 1px 0;
+  border-radius: var(--r-1);
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 90ms;
+  z-index: 4;
+}
+.palette-matrix__swatch:hover::after { opacity: 1; }
