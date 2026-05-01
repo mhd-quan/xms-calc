@@ -15,9 +15,12 @@
   <div id="app" class="app">
     <!-- TOP BAR -->
     <header class="topbar">
-      <div class="topbar__brand"><span class="dot"></span> XMS // CALC</div>
+      <div class="topbar__brand">
+        <span class="topbar__brandmark" aria-hidden="true"><span></span><span></span><span></span></span>
+        <span>XMS // CALC</span>
+      </div>
       <div class="topbar__breadcrumb x-breadcrumb">
-        <span class="x-breadcrumb__item" id="bcCustomer">Customer chưa đặt</span>
+        <span class="x-breadcrumb__item" id="bcCustomer">Khách hàng chưa đặt</span>
         <span class="x-breadcrumb__sep">/</span>
         <div id="revisionDropdown" class="x-dropdown x-breadcrumb__item topbar__revision tnum" tabindex="0" data-value=""
           data-info="Quote revisions|Chọn revision trong quote chain hiện tại.|—">
@@ -88,11 +91,11 @@
         </div>
         <div class="work__controls">
           <div class="x-seg" id="cycleSeg" style="height:24px;">
-            <button type="button" class="x-seg__btn is-active" data-cycle="m" style="min-width:44px; font-size:9px;"
+            <button type="button" class="x-seg__btn" data-cycle="m" style="min-width:44px; font-size:9px;"
               data-info="Per month|Hiển thị theo tháng.|M">Tháng</button>
             <button type="button" class="x-seg__btn" data-cycle="q" style="min-width:44px; font-size:9px;"
               data-info="Per quarter|Hiển thị theo quý.|Q">Quý</button>
-            <button type="button" class="x-seg__btn" data-cycle="y" style="min-width:44px; font-size:9px;"
+            <button type="button" class="x-seg__btn is-active" data-cycle="y" style="min-width:44px; font-size:9px;"
               data-info="Per year|Hiển thị theo năm.|Y">Năm</button>
           </div>
           <button type="button" class="x-btn" style="height:24px; font-size:9.5px;" id="workDateRangeBtn"
@@ -206,6 +209,9 @@
                   </div>
                 </div>
                 <div class="x-row__rhs" id="accountFeeRight">
+                  <div class="x-discount-bank">
+                    <button type="button" class="x-discount-toggle is-on" id="discountAccountApply" aria-pressed="true"
+                      data-info="Apply Account Discount|Bật/tắt áp dụng discount tài khoản.|—">DISC</button>
                   <div class="x-knob" id="discountAccountKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
@@ -213,6 +219,7 @@
                     <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                     <div class="x-knob__readout" id="discountAccountVal">0%</div>
                     <div class="x-knob__label">Discount</div>
+                  </div>
                   </div>
                 </div>
               </div>
@@ -245,6 +252,9 @@
                     </div>
                   </div>
                   <div id="boxDiscountRow" hidden style="margin-top: 14px;">
+                    <div class="x-discount-bank">
+                      <button type="button" class="x-discount-toggle is-on" id="discountBoxApply" aria-pressed="true"
+                        data-info="Apply Box Discount|Bật/tắt áp dụng discount thiết bị.|—">DISC</button>
                     <div class="x-knob" id="discountBoxKnob"
                       data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                       tabindex="0"
@@ -252,6 +262,7 @@
                       <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                       <div class="x-knob__readout" id="discountBoxVal">0%</div>
                       <div class="x-knob__label">Discount</div>
+                    </div>
                     </div>
                   </div>
                 </div>
@@ -265,7 +276,7 @@
               data-info="Section 03 · Bản quyền|Quyền tác giả + quyền liên quan.|—">
               <span class="csection__idx">03</span>
               <span class="csection__title">Bản quyền</span>
-              <span class="eyebrow">Nhà nước</span>
+              <span class="eyebrow">Compliance</span>
               <span class="csection__total tnum" id="copyrightSectionTotal">0</span>
             </div>
             
@@ -284,6 +295,9 @@
                   </div>
                 </div>
                 <div class="x-row__rhs">
+                  <div class="x-discount-bank">
+                    <button type="button" class="x-discount-toggle is-on" id="discountQTGApply" aria-pressed="true"
+                      data-info="Apply QTG Discount|Bật/tắt áp dụng discount quyền tác giả.|—">DISC</button>
                   <div class="x-knob" id="discountQTGKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
@@ -291,6 +305,7 @@
                     <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                     <div class="x-knob__readout" id="discountQTGVal">0%</div>
                     <div class="x-knob__label">Discount</div>
+                  </div>
                   </div>
                 </div>
                 <div class="x-row__amount">
@@ -315,6 +330,9 @@
                   </div>
                 </div>
                 <div class="x-row__rhs">
+                  <div class="x-discount-bank">
+                    <button type="button" class="x-discount-toggle is-on" id="discountQLQApply" aria-pressed="true"
+                      data-info="Apply QLQ Discount|Bật/tắt áp dụng discount quyền liên quan.|—">DISC</button>
                   <div class="x-knob" id="discountQLQKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
@@ -322,6 +340,7 @@
                     <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                     <div class="x-knob__readout" id="discountQLQVal">0%</div>
                     <div class="x-knob__label">Discount</div>
+                  </div>
                   </div>
                 </div>
                 <div class="x-row__amount">
@@ -335,9 +354,8 @@
       </div>
 
         <div class="work__section-actions">
-          <span class="eyebrow">Add new section</span>
+          <span class="eyebrow">Branch tools</span>
           <div class="work__section-action-buttons">
-            <button type="button" class="x-btn" style="font-size:9.5px;" id="btnAddSection">+ Section</button>
             <button type="button" class="x-btn" style="font-size:9.5px;" id="btnDuplicateBranch"
               data-info="Duplicate|Sao chép chi nhánh hiện tại.|⌘D">Duplicate branch</button>
           </div>
@@ -375,7 +393,7 @@
 
       <div class="bottombar__total" data-info="Grand total|Tổng thanh toán sau VAT của toàn bộ báo giá.|—">
         <div class="bottombar__total__head">
-          <div class="bottombar__total__label">Grand total · monthly</div>
+          <div class="bottombar__total__label" id="grandTotalLabel">Grand total · yearly</div>
           <div class="x-seg bottombar__vat" id="vatControl" data-info="VAT|Chọn thuế VAT áp dụng vào tổng thanh toán.|—">
             <button type="button" class="x-seg__btn is-active" data-vat="0">0%</button>
             <button type="button" class="x-seg__btn" data-vat="0.08">8%</button>
@@ -404,8 +422,8 @@
       </div>
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
-      <div class="x-statusbar__cell" id="statusCycle">CYCLE · MONTHLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8 · DARK ABLETON</div>
+      <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.1</div>
     </div>
   </div>
 
@@ -455,14 +473,14 @@
     </div>
   </div>
 
-  <!-- CUSTOMER EXPORT MODAL -->
+  <!-- CUSTOMER PROFILE MODAL -->
   <div id="customerModal" class="x-modal hidden" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle">
     <div class="x-modal__overlay"></div>
     <div class="x-modal__panel" style="min-width: 560px;">
       <div class="x-modal__head">
         <div>
           <div class="x-modal__title" id="customerModalTitle">Thông tin khách hàng</div>
-          <div class="x-modal__sub">Quotation export profile</div>
+          <div class="x-modal__sub">Customer profile</div>
         </div>
         <button id="closeCustomerModal" class="x-modal__close" type="button" aria-label="Close Customer">×</button>
       </div>
@@ -492,7 +510,7 @@
       </div>
       <div class="x-modal__foot">
         <button id="cancelCustomerModal" class="x-btn" type="button">Cancel</button>
-        <button id="confirmCustomerExport" class="x-btn x-btn--primary" type="button">Lưu & Xuất PDF</button>
+        <button id="confirmCustomerExport" class="x-btn x-btn--primary" type="button">Lưu thông tin</button>
       </div>
     </div>
   </div>

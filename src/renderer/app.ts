@@ -20,6 +20,7 @@ import { attachDatepicker } from './modules/controllers/datepicker';
 import { attachDropdown } from './modules/controllers/dropdown';
 import { attachInfoView } from './modules/controllers/infoview';
 import { attachKnob, setKnobValue } from './modules/controllers/knob';
+import { cycleDisplayAmount } from './modules/billing-cycle';
 import { formatVND } from './modules/format';
 import { paletteVar } from './modules/palette';
 import { renderBottombar } from './modules/render-bottombar';
@@ -33,6 +34,7 @@ import { renderWorkbench } from './modules/render-workbench';
 import type {
   CalcOptions,
   CustomerProfile,
+  DiscountToggles,
   GlobalDiscounts,
   ImportActionKey,
   ImportPreview,
@@ -71,11 +73,24 @@ function valueFromEvent(event: Event): string {
   return event.target instanceof HTMLElement ? String(event.target.value) : '';
 }
 
+function createStoreId(): number {
+  return Date.now() + Math.floor(Math.random() * 1000000);
+}
+
+function resolveStoreId(value: string | undefined): number | null {
+  if (!value) return null;
+  const parsed = Number(value);
+  const matched = stores.find((store) => String(store.id) === value || store.id === parsed);
+  if (matched) return matched.id;
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function asErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error ? error.message : fallback;
 }
 let baseSalary: number = DEFAULT_BASE_SALARY;
 let vatRate: number = 0;
+let billingCycle: CalcOptions['billingCycle'] = 'y';
 let stores: Store[] = [];
 let activeTabId: number | null = null;
 
@@ -90,6 +105,13 @@ let globalDiscounts: GlobalDiscounts = {
   box: 0,
   qtg: 0,
   qlq: 0
+};
+
+let discountEnabled: DiscountToggles = {
+  account: true,
+  box: true,
+  qtg: true,
+  qlq: true
 };
 
 let bulkType: Store['type'] | '' = '';
@@ -157,12 +179,14 @@ function getCalcOptions(): CalcOptions {
   return {
     baseSalary,
     vatRate,
+    billingCycle,
     boxMode,
     globalBoxCount,
     hasAccountFee,
     hasQTG,
     hasQLQ,
-    globalDiscounts: { ...globalDiscounts }
+    globalDiscounts: { ...globalDiscounts },
+    discountEnabled: { ...discountEnabled }
   };
 }
 
@@ -181,12 +205,14 @@ function buildInitialDraftSnapshot(): QuoteSnapshot {
     calcOptions: normalizeCalcOptions({
       baseSalary: DEFAULT_BASE_SALARY,
       vatRate: 0,
+      billingCycle: 'y',
       boxMode: 'none',
       globalBoxCount: 1,
       hasAccountFee: true,
       hasQTG: true,
       hasQLQ: true,
-      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 }
+      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
+      discountEnabled: { account: true, box: true, qtg: true, qlq: true }
     }),
     stores: [createStore(1)],
     totals: {}
@@ -324,12 +350,14 @@ function hydrateEditorFromRevision(revision: QuoteRevision): void {
 
   baseSalary = snapshot.calcOptions.baseSalary;
   vatRate = snapshot.calcOptions.vatRate;
+  billingCycle = snapshot.calcOptions.billingCycle;
   boxMode = snapshot.calcOptions.boxMode;
   globalBoxCount = snapshot.calcOptions.globalBoxCount;
   hasAccountFee = snapshot.calcOptions.hasAccountFee;
   hasQTG = snapshot.calcOptions.hasQTG;
   hasQLQ = snapshot.calcOptions.hasQLQ;
   globalDiscounts = { ...snapshot.calcOptions.globalDiscounts };
+  discountEnabled = { ...snapshot.calcOptions.discountEnabled };
 
   stores = snapshot.stores.length ? snapshot.stores : [createStore(1)];
   activeTabId = stores[0]?.id || null;
@@ -548,7 +576,20 @@ function performExport() {
     openSettingsModal();
     return;
   }
-  openCustomerModal();
+  if (!customerProfile.companyName) {
+    openCustomerModal();
+    return;
+  }
+  void exportActiveQuote();
+}
+
+function saveCustomerProfile(): void {
+  customerProfile = readCustomerFields();
+  invalidateDraftSnapshot();
+  markChromeDirty();
+  closeCustomerModal();
+  render('sidebar');
+  scheduleDraftPersist();
 }
 
 async function saveCurrentDraft(): Promise<void> {
@@ -595,7 +636,7 @@ function formatDateStr(ymd: string): string {
 
 function createStore(index: number): Store {
   return {
-    id: Date.now() + Math.random(),
+    id: createStoreId(),
     name: `Chi nhánh ${index}`,
     type: '',
     area: '',
@@ -622,6 +663,21 @@ function addStore() {
   if (active) {
     store.type = active.type;
   }
+  stores.push(store);
+  activeTabId = store.id;
+  clearSidebarSearch();
+  commitQuoteMutation();
+  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: MOTION_STRUCT_SECONDS });
+}
+
+function duplicateActiveStore(): void {
+  const active = getActive();
+  if (!active) return;
+  const store: Store = {
+    ...active,
+    id: createStoreId(),
+    name: `${active.name || 'Chi nhánh'} copy`
+  };
   stores.push(store);
   activeTabId = store.id;
   clearSidebarSearch();
@@ -792,6 +848,10 @@ function renderMain(snapshot: RenderSnapshot): void {
   const duration = breakdown?.duration ?? calculateDurationMonths(store.startDate, store.endDate);
   const coef = breakdown?.coef ?? calculateCoef(store.type, area);
 
+  document.querySelectorAll('#cycleSeg .x-seg__btn').forEach((button) => {
+    button.classList.toggle('is-active', button instanceof HTMLElement && button.dataset.cycle === billingCycle);
+  });
+
   const typeText = document.getElementById('businessTypeText');
   const typeDropdown = document.getElementById('businessType');
   const storeTypeMeta = store.type ? BUSINESS_TYPES[store.type] : undefined;
@@ -811,6 +871,7 @@ function renderMain(snapshot: RenderSnapshot): void {
   accToggle.classList.toggle('is-on', hasAccountFee);
   accToggle.textContent = hasAccountFee ? 'BẬT' : 'TẮT';
   const accRight = document.getElementById('accountFeeRight');
+  renderDiscountApply('discountAccountApply', discountEnabled.account);
   setKnobValue('discountAccountKnob', globalDiscounts.account);
 
   if (hasAccountFee) {
@@ -827,6 +888,7 @@ function renderMain(snapshot: RenderSnapshot): void {
   if (document.activeElement !== boxInput) boxInput.value = String(globalBoxCount);
 
   const boxDiscountRow = document.getElementById('boxDiscountRow');
+  renderDiscountApply('discountBoxApply', discountEnabled.box);
   setKnobValue('discountBoxKnob', globalDiscounts.box);
   if (boxMode === 'buy') {
     boxDiscountRow.removeAttribute('hidden');
@@ -848,12 +910,13 @@ function renderMain(snapshot: RenderSnapshot): void {
   const qtgRow = qtgToggle.closest('.x-row') ?? qtgToggle;
   const qtgMid = qtgRow.querySelector('.x-row__rhs');
   const qtgRight = qtgRow.querySelector('.x-row__amount');
+  renderDiscountApply('discountQTGApply', discountEnabled.qtg);
   setKnobValue('discountQTGKnob', globalDiscounts.qtg);
 
   if (hasQTG) {
     qtgMid.classList.remove('is-disabled');
     qtgRight.classList.remove('is-disabled');
-    animateNumber('qtgAmount', breakdown?.qtgAmount || 0);
+    animateNumber('qtgAmount', cycleDisplayAmount(breakdown?.qtgAmount || 0, billingCycle));
   } else {
     qtgMid.classList.add('is-disabled');
     qtgRight.classList.add('is-disabled');
@@ -869,17 +932,26 @@ function renderMain(snapshot: RenderSnapshot): void {
   const qlqRow = qlqToggle.closest('.x-row') ?? qlqToggle;
   const qlqMid = qlqRow.querySelector('.x-row__rhs');
   const qlqRight = qlqRow.querySelector('.x-row__amount');
+  renderDiscountApply('discountQLQApply', discountEnabled.qlq);
   setKnobValue('discountQLQKnob', globalDiscounts.qlq);
 
   if (hasQLQ) {
     qlqMid.classList.remove('is-disabled');
     qlqRight.classList.remove('is-disabled');
-    animateNumber('qlqAmount', breakdown?.qlqAmount || 0);
+    animateNumber('qlqAmount', cycleDisplayAmount(breakdown?.qlqAmount || 0, billingCycle));
   } else {
     qlqMid.classList.add('is-disabled');
     qlqRight.classList.add('is-disabled');
     animateNumber('qlqAmount', 0);
   }
+}
+
+function renderDiscountApply(id: string, isEnabled: boolean): void {
+  const button = optionalElement(id);
+  if (!button) return;
+  button.classList.toggle('is-on', isEnabled);
+  button.setAttribute('aria-pressed', String(isEnabled));
+  button.textContent = isEnabled ? 'DISC' : 'OFF';
 }
 
 function createRenderSnapshot() {
@@ -902,6 +974,7 @@ function createRenderSnapshot() {
     activeBreakdown,
     maxStoreTotal,
     customer: customerProfile,
+    billingCycle,
     activeQuoteCode,
     activeDisplayQuoteNumber,
     activeRevisionId,
@@ -1009,14 +1082,15 @@ function bindEvents() {
     const removeBtn = closestFromEvent(event, '[data-remove]');
     if (removeBtn) {
       event.stopPropagation();
-      removeStore(parseFloat(removeBtn.dataset.remove ?? '0'));
+      const removeId = resolveStoreId(removeBtn.dataset.remove);
+      if (removeId !== null) removeStore(removeId);
       return;
     }
 
     const item = closestFromEvent(event, '.x-track');
     if (!item) return;
-    const newId = parseFloat(item.dataset.id ?? '0');
-    if (newId !== activeTabId) {
+    const newId = resolveStoreId(item.dataset.id);
+    if (newId !== null && newId !== activeTabId) {
       activeTabId = newId;
       gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: MOTION_STRUCT_SECONDS });
       render(['main', 'sidebar']);
@@ -1043,14 +1117,17 @@ function bindEvents() {
     cycleSeg.addEventListener('click', (event) => {
       const button = closestFromEvent(event, '.x-seg__btn');
       if (!button || !button.dataset.cycle) return;
-      cycleSeg.querySelectorAll('.x-seg__btn').forEach((el) => {
-        el.classList.toggle('is-active', el === button);
-      });
-      renderStatusbar(createRenderSnapshot());
+      if (button.dataset.cycle === 'm' || button.dataset.cycle === 'q' || button.dataset.cycle === 'y') {
+        billingCycle = button.dataset.cycle;
+        invalidateDraftSnapshot();
+        render(['main', 'totals']);
+        scheduleDraftPersist();
+      }
     });
   }
 
   document.getElementById('addStoreBtn').addEventListener('click', addStore);
+  optionalElement('btnDuplicateBranch')?.addEventListener('click', duplicateActiveStore);
 
   const bulkDd = document.getElementById('bulkBusinessType');
   const bulkRowsEl = document.getElementById('bulkRows');
@@ -1180,6 +1257,20 @@ function bindEvents() {
     discountQTGKnob: 'qtg',
     discountQLQKnob: 'qlq'
   };
+  const discountApplyById: Record<string, keyof DiscountToggles> = {
+    discountAccountApply: 'account',
+    discountBoxApply: 'box',
+    discountQTGApply: 'qtg',
+    discountQLQApply: 'qlq'
+  };
+  Object.keys(discountApplyById).forEach((id) => {
+    optionalElement(id)?.addEventListener('click', () => {
+      const field = discountApplyById[id];
+      if (!field) return;
+      discountEnabled[field] = !discountEnabled[field];
+      commitQuoteMutation();
+    });
+  });
   Object.keys(discountFieldById).forEach((id) => {
     const knob = optionalElement(id);
     const discountField = discountFieldById[id];
@@ -1188,7 +1279,7 @@ function bindEvents() {
       el: knob,
       min: 0,
       max: 100,
-      step: 5,
+      step: 1,
       defaultVal: 0,
       onChange: (value) => {
         globalDiscounts[discountField] = value;
@@ -1247,11 +1338,11 @@ function bindEvents() {
   document.getElementById('closeCustomerModal').addEventListener('click', closeCustomerModal);
   document.getElementById('cancelCustomerModal').addEventListener('click', closeCustomerModal);
   bindModalFrame('customerModal', closeCustomerModal);
-  document.getElementById('confirmCustomerExport').addEventListener('click', exportActiveQuote);
-  document.getElementById('customerModal').addEventListener('keydown', async (event) => {
+  document.getElementById('confirmCustomerExport').addEventListener('click', saveCustomerProfile);
+  document.getElementById('customerModal').addEventListener('keydown', (event) => {
     if (event.key === 'Enter') {
       event.preventDefault();
-      await exportActiveQuote();
+      saveCustomerProfile();
     }
   });
 

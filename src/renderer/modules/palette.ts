@@ -1,4 +1,4 @@
-const DEFAULT_HUES = ['rust', 'amber', 'moss', 'teal', 'stone'] as const;
+const DEFAULT_HUES = ['rust', 'amber', 'moss', 'teal', 'indigo', 'mauve', 'stone'] as const;
 
 type DefaultHue = typeof DEFAULT_HUES[number];
 
@@ -10,7 +10,7 @@ export type PaletteToken = {
 export function paletteToken(seed: number): PaletteToken {
   const normalizedSeed = Math.abs(Math.trunc(Number(seed) || 0));
   const hue = DEFAULT_HUES[normalizedSeed % DEFAULT_HUES.length] ?? DEFAULT_HUES[0];
-  const step = 4 + ((normalizedSeed * 3) % 4);
+  const step = 2 + ((normalizedSeed * 2) % 4);
   return { hue, step };
 }
 

@@ -1,15 +1,10 @@
 import type { RenderSnapshot } from '../app';
 import type { RevisionStatus } from '../../shared/types';
+import { cycleLabel } from './billing-cycle';
 
 type StatusView = {
   label: string;
   dot: string;
-};
-
-const CYCLE_LABELS: Record<string, string> = {
-  m: 'MONTHLY',
-  q: 'QUARTERLY',
-  y: 'YEARLY'
 };
 
 export function renderStatusbar(snapshot: RenderSnapshot): void {
@@ -17,8 +12,8 @@ export function renderStatusbar(snapshot: RenderSnapshot): void {
   setText('statusRevisionState', status.label);
   setText('statusQuoteNumber', `QUOTE ${snapshot.activeDisplayQuoteNumber || '—'}`);
   setText('statusBranchSummary', branchSummary(snapshot.stores.length));
-  setText('statusCycle', `CYCLE · ${currentCycleLabel()}`);
-  setText('statusVersion', 'XMS v1.8 · DARK ABLETON');
+  setText('statusCycle', `CYCLE · ${cycleLabel(snapshot.billingCycle).toUpperCase()}`);
+  setText('statusVersion', 'XMS v1.8.1');
 
   const dot = getElement('statusDot');
   if (dot) dot.style.background = status.dot;
@@ -34,11 +29,6 @@ function branchSummary(count: number): string {
   const branchUnit = count === 1 ? 'BRANCH' : 'BRANCHES';
   const lineUnit = count === 1 ? 'LINE' : 'LINES';
   return `${count} ${branchUnit} · ${count} ${lineUnit}`;
-}
-
-function currentCycleLabel(): string {
-  const active = document.querySelector<HTMLElement>('#cycleSeg .x-seg__btn.is-active');
-  return CYCLE_LABELS[active?.dataset.cycle ?? ''] ?? 'MONTHLY';
 }
 
 function setText(id: string, value: string): void {

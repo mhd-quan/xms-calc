@@ -1,3 +1,4 @@
+import { cycleDisplayAmount } from './billing-cycle';
 import { formatVND } from './format';
 import { paletteVar } from './palette';
 
@@ -9,7 +10,7 @@ export function renderWorkbench(snapshot: RenderSnapshot): void {
 
   const index = Math.max(0, snapshot.activeStoreIndex);
   setText('workBranchBadge', `B-${String(index + 1).padStart(2, '0')}`);
-  setText('workStoreCount', '1');
+  setText('workStoreCount', String(snapshot.stores.length));
   setText('workLineCount', '3');
   setText('workDateRangeText', formatDateRange(store.startDate, store.endDate));
   setSectionTotals(snapshot);
@@ -33,8 +34,8 @@ function setSectionTotals(snapshot: RenderSnapshot): void {
   }
 
   setText('facilitySectionTotal', `${breakdown.duration.toFixed(1)}m`);
-  setText('platformSectionTotal', formatVND(breakdown.accountAmount + breakdown.boxAmount));
-  setText('copyrightSectionTotal', formatVND(breakdown.qtgAmount + breakdown.qlqAmount));
+  setText('platformSectionTotal', formatVND(cycleDisplayAmount(breakdown.accountAmount + breakdown.boxAmount, snapshot.billingCycle)));
+  setText('copyrightSectionTotal', formatVND(cycleDisplayAmount(breakdown.qtgAmount + breakdown.qlqAmount, snapshot.billingCycle)));
 }
 
 function formatDateRange(startDate: string, endDate: string): string {

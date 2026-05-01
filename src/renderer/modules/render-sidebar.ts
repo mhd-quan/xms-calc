@@ -59,6 +59,7 @@ function trackTemplate(store: Store, index: number, isActive: boolean, snapshot:
       <div class="x-track__head">
         <span class="x-track__badge" style="background: ${color}">${badge}</span>
         <span class="x-track__name">${escapeHTML(store.name)}</span>
+        <button class="x-track__remove" type="button" data-remove="${store.id}" aria-label="Xóa ${escapeAttr(store.name)}">×</button>
       </div>
       <div class="x-track__meta">
         <span>${escapeHTML(typeLabel)}</span>

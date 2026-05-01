@@ -5,6 +5,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.8.1] — 2026-05-02
+
+### Fixed
+- Fixed discount knob geometry so the indicator remains anchored across the full 0–100% range.
+- Reduced knob drag and wheel sensitivity for controlled discount adjustment.
+- Added per-knob discount apply toggles so stored discount values can be enabled or bypassed independently.
+- Fixed the Tháng/Quý/Năm cycle selector so bottom totals, section totals, and active line amounts divide by 12, 4, or 1.
+- Restored sidebar branch delete controls.
+- Reworked the customer modal so it only saves customer profile data instead of exporting PDF immediately.
+- Added macOS titlebar inset and restored a visible XMS brand mark in the topbar.
+- Removed visible "Dark Ableton" status copy from the app chrome.
+
+### Changed
+- Tightened copyright row spacing to remove the void between discount knobs and amount readouts.
+- Increased bottom bar total emphasis and made branch palette selection brighter.
+
+---
+
 ## [1.8.0] — 2026-05-02
 
 ### Added

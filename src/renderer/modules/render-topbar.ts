@@ -4,7 +4,7 @@ import { renderRevisionDropdown } from './render-revisions';
 
 export function renderTopbar(snapshot: RenderSnapshot): void {
   const activeStore = snapshot.activeStore;
-  setText('bcCustomer', snapshot.customer.companyName || 'Customer chưa đặt');
+  setText('bcCustomer', snapshot.customer.companyName || 'Khách hàng chưa đặt');
   setText('bcBranchName', activeStore?.name || '—');
   renderRevisionDropdown(snapshot);
 

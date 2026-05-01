@@ -158,8 +158,9 @@ function buildNotes(payload: QuotePayload): string {
     'Đối với khoản quyền tác giả, việc thanh toán và đối soát với đơn vị quản lý quyền, nếu phát sinh, được thực hiện theo quy định và/hoặc thỏa thuận riêng giữa các bên liên quan.'
   ];
   const discounts = payload.globals.globalDiscounts || {};
+  const discountEnabled = payload.globals.discountEnabled || {};
   const activeDiscounts = Object.entries(discounts)
-    .filter(([, value]) => Number(value) > 0)
+    .filter(([key, value]) => discountEnabled[key as keyof typeof discountEnabled] !== false && Number(value) > 0)
     .map(([key, value]) => `${key.toUpperCase()} ${value}%`);
   if (activeDiscounts.length) {
     notes.push(`Bảng báo giá này đã ghi nhận mức chiết khấu: ${activeDiscounts.join(', ')}.`);

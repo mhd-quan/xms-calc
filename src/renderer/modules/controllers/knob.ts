@@ -55,7 +55,7 @@ export function attachKnob(spec: KnobSpec): void {
     (event) => {
       event.preventDefault();
       const delta = -Math.sign(event.deltaY);
-      const nudge = event.shiftKey ? spec.step : spec.step * 5;
+      const nudge = event.shiftKey ? spec.step : spec.step;
       setKnob(spec.el, currentValue(spec) + delta * nudge, true);
     },
     { passive: false }
@@ -98,8 +98,8 @@ function onMove(event: PointerEvent): void {
   const pointerLocked = document.pointerLockElement === dragging.el;
   const dy = pointerLocked ? -event.movementY : dragStartY - event.clientY;
   const range = dragging.max - dragging.min;
-  const sensitivity = event.shiftKey ? 0.4 : 1;
-  dragRawVal += (dy / 200) * range * sensitivity;
+  const sensitivity = event.shiftKey ? 0.25 : 0.6;
+  dragRawVal += (dy / 260) * range * sensitivity;
 
   setKnob(dragging.el, dragRawVal, true);
   if (!pointerLocked) dragStartY = event.clientY;

@@ -1,4 +1,5 @@
 import { setVu } from './controllers/vu';
+import { cycleDisplayAmount, cycleLabel } from './billing-cycle';
 import { formatVND } from './format';
 
 import type { RenderSnapshot } from '../app';
@@ -7,12 +8,14 @@ const GRAND_TOTAL_CEILING = 50000000;
 
 export function renderBottombar(snapshot: RenderSnapshot): void {
   const { totals } = snapshot.quote;
+  const displayCycle = snapshot.billingCycle;
 
-  setMoney('totalQTG', totals.subtotalQTG);
-  setMoney('totalQLQ', totals.subtotalQLQ);
-  setMoney('totalAccount', totals.subtotalAccount);
-  setMoney('totalBox', totals.subtotalBox);
-  setText('grandTotal', formatVND(totals.grand));
+  setMoney('totalQTG', cycleDisplayAmount(totals.subtotalQTG, displayCycle));
+  setMoney('totalQLQ', cycleDisplayAmount(totals.subtotalQLQ, displayCycle));
+  setMoney('totalAccount', cycleDisplayAmount(totals.subtotalAccount, displayCycle));
+  setMoney('totalBox', cycleDisplayAmount(totals.subtotalBox, displayCycle));
+  setText('grandTotal', formatVND(cycleDisplayAmount(totals.grand, displayCycle)));
+  setText('grandTotalLabel', `Grand total · ${cycleLabel(displayCycle)}`);
 
   document.querySelectorAll<HTMLElement>('#vatControl .x-seg__btn').forEach((button) => {
     const buttonRate = Number(button.dataset.vat);
@@ -20,7 +23,7 @@ export function renderBottombar(snapshot: RenderSnapshot): void {
   });
 
   const grandVu = getElement('grandVu');
-  if (grandVu) setVu(grandVu, totals.grand / GRAND_TOTAL_CEILING);
+  if (grandVu) setVu(grandVu, cycleDisplayAmount(totals.grand, displayCycle) / GRAND_TOTAL_CEILING);
 }
 
 function setMoney(id: string, value: number): void {
