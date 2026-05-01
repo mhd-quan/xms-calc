@@ -176,7 +176,7 @@
 /* Vector knob, vertical-drag interaction. Click to focus, drag up/down,
    double-click to reset. Renders as <div class="x-knob"> with internal SVG. */
 .x-knob {
-  --size: 44px;
+  --size: 38px;
   --val: 0.5;       /* 0..1 */
   display: inline-flex;
   flex-direction: column;
@@ -197,6 +197,36 @@
   place-items: center;
   transition: border-color var(--t-instant), transform var(--t-quick) var(--ease-out);
 }
+/* Arc glow track — sweeps from -135° to current val position */
+.x-knob__dial::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  /* 270° sweep mapped by --val: from 225° (7:30 position) clockwise */
+  background: conic-gradient(
+    from 225deg,
+    var(--active) 0deg,
+    var(--active) calc(270deg * var(--val)),
+    transparent calc(270deg * var(--val)),
+    transparent 270deg,
+    transparent 360deg
+  );
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+  opacity: 0;
+  transition: opacity var(--t-quick);
+  pointer-events: none;
+}
+.x-knob.is-active .x-knob__dial::after {
+  opacity: 1;
+  animation: arc-breathe 2.8s ease-in-out infinite;
+}
+@keyframes arc-breathe {
+  0%, 100% { opacity: 0.7; filter: blur(0px); }
+  50%       { opacity: 1; filter: blur(1px); }
+}
+
 .x-knob:hover .x-knob__dial { border-color: var(--line-3); }
 .x-knob:active .x-knob__dial,
 .x-knob.is-dragging .x-knob__dial { transform: scale(1.03); }
@@ -214,9 +244,9 @@
 .x-knob__indicator {
   position: absolute;
   left: calc(50% - 1px);
-  top: calc(50% - 20px);
+  top: calc(50% - 17px);
   width: 2px;
-  height: 20px;
+  height: 17px;
   background: var(--ink-1);
   transform-origin: 50% 100%;
   /* Range: -135deg to +135deg, mapped from val 0..1 */

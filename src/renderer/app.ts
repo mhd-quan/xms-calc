@@ -64,6 +64,18 @@ function optionalElement(id: string): HTMLElement | null {
   return document.getElementById(id) as HTMLElement | null;
 }
 
+/** Safe accessor for input elements — returns empty string if element not found. */
+function inputValue(id: string): string {
+  const el = document.getElementById(id) as HTMLInputElement | null;
+  return el?.value?.trim() ?? '';
+}
+
+/** Safe setter for input elements — no-op if element not found. */
+function setInputValue(id: string, value: string): void {
+  const el = document.getElementById(id) as HTMLInputElement | null;
+  if (el) el.value = value;
+}
+
 function clearSidebarSearch(): void {
   const searchInput = optionalElement('searchInput');
   if (searchInput instanceof HTMLInputElement) searchInput.value = '';
@@ -380,38 +392,38 @@ function applyRevisionBundle(bundle: RevisionBundle | null): void {
 }
 
 function setCustomerFields(customer: CustomerProfile): void {
-  document.getElementById('customerCompany').value = customer.companyName || '';
-  document.getElementById('customerContactName').value = customer.contactName || '';
-  document.getElementById('customerDepartment').value = customer.department || '';
-  document.getElementById('customerEmail').value = customer.email || '';
-  document.getElementById('customerPhone').value = customer.phone || '';
+  setInputValue('customerCompany', customer.companyName || '');
+  setInputValue('customerContactName', customer.contactName || '');
+  setInputValue('customerDepartment', customer.department || '');
+  setInputValue('customerEmail', customer.email || '');
+  setInputValue('customerPhone', customer.phone || '');
 }
 
 function setSettingsFields(settings: PreparedByProfile): void {
-  document.getElementById('settingName').value = settings.name || '';
-  document.getElementById('settingTitle').value = settings.title || '';
-  document.getElementById('settingDepartment').value = settings.department || '';
-  document.getElementById('settingEmail').value = settings.email || '';
-  document.getElementById('settingPhone').value = settings.phone || '';
+  setInputValue('settingName', settings.name || '');
+  setInputValue('settingTitle', settings.title || '');
+  setInputValue('settingDepartment', settings.department || '');
+  setInputValue('settingEmail', settings.email || '');
+  setInputValue('settingPhone', settings.phone || '');
 }
 
 function readCustomerFields(): CustomerProfile {
   return normalizeProfile({
-    companyName: document.getElementById('customerCompany').value.trim(),
-    contactName: document.getElementById('customerContactName').value.trim(),
-    department: document.getElementById('customerDepartment').value.trim(),
-    email: document.getElementById('customerEmail').value.trim(),
-    phone: document.getElementById('customerPhone').value.trim()
+    companyName: inputValue('customerCompany'),
+    contactName: inputValue('customerContactName'),
+    department: inputValue('customerDepartment'),
+    email: inputValue('customerEmail'),
+    phone: inputValue('customerPhone')
   });
 }
 
 function readPreparedByFields(): PreparedByProfile {
   return normalizePreparedBy({
-    name: document.getElementById('settingName').value.trim(),
-    title: document.getElementById('settingTitle').value.trim(),
-    department: document.getElementById('settingDepartment').value.trim(),
-    email: document.getElementById('settingEmail').value.trim(),
-    phone: document.getElementById('settingPhone').value.trim()
+    name: inputValue('settingName'),
+    title: inputValue('settingTitle'),
+    department: inputValue('settingDepartment'),
+    email: inputValue('settingEmail'),
+    phone: inputValue('settingPhone')
   });
 }
 
@@ -453,6 +465,7 @@ function closeImportPreviewModal() {
 
 function renderImportActionOptions(preview: ImportPreview): void {
   const container = document.getElementById('importActionOptions');
+  if (!container) return;
   container.innerHTML = preview.actions.map((action) => `
     <button class="x-btn import-action-option${action.key === selectedImportAction ? ' is-active' : ''}" type="button" data-action="${action.key}" style="justify-content:flex-start; width:100%;">
       <strong>${escapeHTML(action.label)}</strong>
@@ -464,13 +477,17 @@ function openImportPreviewModal(preview: ImportPreview): void {
   activeImportPreview = preview;
   selectedImportAction = preview.recommendedAction;
 
-  document.getElementById('importPreviewFileName').textContent = preview.fileName || '-';
-  document.getElementById('importPreviewQuoteNumber').textContent = preview.preview.displayQuoteNumber;
-  document.getElementById('importPreviewCustomer').textContent = preview.preview.customerName || '-';
-  document.getElementById('importPreviewBranchCount').textContent = `${preview.preview.branchCount} branches`;
-  document.getElementById('importPreviewGrandTotal').textContent = `${formatVND(preview.preview.grandTotal)} ₫`;
-  document.getElementById('importPreviewCompatibility').textContent = preview.preview.manifestCompatibility;
-  document.getElementById('importPreviewSummary').textContent = preview.summary;
+  const setText = (id: string, text: string) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  };
+  setText('importPreviewFileName', preview.fileName || '-');
+  setText('importPreviewQuoteNumber', preview.preview.displayQuoteNumber);
+  setText('importPreviewCustomer', preview.preview.customerName || '-');
+  setText('importPreviewBranchCount', `${preview.preview.branchCount} branches`);
+  setText('importPreviewGrandTotal', `${formatVND(preview.preview.grandTotal)} ₫`);
+  setText('importPreviewCompatibility', preview.preview.manifestCompatibility);
+  setText('importPreviewSummary', preview.summary);
   renderImportActionOptions(preview);
   showModal('importPreviewModal', '#confirmImportPreview');
 }
