@@ -402,187 +402,185 @@
   </div>
 
   <!-- BULK ADD MODAL -->
-  <div id="bulkAddModal" class="modal hidden">
-    <div class="modal-overlay"></div>
-    <div class="modal-content bulk-modal-content">
-      <div class="modal-header bulk-modal-header">
+  <div id="bulkAddModal" class="x-modal hidden" role="dialog" aria-modal="true" aria-labelledby="bulkAddTitle">
+    <div class="x-modal__overlay"></div>
+    <div class="x-modal__panel" style="min-width: 580px;">
+      <div class="x-modal__head">
         <div>
-          <h3>Bulk Add</h3>
-          <div class="modal-kicker">Branch input grid</div>
+          <div class="x-modal__title" id="bulkAddTitle">Bulk Add</div>
+          <div class="x-modal__sub">Branch input grid · template-driven</div>
         </div>
-        <button id="closeBulkAdd" class="close-btn">×</button>
+        <button id="closeBulkAdd" class="x-modal__close" type="button" aria-label="Close Bulk Add">×</button>
       </div>
-      <div class="bulk-modal-body">
-        <div class="bulk-toolbar">
-          <div id="bulkBusinessType" class="ableton-dropdown bulk-dropdown" data-value="" tabindex="0">
-            <div class="dropdown-display">
-              <span class="dropdown-text" id="bulkBusinessTypeText">Chọn mô hình...</span>
-              <span class="dropdown-arrow">▼</span>
+      <div class="x-modal__body" style="padding: var(--s-6); max-height: none;">
+        <div class="x-field-row" style="margin-bottom: var(--s-5);">
+          <label class="x-field-row__label">Template / Mô hình</label>
+          <div id="bulkBusinessType" class="x-dropdown" data-value="" tabindex="0">
+            <div class="x-dropdown__display">
+              <span class="x-dropdown__value" id="bulkBusinessTypeText">Chọn mô hình...</span>
+              <span class="x-dropdown__caret"></span>
             </div>
-            <div class="dropdown-menu">
-              <div class="dropdown-item" data-value="cafe">Quán cà phê - giải khát</div>
-              <div class="dropdown-item" data-value="restaurant">Nhà hàng, phòng hội thảo, hội nghị</div>
-              <div class="dropdown-item" data-value="store">Cửa hàng, showroom</div>
-              <div class="dropdown-item" data-value="gym">CLB thể dục, chăm sóc sức khỏe - thẩm mỹ</div>
-              <div class="dropdown-item" data-value="entertainment">Khu vui chơi, giải trí</div>
-              <div class="dropdown-item" data-value="mall">Trung tâm thương mại, cao ốc văn phòng</div>
-              <div class="dropdown-item" data-value="supermarket">Siêu thị</div>
+            <div class="x-dropdown__menu">
+              <div class="x-dropdown__item" data-value="cafe">Quán cà phê - giải khát</div>
+              <div class="x-dropdown__item" data-value="restaurant">Nhà hàng, phòng hội thảo, hội nghị</div>
+              <div class="x-dropdown__item" data-value="store">Cửa hàng, showroom</div>
+              <div class="x-dropdown__item" data-value="gym">CLB thể dục, chăm sóc sức khỏe - thẩm mỹ</div>
+              <div class="x-dropdown__item" data-value="entertainment">Khu vui chơi, giải trí</div>
+              <div class="x-dropdown__item" data-value="mall">Trung tâm thương mại, cao ốc văn phòng</div>
+              <div class="x-dropdown__item" data-value="supermarket">Siêu thị</div>
             </div>
-          </div>
-          <div class="bulk-meter">
-            <span class="signal-dot"></span>
-            <span id="bulkRowCount">0 rows</span>
           </div>
         </div>
 
-        <div class="bulk-grid-shell">
-          <div class="bulk-grid-head">
-            <span>STT</span>
-            <span>Diện tích phát nhạc</span>
+        <div style="margin-top: var(--s-5); padding: var(--s-4); background: var(--inset-0); border: 1px solid var(--line-1); border-radius: var(--r-2);">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--s-4);">
+            <span class="x-field-row__label">Branch areas</span>
+            <span class="tnum" id="bulkRowCount" style="font-family: var(--font-num); font-size: var(--t-label); color: var(--ink-2);">0 rows</span>
           </div>
-          <div id="bulkRows" class="bulk-rows"></div>
+          <div id="bulkRows" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4);"></div>
         </div>
       </div>
-      <div class="bulk-modal-footer">
-        <button id="cancelBulkAdd" class="secondary-btn">Hủy</button>
-        <button id="applyBulkAdd" class="primary-btn">Thêm chi nhánh</button>
+      <div class="x-modal__foot">
+        <button id="cancelBulkAdd" class="x-btn" type="button">Cancel</button>
+        <button id="applyBulkAdd" class="x-btn x-btn--primary" type="button">Add stores</button>
       </div>
     </div>
   </div>
 
   <!-- CUSTOMER EXPORT MODAL -->
-  <div id="customerModal" class="modal hidden">
-    <div class="modal-overlay"></div>
-    <div class="modal-content quote-modal-content">
-      <div class="modal-header">
+  <div id="customerModal" class="x-modal hidden" role="dialog" aria-modal="true" aria-labelledby="customerModalTitle">
+    <div class="x-modal__overlay"></div>
+    <div class="x-modal__panel" style="min-width: 560px;">
+      <div class="x-modal__head">
         <div>
-          <h3>Thông tin khách hàng</h3>
-          <div class="modal-kicker">Quotation export profile</div>
+          <div class="x-modal__title" id="customerModalTitle">Thông tin khách hàng</div>
+          <div class="x-modal__sub">Quotation export profile</div>
         </div>
-        <button id="closeCustomerModal" class="close-btn">×</button>
+        <button id="closeCustomerModal" class="x-modal__close" type="button" aria-label="Close Customer">×</button>
       </div>
-      <div class="modal-body quote-form-body">
-        <div class="settings-grid">
-          <label class="settings-field settings-field-wide">
-            <span class="field-label">Tên Công ty</span>
-            <input id="customerCompany" type="text" class="field-input" placeholder="VD: Công ty TNHH ABC">
+      <div class="x-modal__body">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5);">
+          <label class="x-field-row" style="grid-column: 1 / -1;">
+            <span class="x-field-row__label">Tên Công ty</span>
+            <input id="customerCompany" type="text" class="x-field" placeholder="VD: Công ty TNHH ABC">
           </label>
-          <label class="settings-field">
-            <span class="field-label">Người phụ trách</span>
-            <input id="customerContactName" type="text" class="field-input" placeholder="VD: Trần Minh Anh">
+          <label class="x-field-row">
+            <span class="x-field-row__label">Người phụ trách</span>
+            <input id="customerContactName" type="text" class="x-field" placeholder="VD: Trần Minh Anh">
           </label>
-          <label class="settings-field">
-            <span class="field-label">Phòng ban</span>
-            <input id="customerDepartment" type="text" class="field-input" placeholder="VD: Purchasing">
+          <label class="x-field-row">
+            <span class="x-field-row__label">Phòng ban</span>
+            <input id="customerDepartment" type="text" class="x-field" placeholder="VD: Purchasing">
           </label>
-          <label class="settings-field">
-            <span class="field-label">Email</span>
-            <input id="customerEmail" type="email" class="field-input" placeholder="name@company.com">
+          <label class="x-field-row">
+            <span class="x-field-row__label">Email</span>
+            <input id="customerEmail" type="email" class="x-field" placeholder="name@company.com">
           </label>
-          <label class="settings-field">
-            <span class="field-label">Số điện thoại</span>
-            <input id="customerPhone" type="tel" class="field-input" placeholder="090 000 0000">
+          <label class="x-field-row">
+            <span class="x-field-row__label">Số điện thoại</span>
+            <input id="customerPhone" type="tel" class="x-field" placeholder="090 000 0000">
           </label>
         </div>
       </div>
-      <div class="modal-footer settings-footer">
-        <button id="cancelCustomerModal" class="secondary-btn">Hủy</button>
-        <button id="confirmCustomerExport" class="primary-btn">Lưu & Xuất PDF</button>
+      <div class="x-modal__foot">
+        <button id="cancelCustomerModal" class="x-btn" type="button">Cancel</button>
+        <button id="confirmCustomerExport" class="x-btn x-btn--primary" type="button">Lưu & Xuất PDF</button>
       </div>
     </div>
   </div>
 
   <!-- IMPORT PREVIEW MODAL -->
-  <div id="importPreviewModal" class="modal hidden">
-    <div class="modal-overlay"></div>
-    <div class="modal-content import-modal-content">
-      <div class="modal-header">
+  <div id="importPreviewModal" class="x-modal hidden" role="dialog" aria-modal="true" aria-labelledby="importPreviewTitle">
+    <div class="x-modal__overlay"></div>
+    <div class="x-modal__panel" style="min-width: 620px;">
+      <div class="x-modal__head">
         <div>
-          <h3>Import báo giá từ PDF</h3>
-          <div class="modal-kicker">Preview before attach</div>
+          <div class="x-modal__title" id="importPreviewTitle">Import báo giá từ PDF</div>
+          <div class="x-modal__sub">Preview before attach</div>
         </div>
-        <button id="closeImportPreviewModal" class="close-btn">×</button>
+        <button id="closeImportPreviewModal" class="x-modal__close" type="button" aria-label="Close Import Preview">×</button>
       </div>
-      <div class="modal-body quote-form-body">
-        <div class="import-preview-grid">
-          <div class="import-preview-item">
-            <span class="field-label">File</span>
-            <strong id="importPreviewFileName">-</strong>
+      <div class="x-modal__body">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5);">
+          <div class="x-field-row">
+            <span class="x-field-row__label">File</span>
+            <strong class="x-field" id="importPreviewFileName" style="display: flex; align-items: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">-</strong>
           </div>
-          <div class="import-preview-item">
-            <span class="field-label">Quote</span>
-            <strong id="importPreviewQuoteNumber">-</strong>
+          <div class="x-field-row">
+            <span class="x-field-row__label">Quote</span>
+            <strong class="x-field tnum" id="importPreviewQuoteNumber" style="display: flex; align-items: center;">-</strong>
           </div>
-          <div class="import-preview-item">
-            <span class="field-label">Khách hàng</span>
-            <strong id="importPreviewCustomer">-</strong>
+          <div class="x-field-row">
+            <span class="x-field-row__label">Khách hàng</span>
+            <strong class="x-field" id="importPreviewCustomer" style="display: flex; align-items: center;">-</strong>
           </div>
-          <div class="import-preview-item">
-            <span class="field-label">Chi nhánh</span>
-            <strong id="importPreviewBranchCount">0</strong>
+          <div class="x-field-row">
+            <span class="x-field-row__label">Chi nhánh</span>
+            <strong class="x-field tnum" id="importPreviewBranchCount" style="display: flex; align-items: center;">0</strong>
           </div>
-          <div class="import-preview-item">
-            <span class="field-label">Grand Total</span>
-            <strong id="importPreviewGrandTotal">0</strong>
+          <div class="x-field-row">
+            <span class="x-field-row__label">Grand Total</span>
+            <strong class="x-field tnum" id="importPreviewGrandTotal" style="display: flex; align-items: center;">0</strong>
           </div>
-          <div class="import-preview-item">
-            <span class="field-label">Compatibility</span>
-            <strong id="importPreviewCompatibility">-</strong>
+          <div class="x-field-row">
+            <span class="x-field-row__label">Compatibility</span>
+            <strong class="x-field" id="importPreviewCompatibility" style="display: flex; align-items: center;">-</strong>
           </div>
         </div>
-        <div class="import-preview-summary">
-          <span class="field-label">Conflict status</span>
-          <p id="importPreviewSummary">-</p>
+        <div class="x-field-row" style="margin-top: var(--s-5);">
+          <span class="x-field-row__label">Conflict status</span>
+          <p id="importPreviewSummary" style="margin: 0; padding: var(--s-4); min-height: var(--row-input); background: var(--inset-0); border: 1px solid var(--line-1); border-radius: var(--r-2); color: var(--ink-2);">-</p>
         </div>
-        <div>
-          <span class="field-label">Action</span>
-          <div id="importActionOptions" class="import-action-options"></div>
+        <div class="x-field-row" style="margin-top: var(--s-5);">
+          <span class="x-field-row__label">Action</span>
+          <div id="importActionOptions" style="display: grid; gap: var(--s-3);"></div>
         </div>
       </div>
-      <div class="modal-footer settings-footer">
-        <button id="cancelImportPreview" class="secondary-btn">Hủy</button>
-        <button id="confirmImportPreview" class="primary-btn">Confirm Import</button>
+      <div class="x-modal__foot">
+        <button id="cancelImportPreview" class="x-btn" type="button">Cancel</button>
+        <button id="confirmImportPreview" class="x-btn x-btn--primary" type="button">Confirm Import</button>
       </div>
     </div>
   </div>
 
   <!-- SETTINGS MODAL -->
-  <div id="settingsModal" class="modal hidden">
-    <div class="modal-overlay"></div>
-    <div class="modal-content settings-modal-content">
-      <div class="modal-header">
+  <div id="settingsModal" class="x-modal hidden" role="dialog" aria-modal="true" aria-labelledby="settingsModalTitle">
+    <div class="x-modal__overlay"></div>
+    <div class="x-modal__panel" style="min-width: 560px;">
+      <div class="x-modal__head">
         <div>
-          <h3>Cài đặt</h3>
-          <div class="modal-kicker">Quotation owner profile</div>
+          <div class="x-modal__title" id="settingsModalTitle">Cài đặt</div>
+          <div class="x-modal__sub">Quotation owner profile</div>
         </div>
-        <button id="closeSettings" class="close-btn">×</button>
+        <button id="closeSettings" class="x-modal__close" type="button" aria-label="Close Settings">×</button>
       </div>
-      <div class="modal-body quote-form-body">
-        <div class="settings-grid">
-          <label class="settings-field">
-            <span class="field-label">Tên người lập</span>
-            <input id="settingName" type="text" class="field-input" placeholder="VD: Nguyễn Văn A">
+      <div class="x-modal__body">
+        <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-5);">
+          <label class="x-field-row">
+            <span class="x-field-row__label">Tên người lập</span>
+            <input id="settingName" type="text" class="x-field" placeholder="VD: Nguyễn Văn A">
           </label>
-          <label class="settings-field">
-            <span class="field-label">Chức vụ</span>
-            <input id="settingTitle" type="text" class="field-input" placeholder="VD: BD Executive">
+          <label class="x-field-row">
+            <span class="x-field-row__label">Chức vụ</span>
+            <input id="settingTitle" type="text" class="x-field" placeholder="VD: BD Executive">
           </label>
-          <label class="settings-field">
-            <span class="field-label">Phòng ban</span>
-            <input id="settingDepartment" type="text" class="field-input" placeholder="VD: Business Development">
+          <label class="x-field-row">
+            <span class="x-field-row__label">Phòng ban</span>
+            <input id="settingDepartment" type="text" class="x-field" placeholder="VD: Business Development">
           </label>
-          <label class="settings-field">
-            <span class="field-label">Email</span>
-            <input id="settingEmail" type="email" class="field-input" placeholder="name@nct.vn">
+          <label class="x-field-row">
+            <span class="x-field-row__label">Email</span>
+            <input id="settingEmail" type="email" class="x-field" placeholder="name@nct.vn">
           </label>
-          <label class="settings-field settings-field-wide">
-            <span class="field-label">Số điện thoại</span>
-            <input id="settingPhone" type="tel" class="field-input" placeholder="090 000 0000">
+          <label class="x-field-row" style="grid-column: 1 / -1;">
+            <span class="x-field-row__label">Số điện thoại</span>
+            <input id="settingPhone" type="tel" class="x-field" placeholder="090 000 0000">
           </label>
         </div>
       </div>
-      <div class="modal-footer settings-footer">
-        <button id="saveSettingsBtn" class="primary-btn">Lưu cài đặt</button>
+      <div class="x-modal__foot">
+        <button id="cancelSettings" class="x-btn" type="button">Cancel</button>
+        <button id="saveSettingsBtn" class="x-btn x-btn--primary" type="button">Lưu cài đặt</button>
       </div>
     </div>
   </div>

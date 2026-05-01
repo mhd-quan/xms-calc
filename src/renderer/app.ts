@@ -20,6 +20,7 @@ import { attachKnob, setKnobValue } from './modules/controllers/knob';
 import { formatVND } from './modules/format';
 import { paletteVar } from './modules/palette';
 import { renderBottombar } from './modules/render-bottombar';
+import { bindModalFrame, hideModal, showModal } from './modules/render-modals';
 import { renderSidebar } from './modules/render-sidebar';
 import { renderStatusbar } from './modules/render-statusbar';
 import { renderTopbar } from './modules/render-topbar';
@@ -416,33 +417,32 @@ function renderQuoteChrome() {
 
 function openCustomerModal() {
   setCustomerFields(customerProfile);
-  document.getElementById('customerModal').classList.remove('hidden');
-  requestAnimationFrame(() => document.getElementById('customerCompany').focus());
+  showModal('customerModal', '#customerCompany');
 }
 
 function closeCustomerModal() {
-  document.getElementById('customerModal').classList.add('hidden');
+  hideModal('customerModal');
 }
 
 function openSettingsModal() {
   setSettingsFields(preparedByProfile);
-  document.getElementById('settingsModal').classList.remove('hidden');
+  showModal('settingsModal', '#settingName');
 }
 
 function closeSettingsModal() {
-  document.getElementById('settingsModal').classList.add('hidden');
+  hideModal('settingsModal');
 }
 
 function closeImportPreviewModal() {
   activeImportPreview = null;
   selectedImportAction = null;
-  document.getElementById('importPreviewModal').classList.add('hidden');
+  hideModal('importPreviewModal');
 }
 
 function renderImportActionOptions(preview: ImportPreview): void {
   const container = document.getElementById('importActionOptions');
   container.innerHTML = preview.actions.map((action) => `
-    <button class="import-action-option${action.key === selectedImportAction ? ' active' : ''}" data-action="${action.key}">
+    <button class="x-btn import-action-option${action.key === selectedImportAction ? ' is-active' : ''}" type="button" data-action="${action.key}" style="justify-content:flex-start; width:100%;">
       <strong>${escapeHTML(action.label)}</strong>
     </button>
   `).join('');
@@ -460,7 +460,7 @@ function openImportPreviewModal(preview: ImportPreview): void {
   document.getElementById('importPreviewCompatibility').textContent = preview.preview.manifestCompatibility;
   document.getElementById('importPreviewSummary').textContent = preview.summary;
   renderImportActionOptions(preview);
-  document.getElementById('importPreviewModal').classList.remove('hidden');
+  showModal('importPreviewModal', '#confirmImportPreview');
 }
 
 async function loadRevisionById(revisionId: number): Promise<void> {
@@ -701,9 +701,19 @@ function renderBulkType() {
   const bulkTypeMeta = bulkType ? BUSINESS_TYPES[bulkType] : undefined;
   text.textContent = bulkTypeMeta?.label ?? 'Chọn mô hình...';
   dd.dataset.value = bulkType;
-  dd.querySelectorAll('.dropdown-item').forEach((el) => {
-    el.classList.toggle('active', el.dataset.value === bulkType);
+  dd.querySelectorAll('.x-dropdown__item').forEach((el) => {
+    el.classList.toggle('is-selected', el.dataset.value === bulkType);
   });
+}
+
+function updateBulkSummary(): void {
+  const filledRows = getFilledBulkRows().length;
+  document.getElementById('bulkRowCount').textContent = `${filledRows} rows`;
+  const applyButton = optionalElement('applyBulkAdd');
+  if (applyButton) {
+    const label = filledRows === 1 ? 'store' : 'stores';
+    applyButton.textContent = filledRows > 0 ? `Add ${filledRows} ${label}` : 'Add stores';
+  }
 }
 
 function renderBulkRows(focusIndex: number | null = null): void {
@@ -714,14 +724,15 @@ function renderBulkRows(focusIndex: number | null = null): void {
   rowsEl.innerHTML = bulkAreas.map((value, index) => {
     const color = paletteVar(startIndex + index - 1);
     return `
-      <div class="bulk-row" data-index="${index}" style="--bulk-row-color: ${color}">
-        <div class="bulk-index">${String(startIndex + index).padStart(2, '0')}</div>
-        <div class="bulk-area-wrap">
-          <input class="bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="Nhập diện tích">
+      <div class="x-field-row" data-index="${index}" style="border-left: 2px solid ${color}; padding-left: var(--s-3);">
+        <label class="x-field-row__label" for="bulkArea${index}">STORE ${String(startIndex + index).padStart(2, '0')}</label>
+        <div class="x-suffix-wrap">
+          <input id="bulkArea${index}" class="x-field x-field--num bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="0">
+          <span class="x-suffix">m²</span>
         </div>
       </div>`;
   }).join('');
-  document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
+  updateBulkSummary();
   if (focusIndex !== null) {
     requestAnimationFrame(() => {
       const input = rowsEl.querySelector(`.bulk-area-input[data-index="${focusIndex}"]`);
@@ -739,12 +750,12 @@ function openBulkAddModal() {
   bulkAreas = [''];
   renderBulkType();
   renderBulkRows(0);
-  document.getElementById('bulkAddModal').classList.remove('hidden');
+  showModal('bulkAddModal', '#bulkBusinessType');
 }
 
 function closeBulkAddModal() {
-  document.getElementById('bulkAddModal').classList.add('hidden');
-  document.getElementById('bulkBusinessType').classList.remove('open');
+  hideModal('bulkAddModal');
+  document.getElementById('bulkBusinessType').classList.remove('is-open');
 }
 
 function addBulkRows() {
@@ -1101,37 +1112,31 @@ function bindEvents() {
 
   document.getElementById('addStoreBtn').addEventListener('click', addStore);
 
-  const bulkAddModal = document.getElementById('bulkAddModal');
   const bulkDd = document.getElementById('bulkBusinessType');
-  const bulkMenu = bulkDd.querySelector('.dropdown-menu');
   const bulkRowsEl = document.getElementById('bulkRows');
 
   document.getElementById('btnBulkAdd').addEventListener('click', openBulkAddModal);
   document.getElementById('closeBulkAdd').addEventListener('click', closeBulkAddModal);
   document.getElementById('cancelBulkAdd').addEventListener('click', closeBulkAddModal);
   document.getElementById('applyBulkAdd').addEventListener('click', addBulkRows);
-  bulkAddModal.querySelector('.modal-overlay').addEventListener('click', closeBulkAddModal);
+  bindModalFrame('bulkAddModal', closeBulkAddModal);
 
   bulkDd.addEventListener('click', (event) => {
-    const item = closestFromEvent(event, '.dropdown-item');
+    const item = closestFromEvent(event, '.x-dropdown__item');
     if (item) {
       bulkType = item.dataset.value ?? '';
       renderBulkType();
+      bulkDd.classList.remove('is-open');
+      return;
     }
-    const isOpen = bulkDd.classList.contains('open');
-    if (!isOpen) {
-      bulkDd.classList.add('open');
-      gsap.fromTo(bulkMenu, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.2 });
-    } else {
-      gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
-    }
+    bulkDd.classList.toggle('is-open');
   });
 
   bulkRowsEl.addEventListener('input', (event) => {
     const input = closestFromEvent(event, '.bulk-area-input');
     if (!input) return;
     bulkAreas[Number(input.dataset.index)] = input.value;
-    document.getElementById('bulkRowCount').textContent = `${getFilledBulkRows().length} rows`;
+    updateBulkSummary();
   });
 
   bulkRowsEl.addEventListener('keydown', (event) => {
@@ -1203,8 +1208,8 @@ function bindEvents() {
     if (!dd.contains(clickTarget) && dd.classList.contains('is-open')) {
       dd.classList.remove('is-open');
     }
-    if (!bulkDd.contains(clickTarget) && bulkDd.classList.contains('open')) {
-      gsap.to(bulkMenu, { height: 0, opacity: 0, duration: 0.15, onComplete: () => bulkDd.classList.remove('open') });
+    if (!bulkDd.contains(clickTarget) && bulkDd.classList.contains('is-open')) {
+      bulkDd.classList.remove('is-open');
     }
     ['startDatePicker', 'endDatePicker'].forEach((id) => {
       const pk = document.getElementById(id);
@@ -1327,7 +1332,8 @@ function bindEvents() {
 
   document.getElementById('btnSettings').addEventListener('click', openSettingsModal);
   document.getElementById('closeSettings').addEventListener('click', closeSettingsModal);
-  document.getElementById('settingsModal').querySelector('.modal-overlay').addEventListener('click', closeSettingsModal);
+  document.getElementById('cancelSettings').addEventListener('click', closeSettingsModal);
+  bindModalFrame('settingsModal', closeSettingsModal);
   document.getElementById('saveSettingsBtn').addEventListener('click', () => {
     preparedByProfile = readPreparedByFields();
     invalidateDraftSnapshot();
@@ -1338,7 +1344,7 @@ function bindEvents() {
 
   document.getElementById('closeCustomerModal').addEventListener('click', closeCustomerModal);
   document.getElementById('cancelCustomerModal').addEventListener('click', closeCustomerModal);
-  document.getElementById('customerModal').querySelector('.modal-overlay').addEventListener('click', closeCustomerModal);
+  bindModalFrame('customerModal', closeCustomerModal);
   document.getElementById('confirmCustomerExport').addEventListener('click', exportActiveQuote);
   document.getElementById('customerModal').addEventListener('keydown', async (event) => {
     if (event.key === 'Enter') {
@@ -1349,7 +1355,7 @@ function bindEvents() {
 
   document.getElementById('closeImportPreviewModal').addEventListener('click', closeImportPreviewModal);
   document.getElementById('cancelImportPreview').addEventListener('click', closeImportPreviewModal);
-  document.getElementById('importPreviewModal').querySelector('.modal-overlay').addEventListener('click', closeImportPreviewModal);
+  bindModalFrame('importPreviewModal', closeImportPreviewModal);
   document.getElementById('importActionOptions').addEventListener('click', (event) => {
     const action = closestFromEvent(event, '[data-action]');
     if (!action) return;
