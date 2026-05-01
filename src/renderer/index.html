@@ -19,7 +19,15 @@
       <div class="topbar__breadcrumb x-breadcrumb">
         <span class="x-breadcrumb__item" id="bcCustomer">Customer chưa đặt</span>
         <span class="x-breadcrumb__sep">/</span>
-        <span class="x-breadcrumb__item tnum" id="bcQuote">—</span>
+        <div id="revisionDropdown" class="x-dropdown x-breadcrumb__item topbar__revision tnum" tabindex="0" data-value=""
+          data-info="Quote revisions|Chọn revision trong quote chain hiện tại.|—">
+          <div class="x-dropdown__display topbar__revision__display">
+            <span id="bcQuote">—</span>
+            <span class="x-chip topbar__revision__badge" id="bcRevisionBadge">Base</span>
+            <span class="x-dropdown__caret"></span>
+          </div>
+          <div class="x-dropdown__menu topbar__revision__menu" id="revisionMenu"></div>
+        </div>
         <span class="x-breadcrumb__sep">/</span>
         <span class="x-breadcrumb__item is-current">
           <span class="x-breadcrumb__color" id="bcBranchColor"></span>

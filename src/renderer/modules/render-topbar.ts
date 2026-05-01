@@ -1,11 +1,12 @@
 import type { RenderSnapshot } from '../app';
 import { paletteVar } from './palette';
+import { renderRevisionDropdown } from './render-revisions';
 
 export function renderTopbar(snapshot: RenderSnapshot): void {
   const activeStore = snapshot.activeStore;
   setText('bcCustomer', snapshot.customer.companyName || 'Customer chưa đặt');
-  setText('bcQuote', snapshot.activeDisplayQuoteNumber || '—');
   setText('bcBranchName', activeStore?.name || '—');
+  renderRevisionDropdown(snapshot);
 
   const colorEl = getElement('bcBranchColor');
   if (colorEl) {

@@ -24,6 +24,7 @@ import { formatVND } from './modules/format';
 import { paletteVar } from './modules/palette';
 import { renderBottombar } from './modules/render-bottombar';
 import { bindModalFrame, hideModal, showModal } from './modules/render-modals';
+import { revisionLabel, statusLabel } from './modules/render-revisions';
 import { renderSidebar } from './modules/render-sidebar';
 import { renderStatusbar } from './modules/render-statusbar';
 import { renderTopbar } from './modules/render-topbar';
@@ -150,16 +151,6 @@ function blankPreparedBy(): PreparedByProfile {
     email: '',
     phone: ''
   };
-}
-
-function statusLabel(status: RevisionStatus): string {
-  if (status === 'exported') return 'Exported';
-  if (status === 'imported') return 'Imported';
-  return 'Draft';
-}
-
-function revisionLabel(revisionNumber: number): string {
-  return Number(revisionNumber) > 0 ? `R${revisionNumber}` : 'Base';
 }
 
 function getCalcOptions(): CalcOptions {
@@ -398,25 +389,13 @@ function readPreparedByFields(): PreparedByProfile {
 
 function renderQuoteChrome() {
   const sidebarStatusText = optionalElement('quoteStatusText');
-  if (sidebarStatusText) sidebarStatusText.textContent = statusLabel(activeRevisionStatus);
+  if (sidebarStatusText) sidebarStatusText.textContent = revisionLabel(activeRevisionNumber);
   const sidebarStatusChip = optionalElement('quoteStatusChip');
   if (sidebarStatusChip) {
     sidebarStatusChip.classList.toggle('x-chip--status-draft', activeRevisionStatus === 'draft');
     sidebarStatusChip.classList.toggle('x-chip--status-sent', activeRevisionStatus === 'imported');
     sidebarStatusChip.classList.toggle('x-chip--status-accepted', activeRevisionStatus === 'exported');
-  }
-
-  const revisionList = document.getElementById('revisionList');
-  if (revisionList) {
-    revisionList.innerHTML = revisionsForQuote.map((revision) => `
-      <button class="revision-item${revision.id === activeRevisionId ? ' active' : ''}" data-revision-id="${revision.id}">
-        <div class="revision-item-main">
-          <strong>${escapeHTML(revision.displayQuoteNumber)}</strong>
-          <span>${escapeHTML(revisionLabel(revision.revisionNumber))}</span>
-        </div>
-        <span class="status-chip">${escapeHTML(statusLabel(revision.status))}</span>
-      </button>
-    `).join('');
+    sidebarStatusChip.dataset.info = `Active revision|${activeDisplayQuoteNumber || activeQuoteCode || '—'} · ${statusLabel(activeRevisionStatus)}|—`;
   }
 }
 
@@ -925,8 +904,10 @@ function createRenderSnapshot() {
     customer: customerProfile,
     activeQuoteCode,
     activeDisplayQuoteNumber,
+    activeRevisionId,
     activeRevisionNumber,
-    activeRevisionStatus
+    activeRevisionStatus,
+    revisionsForQuote
   };
 }
 
@@ -1042,15 +1023,18 @@ function bindEvents() {
     }
   });
 
-  const revisionList = optionalElement('revisionList');
-  if (revisionList) {
-    revisionList.addEventListener('click', async (event) => {
-      const item = closestFromEvent(event, '[data-revision-id]');
-      if (!item) return;
-      const revisionId = Number(item.dataset.revisionId);
-      if (!revisionId || revisionId === activeRevisionId) return;
-      await flushDraftPersist();
-      await loadRevisionById(revisionId);
+  const revisionDropdown = optionalElement('revisionDropdown');
+  if (revisionDropdown) {
+    attachDropdown({
+      el: revisionDropdown,
+      onSelect: (value) => {
+        const revisionId = Number(value);
+        if (!revisionId || revisionId === activeRevisionId) return;
+        void (async () => {
+          await flushDraftPersist();
+          await loadRevisionById(revisionId);
+        })();
+      }
     });
   }
 
