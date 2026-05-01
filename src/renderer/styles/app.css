@@ -197,10 +197,17 @@
 
 /* SECTION (calc section) */
 .csection {
+  position: relative;
   background: var(--shell-1);
   border: 1px solid var(--line-1);
   border-radius: var(--r-2);
   overflow: hidden;
+}
+
+.csection:has(.x-dropdown.is-open),
+.csection:has(.x-datepicker.is-open) {
+  overflow: visible;
+  z-index: 20;
 }
 
 .csection__head {

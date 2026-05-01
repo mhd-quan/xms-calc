@@ -15,6 +15,9 @@ import {
 } from '../services/quote-payload';
 
 import gsap from './vendor/gsap-lite';
+import { attachCounter } from './modules/controllers/counter';
+import { attachDatepicker } from './modules/controllers/datepicker';
+import { attachDropdown } from './modules/controllers/dropdown';
 import { attachInfoView } from './modules/controllers/infoview';
 import { attachKnob, setKnobValue } from './modules/controllers/knob';
 import { formatVND } from './modules/format';
@@ -962,55 +965,6 @@ function render(scope: RenderScope = 'all'): void {
   });
 }
 
-function buildCalendar(dateStr: string, wrapperEl: HTMLElement): void {
-  const date = new Date(dateStr);
-  let curYear = date.getFullYear();
-  let curMonth = date.getMonth();
-  const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
-
-  const headTitle = wrapperEl.querySelector('.x-datepicker__monthyear');
-  const grid = wrapperEl.querySelector('.x-datepicker__grid');
-
-  const refreshGrid = () => {
-    headTitle.textContent = `${monthNames[curMonth]}, ${curYear}`;
-    grid.innerHTML = '';
-
-    const firstDay = (new Date(curYear, curMonth, 1).getDay() + 6) % 7;
-    const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
-
-    let html = '';
-    for (let i = 0; i < firstDay; i += 1) html += '<div class="x-datepicker__cell is-dim"></div>';
-
-    const today = new Date();
-    for (let i = 1; i <= daysInMonth; i += 1) {
-      const isToday = today.getDate() === i && today.getMonth() === curMonth && today.getFullYear() === curYear;
-      const isSelected = date.getDate() === i && date.getMonth() === curMonth && date.getFullYear() === curYear;
-      const cellDateStr = `${curYear}-${String(curMonth + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
-      html += `<div class="x-datepicker__cell ${isToday ? 'is-today' : ''} ${isSelected ? 'is-selected' : ''}" data-date="${cellDateStr}">${i}</div>`;
-    }
-    grid.innerHTML = html;
-  };
-  refreshGrid();
-
-  if (!wrapperEl.dataset.bound) {
-    wrapperEl.querySelectorAll('.x-datepicker__nav').forEach((btn) => {
-      btn.addEventListener('click', (event) => {
-        event.stopPropagation();
-        curMonth += parseInt(btn.dataset.dir ?? '0', 10);
-        if (curMonth < 0) {
-          curMonth = 11;
-          curYear -= 1;
-        } else if (curMonth > 11) {
-          curMonth = 0;
-          curYear += 1;
-        }
-        refreshGrid();
-      });
-    });
-    wrapperEl.dataset.bound = 'true';
-  }
-}
-
 function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, max = Infinity): void {
   const el = document.getElementById(inputId);
   if (!el) return;
@@ -1121,15 +1075,12 @@ function bindEvents() {
   document.getElementById('applyBulkAdd').addEventListener('click', addBulkRows);
   bindModalFrame('bulkAddModal', closeBulkAddModal);
 
-  bulkDd.addEventListener('click', (event) => {
-    const item = closestFromEvent(event, '.x-dropdown__item');
-    if (item) {
-      bulkType = item.dataset.value ?? '';
+  attachDropdown({
+    el: bulkDd,
+    onSelect: (value) => {
+      bulkType = value;
       renderBulkType();
-      bulkDd.classList.remove('is-open');
-      return;
     }
-    bulkDd.classList.toggle('is-open');
   });
 
   bulkRowsEl.addEventListener('input', (event) => {
@@ -1168,55 +1119,21 @@ function bindEvents() {
   document.getElementById('workBranchTitle').addEventListener('input', (event) => updateActive('name', valueFromEvent(event)));
   document.getElementById('areaInput').addEventListener('input', (event) => updateActive('area', valueFromEvent(event)));
 
-  const dd = document.getElementById('businessType');
-  dd.addEventListener('click', (event) => {
-    const item = closestFromEvent(event, '.x-dropdown__item');
-    if (item) {
-      updateActive('type', item.dataset.value ?? '');
-      dd.classList.remove('is-open');
-      return;
-    }
-    dd.classList.toggle('is-open');
+  const businessTypeDropdown = document.getElementById('businessType');
+  attachDropdown({
+    el: businessTypeDropdown,
+    onSelect: (value) => updateActive('type', value)
   });
 
-  const setupDatePicker = (pickerId: string, field: Extract<StoreField, 'startDate' | 'endDate'>): void => {
-    const pk = document.getElementById(pickerId);
-    pk.addEventListener('click', (event) => {
-      const cell = closestFromEvent(event, '.x-datepicker__cell:not(.is-dim)');
-      if (cell) {
-        updateActive(field, cell.dataset.date ?? '');
-        pk.classList.remove('is-open');
-        return;
-      }
-      if (closestFromEvent(event, '.x-datepicker__nav')) return;
-
-      const isOpen = pk.classList.contains('is-open');
-      if (!isOpen) {
-        const active = getActive();
-        if (active) buildCalendar(active[field], pk);
-        pk.classList.add('is-open');
-      } else {
-        pk.classList.remove('is-open');
-      }
-    });
-  };
-  setupDatePicker('startDatePicker', 'startDate');
-  setupDatePicker('endDatePicker', 'endDate');
-
-  document.addEventListener('click', (event) => {
-    const clickTarget = event.target instanceof Node ? event.target : null;
-    if (!dd.contains(clickTarget) && dd.classList.contains('is-open')) {
-      dd.classList.remove('is-open');
-    }
-    if (!bulkDd.contains(clickTarget) && bulkDd.classList.contains('is-open')) {
-      bulkDd.classList.remove('is-open');
-    }
-    ['startDatePicker', 'endDatePicker'].forEach((id) => {
-      const pk = document.getElementById(id);
-      if (!pk.contains(clickTarget) && pk.classList.contains('is-open')) {
-        pk.classList.remove('is-open');
-      }
-    });
+  attachDatepicker({
+    el: document.getElementById('startDatePicker'),
+    getValue: () => getActive()?.startDate ?? '',
+    onSelect: (value) => updateActive('startDate', value)
+  });
+  attachDatepicker({
+    el: document.getElementById('endDatePicker'),
+    getValue: () => getActive()?.endDate ?? '',
+    onSelect: (value) => updateActive('endDate', value)
   });
 
   document.querySelectorAll('.csection__head').forEach((header) => {
@@ -1259,17 +1176,16 @@ function bindEvents() {
     commitQuoteMutation();
   });
 
-  document.getElementById('boxMinus').addEventListener('click', () => {
-    globalBoxCount = Math.max(1, globalBoxCount - 1);
-    commitQuoteMutation();
-  });
-  document.getElementById('boxPlus').addEventListener('click', () => {
-    globalBoxCount += 1;
-    commitQuoteMutation();
-  });
-  document.getElementById('boxCount').addEventListener('input', (event) => {
-    globalBoxCount = Math.max(1, Number(valueFromEvent(event)) || 1);
-    commitQuoteMutation();
+  attachCounter({
+    input: document.getElementById('boxCount') as HTMLInputElement,
+    minus: document.getElementById('boxMinus'),
+    plus: document.getElementById('boxPlus'),
+    min: 1,
+    max: 1000,
+    onChange: (value) => {
+      globalBoxCount = value;
+      commitQuoteMutation();
+    }
   });
 
   const discountFieldById: Record<string, keyof GlobalDiscounts> = {
