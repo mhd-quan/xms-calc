@@ -12,29 +12,9 @@ export function renderBottombar(snapshot: RenderSnapshot): void {
   const displayCycle = snapshot.billingCycle;
 
   setMoney('totalQTG', cycleDisplayAmount(totals.subtotalQTG, displayCycle));
-  setStrikeMoney(
-    'totalQTGOriginal',
-    cycleDisplayAmount(totals.subtotalQTGOriginal, displayCycle),
-    cycleDisplayAmount(totals.subtotalQTG, displayCycle)
-  );
   setMoney('totalQLQ', cycleDisplayAmount(totals.subtotalQLQ, displayCycle));
-  setStrikeMoney(
-    'totalQLQOriginal',
-    cycleDisplayAmount(totals.subtotalQLQOriginal, displayCycle),
-    cycleDisplayAmount(totals.subtotalQLQ, displayCycle)
-  );
   setMoney('totalAccount', cycleDisplayAmount(totals.subtotalAccount, displayCycle));
-  setStrikeMoney(
-    'totalAccountOriginal',
-    cycleDisplayAmount(totals.subtotalAccountOriginal, displayCycle),
-    cycleDisplayAmount(totals.subtotalAccount, displayCycle)
-  );
   setMoney('totalBox', cycleDisplayAmount(totals.subtotalBox, displayCycle));
-  setStrikeMoney(
-    'totalBoxOriginal',
-    cycleDisplayAmount(totals.subtotalBoxOriginal, displayCycle),
-    cycleDisplayAmount(totals.subtotalBox, displayCycle)
-  );
 
   const grand = cycleDisplayAmount(totals.grand, displayCycle);
   const grandOriginal = cycleDisplayAmount(totals.grandOriginal, displayCycle);

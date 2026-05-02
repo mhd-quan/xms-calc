@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.1] — 2026-05-03
+
+### Changed
+- Increased size of strikethrough price in inline amounts (11px to 12.5px) and grand total (12px to 14px) for better legibility.
+- Changed strikethrough color from \`ink-4\` to \`ink-5\` to blend more seamlessly with the dark background.
+- Removed strikethrough pricing from the 4 bottombar breakdown cells to reduce visual clutter.
+
+---
+
 ## [1.9.0] — 2026-05-03
 
 ### Added
