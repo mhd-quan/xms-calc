@@ -887,14 +887,20 @@ function renderMain(snapshot: RenderSnapshot): void {
   const accToggle = document.getElementById('accountToggle');
   accToggle.classList.toggle('is-on', hasAccountFee);
   accToggle.textContent = hasAccountFee ? 'BẬT' : 'TẮT';
+  const accRow = accToggle.closest('.x-row') ?? accToggle;
   const accRight = document.getElementById('accountFeeRight');
+  const accAmount = accRow.querySelector<HTMLElement>('.x-row__inline-amount');
   renderDiscountApply('discountAccountApply', discountEnabled.account);
   setKnobValue('discountAccountKnob', globalDiscounts.account);
 
   if (hasAccountFee) {
     accRight.classList.remove('is-disabled');
+    accAmount?.classList.remove('is-disabled');
+    animateNumber('accountAmount', cycleDisplayAmount(breakdown?.accountAmount || 0, billingCycle));
   } else {
     accRight.classList.add('is-disabled');
+    accAmount?.classList.add('is-disabled');
+    animateNumber('accountAmount', 0);
   }
 
   document.querySelectorAll('#boxModeSeg .x-seg__btn').forEach((btn) => {
@@ -907,16 +913,13 @@ function renderMain(snapshot: RenderSnapshot): void {
   const boxDiscountRow = document.getElementById('boxDiscountRow');
   renderDiscountApply('discountBoxApply', discountEnabled.box);
   setKnobValue('discountBoxKnob', globalDiscounts.box);
-  if (boxMode === 'buy') {
-    boxDiscountRow.removeAttribute('hidden');
-  } else {
-    boxDiscountRow.setAttribute('hidden', '');
-  }
+  boxDiscountRow.classList.toggle('is-summary-only', boxMode !== 'buy');
 
   const boxPriceDesc = document.getElementById('boxPriceDesc');
   if (boxMode === 'buy') boxPriceDesc.textContent = '2.000.000 ₫ / thiết bị · chi phí một lần · cấp mỗi chi nhánh';
   else if (boxMode === 'rent') boxPriceDesc.textContent = '1.000.000 ₫ / thiết bị / năm · prorated · cấp mỗi chi nhánh';
   else boxPriceDesc.textContent = 'Chọn hình thức trang bị cho mỗi chi nhánh';
+  animateNumber('boxAmount', boxMode === 'none' ? 0 : cycleDisplayAmount(breakdown?.boxAmount || 0, billingCycle));
 
   document.getElementById('qtgCoef').textContent = coef.toFixed(2);
   document.getElementById('qtgDur').textContent = `${duration.toFixed(1)}m`;

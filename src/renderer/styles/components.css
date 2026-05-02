@@ -219,8 +219,8 @@
   pointer-events: none;
 }
 .x-knob.is-active .x-knob__dial::after {
-  opacity: 1;
-  animation: arc-breathe 2.8s ease-in-out infinite;
+  opacity: 0;
+  animation: none;
 }
 @keyframes arc-breathe {
   0%, 100% { opacity: 0.7; filter: blur(0px); }
@@ -233,8 +233,8 @@
 .x-knob:focus-visible { outline: none; }
 .x-knob:focus-visible .x-knob__dial { box-shadow: var(--focus-glow); border-color: var(--active); }
 .x-knob.is-active .x-knob__dial {
-  border-color: var(--active);
-  animation: knob-glow 2.4s ease-in-out infinite;
+  border-color: var(--line-2);
+  animation: none;
 }
 @keyframes knob-glow {
   0%, 100% { box-shadow: 0 0 0 1px var(--active-glow); }

@@ -55,7 +55,7 @@ export function attachKnob(spec: KnobSpec): void {
     (event) => {
       event.preventDefault();
       const delta = -Math.sign(event.deltaY);
-      // Shift = fine (1× step), normal = coarse (5× step)
+      // Shift = fine (1× step), normal wheel scroll = 5%.
       const nudge = event.shiftKey ? spec.step : spec.step * 5;
       setKnob(spec.el, currentValue(spec) + delta * nudge, true);
     },
