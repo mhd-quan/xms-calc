@@ -1,7 +1,7 @@
 {
   "name": "xms-calculator",
   "productName": "XMS Calculator",
-  "version": "1.8.13",
+  "version": "1.8.14",
   "description": "Royalty Calculator for XMusic Station based on ND 17/2023",
   "main": "out/main/main.js",
   "scripts": {
