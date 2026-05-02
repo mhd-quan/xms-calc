@@ -167,6 +167,7 @@ const escapeHTML = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (
 const MOTION_STRUCT_SECONDS = 0.14;
 const MOTION_METER_SECONDS = 0.4;
 const SIDEBAR_REMOVE_SECONDS = 0.18;
+const STRIKE_PRICE_EPSILON = 0.5;
 
 function blankCustomer(): CustomerProfile {
   return {
@@ -898,6 +899,17 @@ function animateNumber(elementId: string, newValue: number): void {
   });
 }
 
+function renderStrikePrice(elementId: string, originalValue: number, currentValue: number): void {
+  const el = optionalElement(elementId);
+  if (!el) return;
+
+  const shouldShow = originalValue > currentValue + STRIKE_PRICE_EPSILON;
+  el.toggleAttribute('hidden', !shouldShow);
+  if (shouldShow) {
+    el.textContent = `${formatVND(cycleDisplayAmount(originalValue, billingCycle))} ₫`;
+  }
+}
+
 function renderMain(snapshot: RenderSnapshot): void {
   const store = snapshot.activeStore;
   if (!store) return;
@@ -938,10 +950,12 @@ function renderMain(snapshot: RenderSnapshot): void {
     accRight.classList.remove('is-disabled');
     accAmount?.classList.remove('is-disabled');
     animateNumber('accountAmount', cycleDisplayAmount(breakdown?.accountAmount || 0, billingCycle));
+    renderStrikePrice('accountOriginalAmount', breakdown?.accountAmountOriginal || 0, breakdown?.accountAmount || 0);
   } else {
     accRight.classList.add('is-disabled');
     accAmount?.classList.add('is-disabled');
     animateNumber('accountAmount', 0);
+    renderStrikePrice('accountOriginalAmount', 0, 0);
   }
 
   document.querySelectorAll('#boxModeSeg .x-seg__btn').forEach((btn) => {
@@ -961,6 +975,11 @@ function renderMain(snapshot: RenderSnapshot): void {
   else if (boxMode === 'rent') boxPriceDesc.textContent = '1.000.000 ₫ / thiết bị / năm · prorated · cấp mỗi chi nhánh';
   else boxPriceDesc.textContent = 'Chọn hình thức trang bị cho mỗi chi nhánh';
   animateNumber('boxAmount', boxMode === 'none' ? 0 : cycleDisplayAmount(breakdown?.boxAmount || 0, billingCycle));
+  renderStrikePrice(
+    'boxOriginalAmount',
+    boxMode === 'none' ? 0 : breakdown?.boxAmountOriginal || 0,
+    boxMode === 'none' ? 0 : breakdown?.boxAmount || 0
+  );
 
   document.getElementById('qtgCoef').textContent = coef.toFixed(2);
   document.getElementById('qtgDur').textContent = `${duration.toFixed(1)}m`;
@@ -978,10 +997,12 @@ function renderMain(snapshot: RenderSnapshot): void {
     qtgMid?.classList.remove('is-disabled');
     qtgRight?.classList.remove('is-disabled');
     animateNumber('qtgAmount', cycleDisplayAmount(breakdown?.qtgAmount || 0, billingCycle));
+    renderStrikePrice('qtgOriginalAmount', breakdown?.qtgAmountOriginal || 0, breakdown?.qtgAmount || 0);
   } else {
     qtgMid?.classList.add('is-disabled');
     qtgRight?.classList.add('is-disabled');
     animateNumber('qtgAmount', 0);
+    renderStrikePrice('qtgOriginalAmount', 0, 0);
   }
 
   document.getElementById('qlqCoef').textContent = coef.toFixed(2);
@@ -1000,10 +1021,12 @@ function renderMain(snapshot: RenderSnapshot): void {
     qlqMid?.classList.remove('is-disabled');
     qlqRight?.classList.remove('is-disabled');
     animateNumber('qlqAmount', cycleDisplayAmount(breakdown?.qlqAmount || 0, billingCycle));
+    renderStrikePrice('qlqOriginalAmount', breakdown?.qlqAmountOriginal || 0, breakdown?.qlqAmount || 0);
   } else {
     qlqMid?.classList.add('is-disabled');
     qlqRight?.classList.add('is-disabled');
     animateNumber('qlqAmount', 0);
+    renderStrikePrice('qlqOriginalAmount', 0, 0);
   }
 }
 

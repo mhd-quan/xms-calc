@@ -63,13 +63,20 @@ export interface Store {
 
 export interface Totals {
   subtotalQTG: number;
+  subtotalQTGOriginal: number;
   subtotalQLQ: number;
+  subtotalQLQOriginal: number;
   subtotalAccount: number;
+  subtotalAccountOriginal: number;
   subtotalBox: number;
+  subtotalBoxOriginal: number;
   subtotal: number;
+  subtotalOriginal: number;
   vatRate: number;
   vat: number;
+  vatOriginal: number;
   grand: number;
+  grandOriginal: number;
 }
 
 export interface CustomerProfile {
@@ -205,10 +212,15 @@ export interface QuotePayload extends QuoteSnapshot {
       yearly: number;
       periodBase: number;
       qtgAmount: number;
+      qtgAmountOriginal: number;
       qlqAmount: number;
+      qlqAmountOriginal: number;
       accountAmount: number;
+      accountAmountOriginal: number;
       boxAmount: number;
+      boxAmountOriginal: number;
       total: number;
+      totalOriginal: number;
       branchNo: number;
       typeLabel: string;
       shortType: string;

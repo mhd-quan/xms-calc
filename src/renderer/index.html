@@ -240,8 +240,11 @@
                   </div>
                     <canvas class="x-knob__envelope" id="envelopeAccountKnob" width="96" height="60" aria-hidden="true"></canvas>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
-                      <span class="x-row__inline-amount__val tnum" id="accountAmount">0</span>
-                      <span class="x-row__inline-amount__unit">₫</span>
+                      <span class="x-row__inline-amount__strike tnum" id="accountOriginalAmount" hidden>0 ₫</span>
+                      <span class="x-row__inline-amount__current">
+                        <span class="x-row__inline-amount__val tnum" id="accountAmount">0</span>
+                        <span class="x-row__inline-amount__unit">₫</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -285,8 +288,11 @@
                     </div>
                       <canvas class="x-knob__envelope" id="envelopeBoxKnob" width="96" height="60" aria-hidden="true"></canvas>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
-                      <span class="x-row__inline-amount__val tnum" id="boxAmount">0</span>
-                      <span class="x-row__inline-amount__unit">₫</span>
+                      <span class="x-row__inline-amount__strike tnum" id="boxOriginalAmount" hidden>0 ₫</span>
+                      <span class="x-row__inline-amount__current">
+                        <span class="x-row__inline-amount__val tnum" id="boxAmount">0</span>
+                        <span class="x-row__inline-amount__unit">₫</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -332,8 +338,11 @@
                   </div>
                     <canvas class="x-knob__envelope" id="envelopeQTGKnob" width="96" height="60" aria-hidden="true"></canvas>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
-                      <span class="x-row__inline-amount__val tnum" id="qtgAmount">0</span>
-                      <span class="x-row__inline-amount__unit">₫</span>
+                      <span class="x-row__inline-amount__strike tnum" id="qtgOriginalAmount" hidden>0 ₫</span>
+                      <span class="x-row__inline-amount__current">
+                        <span class="x-row__inline-amount__val tnum" id="qtgAmount">0</span>
+                        <span class="x-row__inline-amount__unit">₫</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -368,8 +377,11 @@
                   </div>
                     <canvas class="x-knob__envelope" id="envelopeQLQKnob" width="96" height="60" aria-hidden="true"></canvas>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
-                      <span class="x-row__inline-amount__val tnum" id="qlqAmount">0</span>
-                      <span class="x-row__inline-amount__unit">₫</span>
+                      <span class="x-row__inline-amount__strike tnum" id="qlqOriginalAmount" hidden>0 ₫</span>
+                      <span class="x-row__inline-amount__current">
+                        <span class="x-row__inline-amount__val tnum" id="qlqAmount">0</span>
+                        <span class="x-row__inline-amount__unit">₫</span>
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -401,18 +413,22 @@
       <div class="bottombar__breakdown">
         <div class="bottombar__breakdown__cell" data-info="Quyền tác giả|Tổng phí VCPMC của toàn bộ chi nhánh.|—">
           <div class="bottombar__breakdown__label">Q. Tác Giả</div>
+          <div class="bottombar__breakdown__strike tnum" id="totalQTGOriginal" hidden>0 ₫</div>
           <div class="bottombar__breakdown__val tnum" id="totalQTG">0 ₫</div>
         </div>
         <div class="bottombar__breakdown__cell" data-info="Quyền liên quan|Tổng phí NCT của toàn bộ chi nhánh.|—">
           <div class="bottombar__breakdown__label">Q. Liên Quan</div>
+          <div class="bottombar__breakdown__strike tnum" id="totalQLQOriginal" hidden>0 ₫</div>
           <div class="bottombar__breakdown__val tnum" id="totalQLQ">0 ₫</div>
         </div>
         <div class="bottombar__breakdown__cell" data-info="Tài khoản|Phí tài khoản NCT prorated theo chu kỳ.|—">
           <div class="bottombar__breakdown__label">Tài khoản</div>
+          <div class="bottombar__breakdown__strike tnum" id="totalAccountOriginal" hidden>0 ₫</div>
           <div class="bottombar__breakdown__val tnum" id="totalAccount">0 ₫</div>
         </div>
         <div class="bottombar__breakdown__cell" data-info="Box phát nhạc|Tổng chi phí thiết bị theo hình thức đã chọn.|—">
           <div class="bottombar__breakdown__label">Box</div>
+          <div class="bottombar__breakdown__strike tnum" id="totalBoxOriginal" hidden>0 ₫</div>
           <div class="bottombar__breakdown__val tnum" id="totalBox">0 ₫</div>
         </div>
       </div>
@@ -426,6 +442,7 @@
             <button type="button" class="x-seg__btn" data-vat="0.1">10%</button>
           </div>
         </div>
+        <div class="bottombar__total__strike tnum" id="grandTotalOriginal" hidden>0 ₫</div>
         <div class="bottombar__total__big">
           <span class="tnum" id="grandTotal">0</span>
           <span class="bottombar__total__currency">₫</span>
@@ -449,7 +466,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.8.14</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.9.0</div>
     </div>
   </div>
 

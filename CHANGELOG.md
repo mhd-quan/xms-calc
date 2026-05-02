@@ -5,6 +5,21 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.9.0] — 2026-05-03
+
+### Added
+- Strikethrough pricing across the entire pricing surface. When a discount is applied to any line item (QTG, QLQ, Account, Box), the original pre-discount price appears above the discounted price in a smaller, muted, line-through style.
+- Bottombar breakdown cells (Q. Tác Giả, Q. Liên Quan, Tài khoản, Box) now show original pricing with strikethrough when respective discounts are active.
+- Grand total area in the bottom bar displays the pre-discount total with strikethrough above the discounted+VAT total.
+- Calculator engine now computes and propagates `*Original` values for all line items, subtotals, and grand total.
+
+### Changed
+- Bottom bar height increased from 52px to 64px to accommodate the two-line pricing layout (strikethrough + discounted).
+- Inline amount readout layout changed from single-line baseline alignment to vertical column layout, allowing the strike price to sit above the current price while maintaining right-alignment.
+- Version bumped from 1.8.14 to 1.9.0.
+
+---
+
 ## [1.8.1] — 2026-05-02
 
 ### Fixed

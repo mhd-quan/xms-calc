@@ -192,20 +192,26 @@ export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOp
   const yearly = coef * opts.baseSalary;
   const periodBase = (yearly / 12) * duration;
 
-  const qtgAmount = opts.hasQTG ? periodBase * (1 - effectiveDiscount(opts, 'qtg') / 100) : 0;
-  const qlqAmount = opts.hasQLQ ? periodBase * (1 - effectiveDiscount(opts, 'qlq') / 100) : 0;
-  const accountAmount = opts.hasAccountFee
-    ? (ACCOUNT_FEE_YEARLY / 12) * duration * (1 - effectiveDiscount(opts, 'account') / 100)
-    : 0;
+  const qtgAmountOriginal = opts.hasQTG ? periodBase : 0;
+  const qlqAmountOriginal = opts.hasQLQ ? periodBase : 0;
+  const accountAmountOriginal = opts.hasAccountFee ? (ACCOUNT_FEE_YEARLY / 12) * duration : 0;
+
+  const qtgAmount = qtgAmountOriginal * (1 - effectiveDiscount(opts, 'qtg') / 100);
+  const qlqAmount = qlqAmountOriginal * (1 - effectiveDiscount(opts, 'qlq') / 100);
+  const accountAmount = accountAmountOriginal * (1 - effectiveDiscount(opts, 'account') / 100);
 
   let boxAmount = 0;
+  let boxAmountOriginal = 0;
   if (opts.boxMode === 'buy') {
-    boxAmount = BOX_BUY_PRICE * opts.globalBoxCount * (1 - effectiveDiscount(opts, 'box') / 100);
+    boxAmountOriginal = BOX_BUY_PRICE * opts.globalBoxCount;
+    boxAmount = boxAmountOriginal * (1 - effectiveDiscount(opts, 'box') / 100);
   } else if (opts.boxMode === 'rent') {
-    boxAmount = (BOX_RENT_YEARLY / 12) * duration * opts.globalBoxCount;
+    boxAmountOriginal = (BOX_RENT_YEARLY / 12) * duration * opts.globalBoxCount;
+    boxAmount = boxAmountOriginal;
   }
 
   const total = qtgAmount + qlqAmount + accountAmount + boxAmount;
+  const totalOriginal = qtgAmountOriginal + qlqAmountOriginal + accountAmountOriginal + boxAmountOriginal;
   return {
     name: store.name,
     type: store.type,
@@ -215,10 +221,15 @@ export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOp
     yearly,
     periodBase,
     qtgAmount,
+    qtgAmountOriginal,
     qlqAmount,
+    qlqAmountOriginal,
     accountAmount,
+    accountAmountOriginal,
     boxAmount,
-    total
+    boxAmountOriginal,
+    total,
+    totalOriginal
   };
 }
 
@@ -227,36 +238,58 @@ export function calculateTotals(stores: StoreInput[], options: CalculatorOptions
   const storeBreakdowns = stores.map((store) => calculateStoreBreakdown(store, opts));
   type Totals = {
     subtotalQTG: number;
+    subtotalQTGOriginal: number;
     subtotalQLQ: number;
+    subtotalQLQOriginal: number;
     subtotalAccount: number;
+    subtotalAccountOriginal: number;
     subtotalBox: number;
+    subtotalBoxOriginal: number;
     subtotal: number;
+    subtotalOriginal: number;
     vatRate: number;
     vat: number;
+    vatOriginal: number;
     grand: number;
+    grandOriginal: number;
   };
   const totals = storeBreakdowns.reduce(
     (acc: Totals, s) => {
       acc.subtotalQTG += s.qtgAmount;
+      acc.subtotalQTGOriginal += s.qtgAmountOriginal;
       acc.subtotalQLQ += s.qlqAmount;
+      acc.subtotalQLQOriginal += s.qlqAmountOriginal;
       acc.subtotalAccount += s.accountAmount;
+      acc.subtotalAccountOriginal += s.accountAmountOriginal;
       acc.subtotalBox += s.boxAmount;
+      acc.subtotalBoxOriginal += s.boxAmountOriginal;
       return acc;
     },
     {
       subtotalQTG: 0,
+      subtotalQTGOriginal: 0,
       subtotalQLQ: 0,
+      subtotalQLQOriginal: 0,
       subtotalAccount: 0,
+      subtotalAccountOriginal: 0,
       subtotalBox: 0,
+      subtotalBoxOriginal: 0,
       subtotal: 0,
+      subtotalOriginal: 0,
       vatRate: 0,
       vat: 0,
-      grand: 0
+      vatOriginal: 0,
+      grand: 0,
+      grandOriginal: 0
     }
   );
   totals.subtotal = totals.subtotalQTG + totals.subtotalQLQ + totals.subtotalAccount + totals.subtotalBox;
+  totals.subtotalOriginal =
+    totals.subtotalQTGOriginal + totals.subtotalQLQOriginal + totals.subtotalAccountOriginal + totals.subtotalBoxOriginal;
   totals.vatRate = opts.vatRate;
   totals.vat = totals.subtotal * opts.vatRate;
+  totals.vatOriginal = totals.subtotalOriginal * opts.vatRate;
   totals.grand = totals.subtotal + totals.vat;
+  totals.grandOriginal = totals.subtotalOriginal + totals.vatOriginal;
   return { stores: storeBreakdowns, totals };
 }
