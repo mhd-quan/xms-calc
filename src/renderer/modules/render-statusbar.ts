@@ -2,7 +2,7 @@ import type { RenderSnapshot } from '../app';
 import type { RevisionStatus } from '../../shared/types';
 import { cycleLabel } from './billing-cycle';
 
-const APP_VERSION = '1.8.10';
+const APP_VERSION = '1.8.11';
 
 type StatusView = {
   label: string;

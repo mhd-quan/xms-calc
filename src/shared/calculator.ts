@@ -172,10 +172,10 @@ function normalizeOptions(options: CalculatorOptionsInput = {}): NormalizedOptio
       qlq: clampDiscount(discounts.qlq)
     },
     discountEnabled: {
-      account: discountEnabled.account !== false,
-      box: discountEnabled.box !== false,
-      qtg: discountEnabled.qtg !== false,
-      qlq: discountEnabled.qlq !== false
+      account: discountEnabled.account === true,
+      box: discountEnabled.box === true,
+      qtg: discountEnabled.qtg === true,
+      qlq: discountEnabled.qlq === true
     }
   };
 }

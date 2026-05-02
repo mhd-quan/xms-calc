@@ -177,7 +177,11 @@
    double-click to reset. Renders as <div class="x-knob"> with internal SVG. */
 .x-knob {
   --size: 38px;
-  --val: 0.5;       /* 0..1 */
+  --val: 0;       /* 0..1 */
+  --knob-accent: var(--active);
+  --knob-accent-dim: rgba(255, 180, 58, 0.16);
+  --knob-face: #a0a7b0;
+  --knob-face-dark: #6f7680;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -191,13 +195,19 @@
   height: var(--size);
   position: relative;
   border-radius: 50%;
-  background: radial-gradient(circle at 50% 45%, var(--shell-3), var(--shell-1) 70%);
-  border: 1px solid var(--line-2);
+  background:
+    radial-gradient(circle at 46% 38%, rgba(240, 244, 248, 0.42), transparent 23%),
+    linear-gradient(145deg, var(--knob-face), var(--knob-face-dark));
+  border: 1px solid rgba(12, 15, 20, 0.64);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 -8px 14px rgba(13, 16, 22, 0.26),
+    0 1px 0 rgba(255, 255, 255, 0.08);
   display: grid;
   place-items: center;
-  transition: border-color var(--t-instant), transform var(--t-quick) var(--ease-out);
+  transition: border-color var(--t-instant), transform var(--t-quick) var(--ease-out), box-shadow var(--t-quick);
 }
-/* Arc glow track — sweeps from -135° to current val position */
+/* Reference-style value arc: -135deg to current needle position. */
 .x-knob__dial::after {
   content: "";
   position: absolute;
@@ -206,20 +216,20 @@
   /* 270° sweep mapped by --val: from 225° (7:30 position) clockwise */
   background: conic-gradient(
     from 225deg,
-    var(--active) 0deg,
-    var(--active) calc(270deg * var(--val)),
+    var(--knob-accent) 0deg,
+    var(--knob-accent) calc(270deg * var(--val)),
     transparent calc(270deg * var(--val)),
     transparent 270deg,
     transparent 360deg
   );
-  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-  mask: radial-gradient(closest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-  opacity: 0;
+  -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3.5px));
+  mask: radial-gradient(closest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3.5px));
+  opacity: 0.95;
   transition: opacity var(--t-quick);
   pointer-events: none;
 }
 .x-knob.is-active .x-knob__dial::after {
-  opacity: 0;
+  opacity: 1;
   animation: none;
 }
 @keyframes arc-breathe {
@@ -227,13 +237,25 @@
   50%       { opacity: 1; filter: blur(1px); }
 }
 
-.x-knob:hover .x-knob__dial { border-color: var(--line-3); }
+.x-knob:hover .x-knob__dial {
+  border-color: var(--knob-accent);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    inset 0 -8px 14px rgba(13, 16, 22, 0.26),
+    0 0 0 1px var(--knob-accent-dim);
+}
 .x-knob:active .x-knob__dial,
 .x-knob.is-dragging .x-knob__dial { transform: scale(1.03); }
 .x-knob:focus-visible { outline: none; }
-.x-knob:focus-visible .x-knob__dial { box-shadow: var(--focus-glow); border-color: var(--active); }
+.x-knob:focus-visible .x-knob__dial {
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 0 0 1px var(--knob-accent),
+    0 0 8px var(--knob-accent-dim);
+  border-color: var(--knob-accent);
+}
 .x-knob.is-active .x-knob__dial {
-  border-color: var(--line-2);
+  border-color: rgba(12, 15, 20, 0.64);
   animation: none;
 }
 @keyframes knob-glow {
@@ -245,13 +267,15 @@
   position: absolute;
   left: calc(50% - 1px);
   top: calc(50% - 17px);
-  width: 2px;
-  height: 17px;
-  background: var(--ink-1);
+  width: 2.5px;
+  height: 16px;
+  background: #151a21;
   transform-origin: 50% 100%;
   /* Range: -135deg to +135deg, mapped from val 0..1 */
   transform: rotate(calc(-135deg + (270deg * var(--val))));
   border-radius: 1px;
+  box-shadow: 0 0 0 1px rgba(240, 244, 248, 0.20);
+  z-index: 2;
 }
 .x-knob__label {
   font-family: var(--font-label);
@@ -270,6 +294,7 @@
   color: var(--ink-1);
   line-height: 1;
 }
+.x-knob.is-active .x-knob__readout { color: var(--knob-accent); }
 .x-knob.is-dragging { cursor: grabbing; }
 
 .x-discount-toggle {
@@ -297,8 +322,8 @@
   transform: translateY(1px);
 }
 .x-discount-toggle.is-on {
-  background: var(--active);
-  border-color: var(--active);
+  background: var(--knob-accent);
+  border-color: var(--knob-accent);
   color: var(--active-ink);
 }
 
