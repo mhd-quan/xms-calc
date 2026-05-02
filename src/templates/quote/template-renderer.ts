@@ -160,7 +160,7 @@ function buildNotes(payload: QuotePayload): string {
   const discounts = payload.globals.globalDiscounts || {};
   const discountEnabled = payload.globals.discountEnabled || {};
   const activeDiscounts = Object.entries(discounts)
-    .filter(([key, value]) => discountEnabled[key as keyof typeof discountEnabled] !== false && Number(value) > 0)
+    .filter(([key, value]) => discountEnabled[key as keyof typeof discountEnabled] === true && Number(value) > 0)
     .map(([key, value]) => `${key.toUpperCase()} ${value}%`);
   if (activeDiscounts.length) {
     notes.push(`Bảng báo giá này đã ghi nhận mức chiết khấu: ${activeDiscounts.join(', ')}.`);

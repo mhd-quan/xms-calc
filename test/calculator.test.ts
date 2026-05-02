@@ -122,6 +122,15 @@ test('discount toggles preserve values but control whether they apply', () => {
   moneyEqual(disabledDiscount.qtgAmount, 6435000);
 });
 
+test('missing discount toggles default to off', () => {
+  const defaultDisabled = calculateStoreBreakdown(cafeStore, {
+    baseSalary: 2340000,
+    globalDiscounts: { qtg: 50 }
+  });
+
+  moneyEqual(defaultDisabled.qtgAmount, 6435000);
+});
+
 test('buildQuotePayload creates export-safe metadata and enriched store rows', () => {
   const payload = buildQuotePayload(
     { stores: [cafeStore], calcOptions: baseOptions },

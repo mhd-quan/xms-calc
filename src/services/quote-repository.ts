@@ -175,7 +175,7 @@ export class QuoteRepository {
         hasQTG: true,
         hasQLQ: true,
         globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
-        discountEnabled: { account: true, box: true, qtg: true, qlq: true }
+        discountEnabled: { account: false, box: false, qtg: false, qlq: false }
       }),
       stores: safeParseJson<Store[]>(row.stores_json, []),
       totals: safeParseJson<Partial<Totals>>(row.totals_json, {}),

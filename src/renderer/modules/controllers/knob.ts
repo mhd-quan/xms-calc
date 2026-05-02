@@ -11,6 +11,8 @@ type PointerLockTarget = { requestPointerLock?: () => void | Promise<void> };
 type PointerLockDocument = { exitPointerLock?: () => void | Promise<void> };
 
 const knobMap = new WeakMap<HTMLElement, KnobSpec>();
+const wheelRemainders = new WeakMap<HTMLElement, number>();
+const WHEEL_THRESHOLD = 100;
 
 let dragging: KnobSpec | null = null;
 let dragStartY = 0;
@@ -54,10 +56,14 @@ export function attachKnob(spec: KnobSpec): void {
     'wheel',
     (event) => {
       event.preventDefault();
-      const delta = -Math.sign(event.deltaY);
-      // Shift = fine (1× step), normal wheel scroll = 5%.
+      const rawDelta = normalizeWheelDelta(event);
+      const accumulated = (wheelRemainders.get(spec.el) ?? 0) + rawDelta;
+      const steps = Math.trunc(accumulated / WHEEL_THRESHOLD);
+      wheelRemainders.set(spec.el, accumulated - steps * WHEEL_THRESHOLD);
+      if (steps === 0) return;
+
       const nudge = event.shiftKey ? spec.step : spec.step * 5;
-      setKnob(spec.el, currentValue(spec) + delta * nudge, true);
+      setKnob(spec.el, currentValue(spec) - steps * nudge, true);
     },
     { passive: false }
   );
@@ -99,8 +105,8 @@ function onMove(event: PointerEvent): void {
   const pointerLocked = document.pointerLockElement === dragging.el;
   const dy = pointerLocked ? -event.movementY : dragStartY - event.clientY;
   const range = dragging.max - dragging.min;
-  const sensitivity = event.shiftKey ? 0.25 : 0.6;
-  dragRawVal += (dy / 260) * range * sensitivity;
+  const sensitivity = event.shiftKey ? 0.16 : 0.38;
+  dragRawVal += (dy / 300) * range * sensitivity;
 
   setKnob(dragging.el, dragRawVal, true);
   if (!pointerLocked) dragStartY = event.clientY;
@@ -152,6 +158,12 @@ function currentValue(spec: KnobSpec): number {
   return Number.isFinite(value) ? value : spec.defaultVal;
 }
 
+function normalizeWheelDelta(event: WheelEvent): number {
+  if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return event.deltaY * 16;
+  if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) return event.deltaY * 120;
+  return event.deltaY;
+}
+
 function snapToStep(value: number, spec: KnobSpec): number {
   const step = spec.step > 0 ? spec.step : 1;
   const stepped = Math.round((value - spec.min) / step) * step + spec.min;
@@ -189,12 +201,11 @@ function drawEnvelope(canvasId: string, norm: number): void {
   canvas.width = W;
   canvas.height = H;
 
-  // Colours from CSS variables (read once from :root)
-  const cs = getComputedStyle(document.documentElement);
-  const amber    = (cs.getPropertyValue('--active').trim()     || '#ffb43a');
-  const amberDim = (cs.getPropertyValue('--active-dim').trim() || 'rgba(255,180,58,0.14)');
-  const lineCol  = (cs.getPropertyValue('--line-2').trim()     || '#3c4047');
-  const inkDim   = (cs.getPropertyValue('--ink-4').trim()      || '#5d6168');
+  const rootStyle = getComputedStyle(document.documentElement);
+  const laneStyle = getComputedStyle(canvas.closest('.x-discount-bank') ?? canvas);
+  const accent = laneStyle.getPropertyValue('--lane-accent').trim() || rootStyle.getPropertyValue('--active').trim() || '#ffb43a';
+  const fill = laneStyle.getPropertyValue('--lane-fill').trim() || rootStyle.getPropertyValue('--active-dim').trim() || 'rgba(255,180,58,0.14)';
+  const lineCol = rootStyle.getPropertyValue('--line-2').trim() || '#3c4047';
 
   ctx.clearRect(0, 0, W, H);
 
@@ -217,35 +228,37 @@ function drawEnvelope(canvasId: string, norm: number): void {
   ctx.globalAlpha = 1;
 
   // Envelope line coordinates
-  const pad   = 3;
-  const yTop  = pad;                         // 0% discount → line at top (full price)
-  const yEnd  = pad + (H - pad * 2) * norm;  // end Y scales with discount
+  const pad = 4;
+  const yTop = pad + (H - pad * 2) * 0.18;
+  const yEnd = pad + (H - pad * 2) * (0.18 + 0.72 * norm);
+  const xMid = W * 0.58;
+  const yMid = yTop + (yEnd - yTop) * 0.48;
 
   // Gradient fill area under the line
   ctx.beginPath();
   ctx.moveTo(0, yTop);
-  ctx.lineTo(W, yEnd);
+  ctx.bezierCurveTo(W * 0.28, yTop, xMid, yMid, W, yEnd);
   ctx.lineTo(W, H);
   ctx.lineTo(0, H);
   ctx.closePath();
-  ctx.fillStyle = amberDim;
+  ctx.fillStyle = fill;
+  ctx.globalAlpha = norm > 0 ? 1 : 0.55;
   ctx.fill();
 
   // Main envelope line
   ctx.beginPath();
   ctx.moveTo(0, yTop);
-  ctx.lineTo(W, yEnd);
-  ctx.strokeStyle = norm > 0 ? amber : inkDim;
+  ctx.bezierCurveTo(W * 0.28, yTop, xMid, yMid, W, yEnd);
+  ctx.strokeStyle = accent;
   ctx.lineWidth = 1.5;
-  ctx.globalAlpha = norm > 0 ? 1 : 0.35;
+  ctx.globalAlpha = norm > 0 ? 1 : 0.58;
   ctx.stroke();
 
   // Dot at end of line
-  if (norm > 0) {
-    ctx.beginPath();
-    ctx.arc(W - 2, yEnd, 2.2, 0, Math.PI * 2);
-    ctx.fillStyle = amber;
-    ctx.globalAlpha = 1;
-    ctx.fill();
-  }
+  ctx.beginPath();
+  ctx.arc(W - 3, yEnd, 2.2, 0, Math.PI * 2);
+  ctx.fillStyle = accent;
+  ctx.globalAlpha = norm > 0 ? 1 : 0.65;
+  ctx.fill();
+  ctx.globalAlpha = 1;
 }

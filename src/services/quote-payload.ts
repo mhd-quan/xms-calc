@@ -95,10 +95,10 @@ function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string,
       qlq: Number(discounts.qlq) || 0
     },
     discountEnabled: {
-      account: discountEnabled.account !== false,
-      box: discountEnabled.box !== false,
-      qtg: discountEnabled.qtg !== false,
-      qlq: discountEnabled.qlq !== false
+      account: discountEnabled.account === true,
+      box: discountEnabled.box === true,
+      qtg: discountEnabled.qtg === true,
+      qlq: discountEnabled.qlq === true
     },
     baseSalary: Number(calcOptions?.baseSalary) || 2340000,
     vatRate: Number(calcOptions?.vatRate) || 0
