@@ -503,24 +503,29 @@
   width: min(620px, 100%);
 }
 
+.x-discount-bank .x-knob {
+  --knob-accent: var(--lane-accent);
+  --knob-accent-dim: var(--lane-fill);
+}
+
 .x-discount-bank--account {
-  --lane-accent: #ffb43a;
-  --lane-fill: rgba(255, 180, 58, 0.18);
+  --lane-accent: var(--active);
+  --lane-fill: rgba(255, 180, 58, 0.16);
 }
 
 .x-discount-bank--box {
-  --lane-accent: #18d2c8;
-  --lane-fill: rgba(24, 210, 200, 0.16);
+  --lane-accent: var(--data);
+  --lane-fill: rgba(92, 212, 196, 0.14);
 }
 
 .x-discount-bank--qtg {
-  --lane-accent: #ff6b7a;
-  --lane-fill: rgba(255, 107, 122, 0.16);
+  --lane-accent: var(--alert);
+  --lane-fill: rgba(255, 92, 92, 0.14);
 }
 
 .x-discount-bank--qlq {
-  --lane-accent: #7aa7ff;
-  --lane-fill: rgba(122, 167, 255, 0.16);
+  --lane-accent: var(--vu-low);
+  --lane-fill: rgba(74, 222, 128, 0.13);
 }
 
 .x-discount-bank.is-summary-only {
@@ -540,10 +545,11 @@
   min-width: 188px;
   max-width: 260px;
   height: 48px;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--lane-accent) 5%, var(--inset-0)), var(--inset-0));
+  background: var(--inset-1);
   border: 1px solid var(--line-1);
   border-radius: var(--r-2);
   display: block;
+  contain: strict;
 }
 
 .x-row__info { flex: 1; }

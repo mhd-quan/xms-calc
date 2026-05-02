@@ -180,8 +180,8 @@
   --val: 0;       /* 0..1 */
   --knob-accent: var(--active);
   --knob-accent-dim: rgba(255, 180, 58, 0.16);
-  --knob-face: #a0a7b0;
-  --knob-face-dark: #6f7680;
+  --knob-face: var(--inset-1);
+  --knob-face-border: var(--line-2);
   display: inline-flex;
   flex-direction: column;
   align-items: center;
@@ -195,17 +195,12 @@
   height: var(--size);
   position: relative;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 46% 38%, rgba(240, 244, 248, 0.42), transparent 23%),
-    linear-gradient(145deg, var(--knob-face), var(--knob-face-dark));
-  border: 1px solid rgba(12, 15, 20, 0.64);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    inset 0 -8px 14px rgba(13, 16, 22, 0.26),
-    0 1px 0 rgba(255, 255, 255, 0.08);
+  background: var(--knob-face);
+  border: 1px solid var(--knob-face-border);
+  box-shadow: none;
   display: grid;
   place-items: center;
-  transition: border-color var(--t-instant), transform var(--t-quick) var(--ease-out), box-shadow var(--t-quick);
+  transition: border-color var(--t-instant);
 }
 /* Reference-style value arc: -135deg to current needle position. */
 .x-knob__dial::after {
@@ -224,57 +219,44 @@
   );
   -webkit-mask: radial-gradient(closest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3.5px));
   mask: radial-gradient(closest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3.5px));
-  opacity: 0.95;
-  transition: opacity var(--t-quick);
+  opacity: 0.9;
   pointer-events: none;
 }
 .x-knob.is-active .x-knob__dial::after {
   opacity: 1;
   animation: none;
 }
-@keyframes arc-breathe {
-  0%, 100% { opacity: 0.7; filter: blur(0px); }
-  50%       { opacity: 1; filter: blur(1px); }
-}
 
 .x-knob:hover .x-knob__dial {
   border-color: var(--knob-accent);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
-    inset 0 -8px 14px rgba(13, 16, 22, 0.26),
-    0 0 0 1px var(--knob-accent-dim);
 }
 .x-knob:active .x-knob__dial,
-.x-knob.is-dragging .x-knob__dial { transform: scale(1.03); }
+.x-knob.is-dragging .x-knob__dial { border-color: var(--knob-accent); }
 .x-knob:focus-visible { outline: none; }
 .x-knob:focus-visible .x-knob__dial {
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.22),
-    0 0 0 1px var(--knob-accent),
-    0 0 8px var(--knob-accent-dim);
+  outline: 1px solid var(--knob-accent);
+  outline-offset: 2px;
   border-color: var(--knob-accent);
 }
 .x-knob.is-active .x-knob__dial {
-  border-color: rgba(12, 15, 20, 0.64);
+  border-color: var(--knob-face-border);
   animation: none;
 }
-@keyframes knob-glow {
-  0%, 100% { box-shadow: 0 0 0 1px var(--active-glow); }
-  50%       { box-shadow: 0 0 0 2px var(--active-glow), 0 0 10px rgba(255,180,58,0.20); }
-}
+.x-knob.is-active:hover .x-knob__dial,
+.x-knob.is-active.is-dragging .x-knob__dial { border-color: var(--knob-accent); }
 .x-knob__svg { position: absolute; inset: 0; pointer-events: none; }
 .x-knob__indicator {
   position: absolute;
   left: calc(50% - 1px);
   top: calc(50% - 17px);
-  width: 2.5px;
+  width: 2px;
   height: 16px;
-  background: #151a21;
+  background: var(--ink-1);
   transform-origin: 50% 100%;
   /* Range: -135deg to +135deg, mapped from val 0..1 */
   transform: rotate(calc(-135deg + (270deg * var(--val))));
   border-radius: 1px;
-  box-shadow: 0 0 0 1px rgba(240, 244, 248, 0.20);
+  box-shadow: none;
   z-index: 2;
 }
 .x-knob__label {
