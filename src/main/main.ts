@@ -145,7 +145,7 @@ function createWindow(): void {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
-    minWidth: 920,
+    minWidth: 1080,
     minHeight: 600,
     titleBarStyle: 'hiddenInset',
     trafficLightPosition: { x: 20, y: 22 },

@@ -5,8 +5,9 @@
 .app {
   display: grid;
   grid-template-rows: 44px 1fr 52px 22px;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: clamp(216px, 18vw, 240px) minmax(0, 1fr);
   height: 100%;
+  min-width: 0;
   background: var(--shell-0);
   color: var(--ink-1);
   font-family: var(--font-ui);
@@ -52,9 +53,9 @@
 
 .topbar__revision {
   width: auto;
-  min-width: 188px;
-  max-width: min(340px, 32vw);
-  flex: 0 1 260px;
+  min-width: 148px;
+  max-width: min(220px, 22vw);
+  flex: 0 1 188px;
   overflow: visible;
   color: var(--ink-2);
 }
@@ -62,7 +63,7 @@
 .topbar__revision__display {
   height: 24px;
   min-width: 0;
-  gap: var(--s-4);
+  gap: var(--s-3);
   padding: 0 var(--s-3) 0 var(--s-4);
   background: var(--inset-0);
   border-color: var(--line-1);
@@ -291,6 +292,7 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--s-6);
   margin-bottom: 4px;
 }
@@ -303,6 +305,8 @@
 .work__controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 10px;
   flex-shrink: 0;
 }
@@ -434,16 +438,17 @@
 .csbody-grid--6-6 { grid-template-columns: 1fr 1fr; }
 .x-row {
   display: grid;
-  grid-template-columns: minmax(360px, 1fr) minmax(460px, 660px);
-  gap: 42px;
+  grid-template-columns: minmax(260px, 1fr) minmax(560px, 620px);
+  gap: 28px;
   align-items: flex-start;
   padding: var(--s-5) 0;
 }
 
 .x-row__lhs {
   display: flex;
-  gap: 42px;
-  align-items: flex-start;
+  gap: 28px;
+  align-items: center;
+  min-width: 0;
 }
 
 .x-row__rhs {
@@ -461,6 +466,16 @@
   padding-top: var(--s-3);
   border-top: 1px solid var(--line-1);
 }
+
+.x-row__inline-amount--control {
+  min-width: 148px;
+  margin-top: 0;
+  margin-left: auto;
+  padding: 0 0 0 var(--s-4);
+  border-top: 0;
+  border-left: 1px solid var(--line-1);
+  align-self: center;
+}
 .x-row__inline-amount__val {
   font-family: var(--font-display);
   font-size: var(--t-readout);
@@ -475,20 +490,32 @@
 }
 
 .x-discount-bank {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: auto auto minmax(188px, 1fr) minmax(148px, auto);
   align-items: center;
-  justify-content: flex-start;
+  justify-content: stretch;
   gap: 22px;
   min-width: 0;
-  width: min(560px, 100%);
+  width: min(620px, 100%);
+}
+
+.x-discount-bank.is-summary-only {
+  grid-template-columns: minmax(148px, auto);
+  justify-content: end;
+}
+
+.x-discount-bank.is-summary-only .x-discount-toggle,
+.x-discount-bank.is-summary-only .x-knob,
+.x-discount-bank.is-summary-only .x-knob__envelope {
+  display: none;
 }
 
 /* Envelope canvas — Ableton automation-lane style line display */
 .x-knob__envelope {
-  flex: 0 1 220px;
-  min-width: 170px;
-  max-width: 220px;
-  height: 32px;
+  width: 100%;
+  min-width: 188px;
+  max-width: 260px;
+  height: 48px;
   background: var(--inset-0);
   border: 1px solid var(--line-1);
   border-radius: var(--r-2);
@@ -498,8 +525,10 @@
 .x-row__info { flex: 1; }
 
 #boxQuantityRow {
-  justify-content: flex-end;
-  gap: 30px;
+  justify-content: flex-start;
+  gap: 18px;
+  width: fit-content;
+  margin-top: var(--s-4);
 }
 
 #boxQuantityRow .label {
@@ -528,6 +557,69 @@
 .x-row__inline-amount.is-disabled {
   opacity: 0.45;
   pointer-events: none;
+}
+
+@media (max-width: 1180px) {
+  .app {
+    grid-template-columns: 208px minmax(0, 1fr);
+  }
+
+  .topbar {
+    padding-inline: var(--s-4);
+  }
+
+  .topbar__revision {
+    min-width: 132px;
+    max-width: min(188px, 20vw);
+    flex-basis: 164px;
+  }
+
+  .sidebar__fixed {
+    padding-inline: var(--s-3);
+  }
+
+  .work {
+    padding-inline: 14px;
+  }
+
+  .work__head {
+    align-items: flex-start;
+    gap: var(--s-4);
+  }
+
+  .work__controls {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .csbody-grid--7-5,
+  .csbody-grid--6-6 {
+    grid-template-columns: 1fr;
+  }
+
+  .x-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .x-row__lhs {
+    align-items: flex-start;
+  }
+
+  .x-row__rhs {
+    justify-self: stretch;
+  }
+
+  .x-discount-bank {
+    width: 100%;
+    grid-template-columns: auto auto minmax(168px, 1fr) minmax(140px, auto);
+    gap: 18px;
+  }
+
+  .x-knob__envelope {
+    min-width: 168px;
+    max-width: none;
+  }
 }
 
 /* LINE ROW (one line of calc data) */
@@ -774,6 +866,30 @@
 
 .bottombar__total__vu { margin-top: var(--s-1); }
 .bottombar__total__vu .x-vu { height: 4px; }
+
+@media (max-width: 1180px) {
+  .bottombar {
+    grid-template-columns: 180px minmax(0, 1fr) 240px;
+  }
+
+  .bottombar .x-infoview,
+  .bottombar__breakdown__cell,
+  .bottombar__total {
+    padding-inline: var(--s-3);
+  }
+
+  .bottombar__breakdown__label {
+    letter-spacing: 0.14em;
+  }
+
+  .bottombar__breakdown__val {
+    font-size: 12.5px;
+  }
+
+  .bottombar__total__big {
+    font-size: 22px;
+  }
+}
 
 /* Status bar inside artboard */
 .x-statusbar {
