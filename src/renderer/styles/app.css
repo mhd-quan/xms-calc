@@ -456,6 +456,14 @@
   justify-self: stretch;
 }
 
+.x-row--box {
+  align-items: center;
+}
+
+.x-row--box .x-row__rhs {
+  align-self: center;
+}
+
 /* Inline amount readout (replaces separate Thành tiền column) */
 .x-row__inline-amount {
   display: flex;
@@ -501,6 +509,7 @@
   gap: 22px;
   min-width: 0;
   width: min(620px, 100%);
+  padding-left: 24px;
 }
 
 .x-discount-bank .x-knob {
@@ -544,11 +553,12 @@
   width: 100%;
   min-width: 188px;
   max-width: 260px;
-  height: 48px;
+  height: 60px;
   background: var(--inset-1);
   border: 1px solid var(--line-1);
   border-radius: var(--r-2);
   display: block;
+  justify-self: end;
   contain: strict;
 }
 
@@ -644,6 +654,7 @@
     width: 100%;
     grid-template-columns: auto auto minmax(168px, 1fr) minmax(140px, auto);
     gap: 18px;
+    padding-left: 0;
   }
 
   .x-knob__envelope {
