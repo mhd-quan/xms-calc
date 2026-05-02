@@ -166,6 +166,7 @@ const HTML_ENTITIES: Record<string, string> = {
 const escapeHTML = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, (char) => HTML_ENTITIES[char] ?? char);
 const MOTION_STRUCT_SECONDS = 0.14;
 const MOTION_METER_SECONDS = 0.4;
+const SIDEBAR_REMOVE_SECONDS = 0.18;
 
 function blankCustomer(): CustomerProfile {
   return {
@@ -702,22 +703,62 @@ function duplicateActiveStore(): void {
   gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: MOTION_STRUCT_SECONDS });
 }
 
+function animateStoreRemoval(el: Element | null, onComplete: () => void): void {
+  if (!(el instanceof HTMLElement) || typeof el.animate !== 'function') {
+    onComplete();
+    return;
+  }
+
+  gsap.killTweensOf(el);
+  const rect = el.getBoundingClientRect();
+  const style = getComputedStyle(el);
+  const marginBottom = Number.parseFloat(style.marginBottom) || 0;
+  let didComplete = false;
+  const finish = (): void => {
+    if (didComplete) return;
+    didComplete = true;
+    onComplete();
+  };
+
+  el.style.height = `${rect.height}px`;
+  el.style.overflow = 'hidden';
+  el.style.pointerEvents = 'none';
+  el.style.willChange = 'height, opacity, transform, margin-bottom';
+
+  const animation = el.animate(
+    [
+      {
+        height: `${rect.height}px`,
+        marginBottom: `${marginBottom}px`,
+        opacity: 1,
+        transform: 'translateX(0)'
+      },
+      {
+        height: '0px',
+        marginBottom: '0px',
+        opacity: 0,
+        transform: 'translateX(-12px)'
+      }
+    ],
+    {
+      duration: SIDEBAR_REMOVE_SECONDS * 1000,
+      easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      fill: 'forwards'
+    }
+  );
+
+  animation.addEventListener('finish', finish, { once: true });
+  animation.addEventListener('cancel', finish, { once: true });
+}
+
 function removeStore(id: number): void {
   if (stores.length <= 1) return;
+  const removedActiveStore = activeTabId === id;
   const el = document.querySelector(`[data-id="${id}"]`);
-  if (el) gsap.killTweensOf(el);
-  gsap.to(el, {
-    x: -20,
-    opacity: 0,
-    height: 0,
-    padding: 0,
-    margin: 0,
-    duration: MOTION_STRUCT_SECONDS,
-    onComplete: () => {
-      stores = stores.filter((store) => store.id !== id);
-      if (activeTabId === id) activeTabId = stores[0]?.id ?? null;
-      commitQuoteMutation();
-    }
+  animateStoreRemoval(el, () => {
+    stores = stores.filter((store) => store.id !== id);
+    if (removedActiveStore) activeTabId = stores[0]?.id ?? null;
+    commitQuoteMutation(removedActiveStore ? 'all' : ['sidebar', 'totals']);
   });
 }
 
