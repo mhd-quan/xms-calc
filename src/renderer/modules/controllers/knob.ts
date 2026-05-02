@@ -9,10 +9,23 @@ export type KnobSpec = {
 
 type PointerLockTarget = { requestPointerLock?: () => void | Promise<void> };
 type PointerLockDocument = { exitPointerLock?: () => void | Promise<void> };
+type EnvelopeCache = {
+  ctx: CanvasRenderingContext2D;
+  width: number;
+  height: number;
+  accent: string;
+  fill: string;
+  lineCol: string;
+};
 
 const knobMap = new WeakMap<HTMLElement, KnobSpec>();
 const wheelRemainders = new WeakMap<HTMLElement, number>();
-const WHEEL_THRESHOLD = 100;
+const envelopeCache = new WeakMap<HTMLCanvasElement, EnvelopeCache>();
+const pendingEnvelopeValues = new Map<string, number>();
+const pendingEnvelopeFrames = new Map<string, number>();
+
+const WHEEL_THRESHOLD = 64;
+const MAX_WHEEL_STEPS_PER_EVENT = 1;
 
 let dragging: KnobSpec | null = null;
 let dragStartY = 0;
@@ -57,9 +70,14 @@ export function attachKnob(spec: KnobSpec): void {
     (event) => {
       event.preventDefault();
       const rawDelta = normalizeWheelDelta(event);
-      const accumulated = (wheelRemainders.get(spec.el) ?? 0) + rawDelta;
-      const steps = Math.trunc(accumulated / WHEEL_THRESHOLD);
-      wheelRemainders.set(spec.el, accumulated - steps * WHEEL_THRESHOLD);
+      const remainder = wheelRemainders.get(spec.el) ?? 0;
+      const accumulated = sameSign(rawDelta, remainder) ? remainder + rawDelta : rawDelta;
+      const steps = clamp(
+        Math.trunc(accumulated / WHEEL_THRESHOLD),
+        -MAX_WHEEL_STEPS_PER_EVENT,
+        MAX_WHEEL_STEPS_PER_EVENT
+      );
+      wheelRemainders.set(spec.el, clamp(accumulated - steps * WHEEL_THRESHOLD, -WHEEL_THRESHOLD + 1, WHEEL_THRESHOLD - 1));
       if (steps === 0) return;
 
       const nudge = event.shiftKey ? spec.step : spec.step * 5;
@@ -105,7 +123,7 @@ function onMove(event: PointerEvent): void {
   const pointerLocked = document.pointerLockElement === dragging.el;
   const dy = pointerLocked ? -event.movementY : dragStartY - event.clientY;
   const range = dragging.max - dragging.min;
-  const sensitivity = event.shiftKey ? 0.16 : 0.38;
+  const sensitivity = event.shiftKey ? 0.2 : 0.48;
   dragRawVal += (dy / 300) * range * sensitivity;
 
   setKnob(dragging.el, dragRawVal, true);
@@ -147,7 +165,7 @@ function setKnob(el: HTMLElement, value: number, fire = false): void {
   // Knob IDs follow pattern "discount{Section}Knob" → canvas IDs are "envelope{Section}Knob"
   const match = el.id.match(/^discount(\w+)Knob$/);
   if (match) {
-    drawEnvelope('envelope' + match[1] + 'Knob', norm);
+    scheduleEnvelopeDraw('envelope' + match[1] + 'Knob', norm);
   }
 
   if (fire && stepped !== previous) spec.onChange(stepped);
@@ -162,6 +180,14 @@ function normalizeWheelDelta(event: WheelEvent): number {
   if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) return event.deltaY * 16;
   if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) return event.deltaY * 120;
   return event.deltaY;
+}
+
+function sameSign(a: number, b: number): boolean {
+  return b === 0 || Math.sign(a) === Math.sign(b);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
 }
 
 function snapToStep(value: number, spec: KnobSpec): number {
@@ -182,6 +208,55 @@ function formatKnobValue(value: number, spec: KnobSpec): string {
   return `${display}${unit}`;
 }
 
+function scheduleEnvelopeDraw(canvasId: string, norm: number): void {
+  pendingEnvelopeValues.set(canvasId, norm);
+  if (pendingEnvelopeFrames.has(canvasId)) return;
+
+  const frame = requestAnimationFrame(() => {
+    pendingEnvelopeFrames.delete(canvasId);
+    const nextNorm = pendingEnvelopeValues.get(canvasId);
+    if (nextNorm === undefined) return;
+    pendingEnvelopeValues.delete(canvasId);
+    drawEnvelope(canvasId, nextNorm);
+  });
+
+  pendingEnvelopeFrames.set(canvasId, frame);
+}
+
+function getEnvelopeCache(canvas: HTMLCanvasElement): EnvelopeCache | null {
+  const width = canvas.offsetWidth || canvas.width;
+  const height = canvas.offsetHeight || canvas.height;
+  let cached = envelopeCache.get(canvas);
+
+  if (!cached) {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    const rootStyle = getComputedStyle(document.documentElement);
+    const laneStyle = getComputedStyle(canvas.closest('.x-discount-bank') ?? canvas);
+    cached = {
+      ctx,
+      width,
+      height,
+      accent: laneStyle.getPropertyValue('--lane-accent').trim() || rootStyle.getPropertyValue('--active').trim() || '#ffb43a',
+      fill: laneStyle.getPropertyValue('--lane-fill').trim() || rootStyle.getPropertyValue('--active-dim').trim() || 'rgba(255,180,58,0.14)',
+      lineCol: rootStyle.getPropertyValue('--line-2').trim() || '#3c4047'
+    };
+    envelopeCache.set(canvas, cached);
+  }
+
+  if (cached.width !== width || cached.height !== height) {
+    cached.width = width;
+    cached.height = height;
+    canvas.width = width;
+    canvas.height = height;
+  } else if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  return cached;
+}
+
 /**
  * Draws an Ableton-style automation lane on the envelope canvas paired with
  * the given knob. The line starts at top-left (0% discount = full price)
@@ -193,19 +268,10 @@ function drawEnvelope(canvasId: string, norm: number): void {
   const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
   if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
 
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
+  const cached = getEnvelopeCache(canvas);
+  if (!cached) return;
 
-  const W = canvas.offsetWidth || canvas.width;
-  const H = canvas.offsetHeight || canvas.height;
-  canvas.width = W;
-  canvas.height = H;
-
-  const rootStyle = getComputedStyle(document.documentElement);
-  const laneStyle = getComputedStyle(canvas.closest('.x-discount-bank') ?? canvas);
-  const accent = laneStyle.getPropertyValue('--lane-accent').trim() || rootStyle.getPropertyValue('--active').trim() || '#ffb43a';
-  const fill = laneStyle.getPropertyValue('--lane-fill').trim() || rootStyle.getPropertyValue('--active-dim').trim() || 'rgba(255,180,58,0.14)';
-  const lineCol = rootStyle.getPropertyValue('--line-2').trim() || '#3c4047';
+  const { ctx, width: W, height: H, accent, fill, lineCol } = cached;
 
   ctx.clearRect(0, 0, W, H);
 
