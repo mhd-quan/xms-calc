@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.10.2] — 2026-05-05
+
+### Fixed
+- Fixed a bug where the Export Dropdown menu would not open when clicked.
+- Replaced the save icon with a proper export icon for clarity.
+
+---
+
 ## [1.10.1] — 2026-05-05
 
 ### Added
