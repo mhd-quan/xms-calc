@@ -43,13 +43,23 @@
         <button class="x-btn x-btn--icon" id="btnBulkAdd" type="button" title="Thêm hàng loạt" data-info="Thêm hàng loạt|Paste nhiều diện tích cùng lúc để tạo chi nhánh từ bảng tính.|⌘B">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
         </button>
+        <div style="position: relative; width: auto;" id="newDropdownWrapper" class="x-dropdown">
+          <button class="x-btn x-btn--icon" id="btnNewMenu" type="button" title="Tạo mới" data-info="Tạo mới|Tạo báo giá, tạo revision mới, hoặc import báo giá.|—">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+          <div class="x-dropdown__menu" id="newMenu" style="right: 0; left: auto; top: 100%; margin-top: 4px; width: 150px;">
+            <div class="x-dropdown__item" id="btnNewQuote" style="display: flex; align-items: center;">New Quote</div>
+            <div class="x-dropdown__item" id="btnNewRevision" style="display: flex; align-items: center;">New Revision</div>
+            <div class="x-dropdown__item" id="btnImportQuote" style="display: flex; align-items: center;">Import</div>
+          </div>
+        </div>
         <div style="position: relative; width: auto;" id="exportDropdownWrapper" class="x-dropdown">
           <button class="x-btn x-btn--icon x-btn--primary" id="btnExportMenu" type="button" title="Xuất báo giá" data-info="Xuất báo giá|Lưu dữ liệu báo giá, chi nhánh và xuất định dạng PDF/Excel.|—">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           </button>
-          <div class="x-dropdown__menu" id="exportMenu" style="right: 0; left: auto; top: 100%; margin-top: 4px; width: 140px;">
-            <div class="x-dropdown__item" id="btnExportPdf" style="display: flex; align-items: center;">Xuất PDF <span class="tnum" style="opacity:0.5; margin-left:auto; font-size:10px;">⌘S</span></div>
-            <div class="x-dropdown__item" id="btnExportExcel" style="display: flex; align-items: center;">Xuất Excel <span class="tnum" style="opacity:0.5; margin-left:auto; font-size:10px;">⌘E</span></div>
+          <div class="x-dropdown__menu" id="exportMenu" style="right: 0; left: auto; top: 100%; margin-top: 4px; width: 150px;">
+            <div class="x-dropdown__item" id="btnExportPdf" style="display: flex; align-items: center;">as Quota <span class="tnum" style="opacity:0.5; margin-left:auto; font-size:10px;">⌘S</span></div>
+            <div class="x-dropdown__item" id="btnExportExcel" style="display: flex; align-items: center;">as Workbook <span class="tnum" style="opacity:0.5; margin-left:auto; font-size:10px;">⌘E</span></div>
           </div>
         </div>
       </div>

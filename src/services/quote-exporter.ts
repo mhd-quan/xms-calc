@@ -226,7 +226,7 @@ export async function exportQuote({
     timings.createWindow = performance.now() - createStart;
 
     const renderStart = performance.now();
-    await printWin.webContents.executeJavaScript(`window.renderQuote(${JSON.stringify(payload)})`, true);
+    await printWin.webContents.executeJavaScript(`window.renderQuote(JSON.parse(${JSON.stringify(JSON.stringify(payload))}))`, true);
     timings.renderTemplate = performance.now() - renderStart;
 
     const pdfStart = performance.now();

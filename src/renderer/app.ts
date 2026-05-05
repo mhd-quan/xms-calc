@@ -1400,19 +1400,30 @@ function bindEvents() {
   setupScrubbableInput('areaInput', 1, 1, 10000);
   setupScrubbableInput('boxCount', 1, 1, 1000);
 
-  optionalElement('newQuoteBtn')?.addEventListener('click', () => {
-    void createNewQuote();
-  });
-  optionalElement('newRevisionBtn')?.addEventListener('click', () => {
-    void createNewRevision();
-  });
-  optionalElement('importPdfBtn')?.addEventListener('click', () => {
-    void importQuoteFromPdf();
-  });
+  // --- New Menu Dropdown ---
+  const btnNewMenu = document.getElementById('btnNewMenu');
+  const newDropdownWrapper = document.getElementById('newDropdownWrapper');
+  const btnNewQuote = document.getElementById('btnNewQuote');
+  const btnNewRevision = document.getElementById('btnNewRevision');
+  const btnImportQuote = document.getElementById('btnImportQuote');
+
+  if (btnNewMenu && newDropdownWrapper) {
+    btnNewMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = newDropdownWrapper.classList.contains('is-open');
+      document.querySelectorAll('.x-dropdown.is-open').forEach((el) => el.classList.remove('is-open'));
+      if (!isOpen) newDropdownWrapper.classList.add('is-open');
+    });
+  }
+  if (btnNewQuote) btnNewQuote.addEventListener('click', () => { void createNewQuote(); newDropdownWrapper?.classList.remove('is-open'); });
+  if (btnNewRevision) btnNewRevision.addEventListener('click', () => { void createNewRevision(); newDropdownWrapper?.classList.remove('is-open'); });
+  if (btnImportQuote) btnImportQuote.addEventListener('click', () => { void importQuoteFromPdf(); newDropdownWrapper?.classList.remove('is-open'); });
+
   document.getElementById('btnCustomer').addEventListener('click', openCustomerModal);
   const exportMenuWrapper = document.getElementById('exportDropdownWrapper');
   document.getElementById('btnExportMenu').addEventListener('click', (e) => {
     e.stopPropagation();
+    document.querySelectorAll('.x-dropdown.is-open').forEach((el) => el.classList.remove('is-open'));
     exportMenuWrapper.classList.toggle('is-open');
   });
   document.addEventListener('click', (e) => {
