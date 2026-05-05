@@ -43,9 +43,15 @@
         <button class="x-btn x-btn--icon" id="btnBulkAdd" type="button" title="Thêm hàng loạt" data-info="Thêm hàng loạt|Paste nhiều diện tích cùng lúc để tạo chi nhánh từ bảng tính.|⌘B">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H7a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7z"/><path d="M14 2v5h5"/><path d="M9 13h6"/><path d="M9 17h6"/></svg>
         </button>
-        <button class="x-btn x-btn--icon x-btn--primary" id="btnSave" type="button" title="Lưu" data-info="Lưu|Lưu toàn bộ dữ liệu báo giá, chi nhánh và cài đặt vào database.|⌘S">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
-        </button>
+        <div style="position: relative;" id="exportDropdownWrapper">
+          <button class="x-btn x-btn--icon x-btn--primary" id="btnExportMenu" type="button" title="Xuất báo giá" data-info="Xuất báo giá|Lưu dữ liệu báo giá, chi nhánh và xuất định dạng PDF/Excel.|—">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17,21 17,13 7,13 7,21"/><polyline points="7,3 7,8 15,8"/></svg>
+          </button>
+          <div class="x-dropdown__menu" id="exportMenu" style="right: 0; left: auto; top: 100%; margin-top: 4px; width: 140px;">
+            <div class="x-dropdown__item" id="btnExportPdf" style="display: flex; align-items: center;">Xuất PDF <span class="tnum" style="opacity:0.5; margin-left:auto; font-size:10px;">⌘S</span></div>
+            <div class="x-dropdown__item" id="btnExportExcel" style="display: flex; align-items: center;">Xuất Excel <span class="tnum" style="opacity:0.5; margin-left:auto; font-size:10px;">⌘E</span></div>
+          </div>
+        </div>
       </div>
     </header>
 

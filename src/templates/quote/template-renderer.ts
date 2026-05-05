@@ -10,6 +10,7 @@ type PricingRowInput = {
   scope: string;
   unit: string;
   amount: number;
+  originalAmount?: number;
 };
 
 declare global {
@@ -54,7 +55,11 @@ function durationScope(stores: TemplateStore[]): string {
   return min === max ? `${format(min)} tháng` : `${format(min)}-${format(max)} tháng`;
 }
 
-function addRow(rows: string[], { index, group, title, detail, scope, unit, amount }: PricingRowInput): void {
+function addRow(rows: string[], { index, group, title, detail, scope, unit, amount, originalAmount }: PricingRowInput): void {
+  const strikeHtml = originalAmount !== undefined && originalAmount > amount + 1 
+    ? `<div style="text-decoration: line-through; color: #888; font-size: 0.85em; margin-bottom: 2px;">${formatVND(originalAmount)}</div>`
+    : '';
+
   rows.push(`
     <tr class="${group ? 'group-row' : 'child-row'}">
       <td class="center">${index}</td>
@@ -62,7 +67,7 @@ function addRow(rows: string[], { index, group, title, detail, scope, unit, amou
       <td>${show(detail)}</td>
       <td>${show(scope)}</td>
       <td>${show(unit)}</td>
-      <td class="money">${formatVND(amount)}</td>
+      <td class="money">${strikeHtml}<div>${formatVND(amount)}</div></td>
     </tr>
   `);
 }
@@ -84,7 +89,8 @@ function buildPricingRows(payload: QuotePayload): string {
       detail: 'Tổng phí bản quyền sử dụng âm nhạc tại địa điểm kinh doanh',
       scope,
       unit: duration,
-      amount: payload.totals.subtotalQLQ + payload.totals.subtotalQTG
+      amount: payload.totals.subtotalQLQ + payload.totals.subtotalQTG,
+      originalAmount: (payload.totals.subtotalQLQOriginal || 0) + (payload.totals.subtotalQTGOriginal || 0)
     });
     if (payload.totals.subtotalQLQ > 0) {
       addRow(rows, {
@@ -93,7 +99,8 @@ function buildPricingRows(payload: QuotePayload): string {
         detail: 'Quyền liên quan bản ghi, bản thu âm do NCT Media cung cấp',
         scope,
         unit: duration,
-        amount: payload.totals.subtotalQLQ
+        amount: payload.totals.subtotalQLQ,
+        originalAmount: payload.totals.subtotalQLQOriginal
       });
     }
     if (payload.totals.subtotalQTG > 0) {
@@ -103,7 +110,8 @@ function buildPricingRows(payload: QuotePayload): string {
         detail: 'Phí quyền tác giả âm nhạc, áp dụng khi khách hàng yêu cầu tính kèm trong báo giá',
         scope,
         unit: duration,
-        amount: payload.totals.subtotalQTG
+        amount: payload.totals.subtotalQTG,
+        originalAmount: payload.totals.subtotalQTGOriginal
       });
     }
   }
@@ -116,7 +124,8 @@ function buildPricingRows(payload: QuotePayload): string {
       detail: 'Tài khoản quản trị, phân phối và vận hành danh sách phát XMusic Station',
       scope: `${branchCount} tài khoản / ${branchCount} chi nhánh`,
       unit: duration,
-      amount: payload.totals.subtotalAccount
+      amount: payload.totals.subtotalAccount,
+      originalAmount: payload.totals.subtotalAccountOriginal
     });
   }
 
@@ -132,7 +141,8 @@ function buildPricingRows(payload: QuotePayload): string {
         : 'Thuê thiết bị phát nhạc cấu hình sẵn cho từng địa điểm',
       scope: `${totalBoxes} box · ${branchCount} chi nhánh`,
       unit: isBuy ? 'Một lần' : duration,
-      amount: payload.totals.subtotalBox
+      amount: payload.totals.subtotalBox,
+      originalAmount: payload.totals.subtotalBoxOriginal
     });
   }
 
@@ -216,13 +226,20 @@ window.renderQuote = function renderQuote(payload: QuotePayload): true {
   byId('vatRateBadge').textContent = `${payload.totals.vatRate * 100}%`;
 
   byId('pricingRows').innerHTML = buildPricingRows(payload);
-  byId('subtotal').textContent = formatVND(payload.totals.subtotal);
+  
+  const renderTotalLine = (id: string, amount: number, original?: number) => {
+    byId(id).innerHTML = original !== undefined && original > amount + 1 
+      ? `<div style="text-decoration: line-through; color: #888; font-size: 0.85em; margin-bottom: 2px;">${formatVND(original)}</div>
+         <div>${formatVND(amount)}</div>`
+      : formatVND(amount);
+  };
+
+  renderTotalLine('subtotal', payload.totals.subtotal, payload.totals.subtotalOriginal);
   byId('vatRate').textContent = `${payload.totals.vatRate * 100}%`;
-  byId('vat').textContent = formatVND(payload.totals.vat);
-  byId('grand').textContent = formatVND(payload.totals.grand);
+  renderTotalLine('vat', payload.totals.vat, payload.totals.vatOriginal);
+  renderTotalLine('grand', payload.totals.grand, payload.totals.grandOriginal);
+  
   byId('nextYearTotal').textContent = formatVND(nextCycle);
   byId('notes').innerHTML = buildNotes(payload);
   return true;
 };
-
-export {};

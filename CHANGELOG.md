@@ -5,6 +5,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.10.1] — 2026-05-05
+
+### Added
+- **Excel Export Support (`exceljs`)**: Replaced raw string parsing with native Excel formulas and layout matching the Fujimart reference.
+- Unified Export UI Dropdown (combining PDF and XLSX exports) for better UX.
+
+### Changed
+- Replaced Arial font with **Aptos Display** across the entire Excel export for a cleaner modern look.
+- Synced red highlight note texts with the design system token (`--p-rust-5: #c4604c`).
+
+### Fixed
+- Fixed CORS security block caused by ES Modules for `template-renderer.ts`, fully restoring PDF export rendering.
+- Render strikethrough pricing natively in PDF exports for discounted stores.
+
+---
+
 ## [1.9.1] — 2026-05-03
 
 ### Changed

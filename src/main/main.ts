@@ -6,6 +6,7 @@ import { buildImportPreview, buildImportedSnapshot, extractManifestFromPdfFile }
 import { EMBEDDED_PAYLOAD_SCHEMA_VERSION, buildQuoteIdentity, generateBaseQuoteCode, getQuoteSequencePrefix } from '../services/quote-identity-service';
 import { buildEmbeddedManifest, buildQuotePayload, normalizeCalcOptions, normalizePreparedBy, normalizeProfile, normalizeStores } from '../services/quote-payload';
 import { exportQuote } from '../services/quote-exporter';
+import { exportExcel } from '../services/excel-exporter';
 import { QuoteRepository } from '../services/quote-repository';
 import { calculateTotals } from '../shared/calculator';
 
@@ -254,6 +255,36 @@ app.whenReady().then(() => {
       filePath: exportResult.filePath,
       bundle: repository.getRevisionBundle(exportedRevision.id)
     };
+  });
+
+  ipcMain.handle('export-quote-excel', async (event, ipcPayload: ExportQuotePayload) => {
+    const { revisionId, snapshot } = ipcPayload;
+    const repository = ensureRepository();
+    const normalizedSnapshot = normalizeSnapshot(snapshot, { recomputeTotals: true });
+    const currentRevision = repository.getRevisionById(revisionId);
+    if (!currentRevision) {
+      throw new Error('Không tìm thấy revision đang mở để export.');
+    }
+
+    repository.updateRevisionSnapshot({
+      revisionId,
+      snapshot: normalizedSnapshot
+    });
+
+    const quoteIdentity = buildQuoteIdentity(currentRevision.quoteCode, currentRevision.revisionNumber);
+    const quotePayload = buildQuotePayload(normalizedSnapshot, normalizedSnapshot.customer, normalizedSnapshot.preparedBy, {
+      quoteIdentity,
+      quoteDateInput: new Date()
+    });
+
+    const exportResult = await exportExcel({
+      app,
+      dialog: dialog as unknown as DialogLike,
+      payload: quotePayload,
+      parentWindow: BrowserWindow.fromWebContents(event.sender)
+    });
+
+    return exportResult;
   });
 
   ipcMain.handle('import-quote-pdf-preview', async (event): Promise<ImportPreview | null> => {

@@ -34,6 +34,7 @@ export interface ElectronAPI {
   createNewQuote(snapshot: QuoteSnapshot): Promise<RevisionBundle>;
   createNewRevision(payload: CreateNewRevisionPayload): Promise<RevisionBundle>;
   exportQuote(payload: ExportQuotePayload): Promise<ExportQuoteResult | null>;
+  exportQuoteExcel(payload: ExportQuotePayload): Promise<{ filePath: string } | null>;
   getStartupRevision(): Promise<RevisionBundle | null>;
   importQuotePdfPreview(): Promise<ImportPreview | null>;
   confirmImportQuotePdf(payload: ConfirmImportQuotePdfPayload): Promise<RevisionBundle>;

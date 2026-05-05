@@ -19,6 +19,9 @@ const electronAPI: ElectronAPI = {
   exportQuote(payload: ExportQuotePayload) {
     return ipcRenderer.invoke('export-quote', payload);
   },
+  exportQuoteExcel(payload: ExportQuotePayload) {
+    return ipcRenderer.invoke('export-quote-excel', payload);
+  },
   getStartupRevision() {
     return ipcRenderer.invoke('get-startup-revision');
   },

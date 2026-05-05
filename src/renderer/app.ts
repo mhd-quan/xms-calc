@@ -544,7 +544,7 @@ async function confirmImportPreview() {
   }
 }
 
-async function exportActiveQuote() {
+async function _exportActiveQuoteCore(type: 'pdf' | 'excel') {
   if (!window.electronAPI) {
     alert('Không thể kết nối tới Electron API. Vui lòng khởi động lại ứng dụng.');
     return;
@@ -564,33 +564,42 @@ async function exportActiveQuote() {
   scheduleDraftPersist();
   await flushDraftPersist();
 
-  const exportBtn = optionalElement('btnSave');
-  if (exportBtn) {
-    exportBtn.style.opacity = '0.5';
-    exportBtn.style.pointerEvents = 'none';
-  }
+  const exportBtnPdf = optionalElement('btnExportPdf');
+  const exportBtnExcel = optionalElement('btnExportExcel');
+  if (exportBtnPdf) { exportBtnPdf.style.opacity = '0.5'; exportBtnPdf.style.pointerEvents = 'none'; }
+  if (exportBtnExcel) { exportBtnExcel.style.opacity = '0.5'; exportBtnExcel.style.pointerEvents = 'none'; }
 
   try {
-    const result = await window.electronAPI.exportQuote({
+    const payload = {
       revisionId: activeRevisionId,
       snapshot: buildDraftSnapshot()
-    });
-    if (result?.bundle) {
+    };
+    const result = type === 'pdf' 
+      ? await window.electronAPI.exportQuote(payload)
+      : await window.electronAPI.exportQuoteExcel(payload);
+
+    if (result && 'bundle' in result && result.bundle) {
       syncBundleMetadata(result.bundle);
       render();
     }
   } catch (error) {
     console.error(error);
-    alert(asErrorMessage(error, 'Error exporting PDF'));
+    alert(asErrorMessage(error, `Error exporting ${type.toUpperCase()}`));
   } finally {
-    if (exportBtn) {
-      exportBtn.style.opacity = '1';
-      exportBtn.style.pointerEvents = 'auto';
-    }
+    if (exportBtnPdf) { exportBtnPdf.style.opacity = '1'; exportBtnPdf.style.pointerEvents = 'auto'; }
+    if (exportBtnExcel) { exportBtnExcel.style.opacity = '1'; exportBtnExcel.style.pointerEvents = 'auto'; }
   }
 }
 
-function performExport() {
+async function exportActiveQuotePdf() {
+  await _exportActiveQuoteCore('pdf');
+}
+
+async function exportActiveQuoteExcel() {
+  await _exportActiveQuoteCore('excel');
+}
+
+function performExportPdf() {
   if (!preparedByProfile.name) {
     openSettingsModal();
     return;
@@ -599,7 +608,19 @@ function performExport() {
     openCustomerModal();
     return;
   }
-  void exportActiveQuote();
+  void exportActiveQuotePdf();
+}
+
+function performExportExcel() {
+  if (!preparedByProfile.name) {
+    openSettingsModal();
+    return;
+  }
+  if (!customerProfile.companyName) {
+    openCustomerModal();
+    return;
+  }
+  void exportActiveQuoteExcel();
 }
 
 function saveCustomerProfile(): void {
@@ -612,21 +633,18 @@ function saveCustomerProfile(): void {
 }
 
 async function saveCurrentDraft(): Promise<void> {
-  const saveBtn = optionalElement('btnSave');
-  if (saveBtn) {
-    saveBtn.style.opacity = '0.65';
-    saveBtn.style.pointerEvents = 'none';
-  }
+  const saveBtnPdf = optionalElement('btnExportPdf');
+  const saveBtnExcel = optionalElement('btnExportExcel');
+  if (saveBtnPdf) { saveBtnPdf.style.opacity = '0.65'; saveBtnPdf.style.pointerEvents = 'none'; }
+  if (saveBtnExcel) { saveBtnExcel.style.opacity = '0.65'; saveBtnExcel.style.pointerEvents = 'none'; }
 
   try {
     invalidateDraftSnapshot();
     scheduleDraftPersist();
     await flushDraftPersist();
   } finally {
-    if (saveBtn) {
-      saveBtn.style.opacity = '1';
-      saveBtn.style.pointerEvents = 'auto';
-    }
+    if (saveBtnPdf) { saveBtnPdf.style.opacity = '1'; saveBtnPdf.style.pointerEvents = 'auto'; }
+    if (saveBtnExcel) { saveBtnExcel.style.opacity = '1'; saveBtnExcel.style.pointerEvents = 'auto'; }
   }
 }
 
@@ -1392,14 +1410,34 @@ function bindEvents() {
     void importQuoteFromPdf();
   });
   document.getElementById('btnCustomer').addEventListener('click', openCustomerModal);
-  document.getElementById('btnSave').addEventListener('click', () => {
-    void saveCurrentDraft();
+  const exportMenu = document.getElementById('exportMenu');
+  document.getElementById('btnExportMenu').addEventListener('click', (e) => {
+    e.stopPropagation();
+    exportMenu.classList.toggle('is-open');
+  });
+  document.addEventListener('click', (e) => {
+    if (!exportMenu.contains(e.target as Node) && e.target !== document.getElementById('btnExportMenu')) {
+      exportMenu.classList.remove('is-open');
+    }
+  });
+
+  document.getElementById('btnExportPdf').addEventListener('click', () => {
+    exportMenu.classList.remove('is-open');
+    performExportPdf();
+  });
+  document.getElementById('btnExportExcel').addEventListener('click', () => {
+    exportMenu.classList.remove('is-open');
+    performExportExcel();
   });
 
   window.addEventListener('keydown', (event) => {
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'e') {
       event.preventDefault();
-      performExport();
+      performExportPdf();
+    }
+    if (event.key.toLowerCase() === 'e') {
+      event.preventDefault();
+      performExportExcel();
     }
     if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
       event.preventDefault();
