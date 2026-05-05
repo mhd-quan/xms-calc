@@ -5,6 +5,22 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.11.0] — 2026-05-05
+
+### Added
+- Restored the "+" topbar button and dropdown containing New Quote, New Revision, and Import actions.
+- Full XLSX import support: Quotes can now be reconstructed directly from previously exported `.xlsx` workbooks.
+
+### Changed
+- Wording for Export actions updated to "as Quota" (PDF) and "as Workbook" (Excel) to better reflect output types.
+- Branch title (work view) UI overhaul: Font size doubled to 32px and background glow replaced with a sleeker, animated bottom border highlight.
+- Re-calibrated branch color palette (`palette.css`) with richer, more vibrant tones to provide better contrast against the amber active state.
+
+### Fixed
+- Fixed an `export-quote` bug (`Script failed to execute` / `SyntaxError`) that occurred when a quote contained certain unescaped line terminators or characters by implementing double-JSON serialization for context bridging.
+
+---
+
 ## [1.10.3] — 2026-05-05
 
 ### Fixed

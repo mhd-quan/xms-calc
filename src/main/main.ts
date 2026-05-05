@@ -291,20 +291,28 @@ app.whenReady().then(() => {
     const parentWindow = BrowserWindow.fromWebContents(event.sender);
     const { canceled, filePaths } = parentWindow
       ? await dialog.showOpenDialog(parentWindow, {
-          title: 'Chọn báo giá PDF để import',
+          title: 'Chọn báo giá để import',
           properties: ['openFile'],
-          filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+          filters: [{ name: 'Supported Files', extensions: ['pdf', 'xlsx'] }]
         })
       : await dialog.showOpenDialog({
-          title: 'Chọn báo giá PDF để import',
+          title: 'Chọn báo giá để import',
           properties: ['openFile'],
-          filters: [{ name: 'PDF Files', extensions: ['pdf'] }]
+          filters: [{ name: 'Supported Files', extensions: ['pdf', 'xlsx'] }]
         });
 
     if (canceled || !filePaths.length) return null;
     const selectedFilePath = filePaths[0];
     if (!selectedFilePath) return null;
-    const extracted = await extractManifestFromPdfFile(selectedFilePath);
+
+    let extracted;
+    if (selectedFilePath.toLowerCase().endsWith('.xlsx')) {
+      const { extractManifestFromExcelFile } = await import('../services/excel-import-service');
+      extracted = await extractManifestFromExcelFile(selectedFilePath);
+    } else {
+      extracted = await extractManifestFromPdfFile(selectedFilePath);
+    }
+    
     return buildImportPreview({
       ...extracted,
       repository: ensureRepository()
@@ -317,8 +325,16 @@ app.whenReady().then(() => {
       throw new Error('Thiếu dữ liệu import preview.');
     }
 
+    let extracted;
+    if (preview.filePath.toLowerCase().endsWith('.xlsx')) {
+      const { extractManifestFromExcelFile } = await import('../services/excel-import-service');
+      extracted = await extractManifestFromExcelFile(preview.filePath);
+    } else {
+      extracted = await extractManifestFromPdfFile(preview.filePath);
+    }
+
     const reloadedPreview = buildImportPreview({
-      ...(await extractManifestFromPdfFile(preview.filePath)),
+      ...extracted,
       repository: ensureRepository()
     });
     const selectedAction = action || reloadedPreview.recommendedAction;
