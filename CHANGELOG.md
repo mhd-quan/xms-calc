@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.10.3] — 2026-05-05
+
+### Fixed
+- Disabled horizontal scrolling in the sidebar branch list to eliminate the unwanted scrollbar track consuming vertical space.
+- Implemented auto-fading overlay vertical scrollbars for the sidebar to prevent layout shifts and maintain a clean UI.
+
+---
+
 ## [1.10.2] — 2026-05-05
 
 ### Fixed
