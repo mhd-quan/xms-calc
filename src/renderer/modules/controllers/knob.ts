@@ -88,12 +88,15 @@ export function attachKnob(spec: KnobSpec): void {
 
   spec.el.addEventListener('keydown', (event) => {
     const pageStep = spec.step * 10;
+    const isShift = event.shiftKey;
+    const nudge = isShift ? pageStep : spec.step;
+
     if (event.key === 'ArrowUp' || event.key === 'ArrowRight') {
       event.preventDefault();
-      setKnob(spec.el, currentValue(spec) + spec.step, true);
+      setKnob(spec.el, currentValue(spec) + nudge, true);
     } else if (event.key === 'ArrowDown' || event.key === 'ArrowLeft') {
       event.preventDefault();
-      setKnob(spec.el, currentValue(spec) - spec.step, true);
+      setKnob(spec.el, currentValue(spec) - nudge, true);
     } else if (event.key === 'PageUp') {
       event.preventDefault();
       setKnob(spec.el, currentValue(spec) + pageStep, true);

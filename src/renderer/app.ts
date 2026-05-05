@@ -143,6 +143,8 @@ let activeImportPreview: ImportPreview | null = null;
 let selectedImportAction: ImportActionKey | null = null;
 
 let isHydratingRevision = false;
+let isHydratingHistory = false;
+let isExportingFile = false;
 let renderScheduled = false;
 const renderScope = new Set<RenderScopeKey>();
 let chromeDirty = true;
@@ -294,6 +296,9 @@ async function persistDraftSerialized(serialized: string): Promise<true | null> 
       snapshot
     });
     lastPersistedSnapshot = serialized;
+    if (!isHydratingHistory) {
+      window.electronAPI.historyPush(snapshot).catch(console.error);
+    }
     return true;
   } catch (error) {
     console.error(error);
@@ -347,18 +352,11 @@ function syncBundleMetadata(bundle: RevisionBundle | null): void {
   markChromeDirty();
 }
 
-function hydrateEditorFromRevision(revision: QuoteRevision): void {
+function hydrateFromSnapshot(snapshot: QuoteSnapshot): void {
   isHydratingRevision = true;
 
-  const snapshot = {
-    customer: normalizeProfile(revision.customer),
-    preparedBy: normalizePreparedBy(revision.preparedBy),
-    calcOptions: normalizeCalcOptions(revision.calcOptions),
-    stores: normalizeStores(revision.stores)
-  };
-
-  customerProfile = snapshot.customer;
-  preparedByProfile = snapshot.preparedBy;
+  customerProfile = normalizeProfile(snapshot.customer);
+  preparedByProfile = normalizePreparedBy(snapshot.preparedBy);
   setCustomerFields(customerProfile);
   setSettingsFields(preparedByProfile);
 
@@ -373,7 +371,7 @@ function hydrateEditorFromRevision(revision: QuoteRevision): void {
   globalDiscounts = { ...snapshot.calcOptions.globalDiscounts };
   discountEnabled = { ...snapshot.calcOptions.discountEnabled };
 
-  stores = snapshot.stores.length ? snapshot.stores : [createStore(1)];
+  stores = snapshot.stores.length ? normalizeStores(snapshot.stores) : [createStore(1)];
   activeTabId = stores[0]?.id || null;
   clearSidebarSearch();
 
@@ -385,6 +383,48 @@ function hydrateEditorFromRevision(revision: QuoteRevision): void {
 
   isHydratingRevision = false;
   render();
+}
+
+function hydrateEditorFromRevision(revision: QuoteRevision): void {
+  hydrateFromSnapshot(revision);
+}
+
+async function performUndo() {
+  const snapshot = await window.electronAPI.historyUndo();
+  if (snapshot) {
+    isHydratingHistory = true;
+    try {
+      hydrateFromSnapshot(snapshot);
+    } finally {
+      isHydratingHistory = false;
+    }
+  }
+}
+
+async function performRedo() {
+  const snapshot = await window.electronAPI.historyRedo();
+  if (snapshot) {
+    isHydratingHistory = true;
+    try {
+      hydrateFromSnapshot(snapshot);
+    } finally {
+      isHydratingHistory = false;
+    }
+  }
+}
+
+function navigateSidebar(direction: number) {
+  if (!stores.length) return;
+  const currentIndex = stores.findIndex(s => s.id === activeTabId);
+  let nextIndex = currentIndex + direction;
+  if (nextIndex < 0) nextIndex = 0;
+  if (nextIndex >= stores.length) nextIndex = stores.length - 1;
+
+  const nextStore = stores[nextIndex];
+  if (nextStore && nextStore.id !== activeTabId) {
+    activeTabId = nextStore.id;
+    commitQuoteMutation('all');
+  }
 }
 
 function applyRevisionBundle(bundle: RevisionBundle | null): void {
@@ -504,7 +544,10 @@ async function createNewQuote() {
   if (!window.electronAPI) return;
   await flushDraftPersist();
   const bundle = await window.electronAPI.createNewQuote(buildInitialDraftSnapshot());
-  applyRevisionBundle(bundle);
+  if (bundle) {
+    void window.electronAPI.historyClear();
+    applyRevisionBundle(bundle);
+  }
 }
 
 async function createNewRevision() {
@@ -536,12 +579,24 @@ async function confirmImportPreview() {
       preview: activeImportPreview,
       action: selectedImportAction ?? activeImportPreview.recommendedAction
     });
+    if (bundle) {
+      void window.electronAPI.historyClear();
+      applyRevisionBundle(bundle);
+    }
     closeImportPreviewModal();
-    applyRevisionBundle(bundle);
   } catch (error) {
     console.error(error);
     alert(asErrorMessage(error, 'Không thể hoàn tất import.'));
   }
+}
+
+function setExportMenuBusy(isBusy: boolean): void {
+  ['btnExportPdf', 'btnExportExcel', 'btnSaveDraftFile'].forEach((id) => {
+    const button = optionalElement(id);
+    if (!button) return;
+    button.style.opacity = isBusy ? '0.5' : '1';
+    button.style.pointerEvents = isBusy ? 'none' : 'auto';
+  });
 }
 
 async function _exportActiveQuoteCore(type: 'pdf' | 'excel') {
@@ -553,6 +608,9 @@ async function _exportActiveQuoteCore(type: 'pdf' | 'excel') {
     alert('Không tìm thấy revision đang mở để export.');
     return;
   }
+  if (isExportingFile) return;
+  const revisionId = activeRevisionId;
+
   customerProfile = readCustomerFields();
   invalidateDraftSnapshot();
   if (!customerProfile.companyName) {
@@ -564,14 +622,12 @@ async function _exportActiveQuoteCore(type: 'pdf' | 'excel') {
   scheduleDraftPersist();
   await flushDraftPersist();
 
-  const exportBtnPdf = optionalElement('btnExportPdf');
-  const exportBtnExcel = optionalElement('btnExportExcel');
-  if (exportBtnPdf) { exportBtnPdf.style.opacity = '0.5'; exportBtnPdf.style.pointerEvents = 'none'; }
-  if (exportBtnExcel) { exportBtnExcel.style.opacity = '0.5'; exportBtnExcel.style.pointerEvents = 'none'; }
+  isExportingFile = true;
+  setExportMenuBusy(true);
 
   try {
     const payload = {
-      revisionId: activeRevisionId,
+      revisionId,
       snapshot: buildDraftSnapshot()
     };
     const result = type === 'pdf' 
@@ -586,8 +642,8 @@ async function _exportActiveQuoteCore(type: 'pdf' | 'excel') {
     console.error(error);
     alert(asErrorMessage(error, `Error exporting ${type.toUpperCase()}`));
   } finally {
-    if (exportBtnPdf) { exportBtnPdf.style.opacity = '1'; exportBtnPdf.style.pointerEvents = 'auto'; }
-    if (exportBtnExcel) { exportBtnExcel.style.opacity = '1'; exportBtnExcel.style.pointerEvents = 'auto'; }
+    isExportingFile = false;
+    setExportMenuBusy(false);
   }
 }
 
@@ -623,6 +679,44 @@ function performExportExcel() {
   void exportActiveQuoteExcel();
 }
 
+async function saveActiveQuoteDraftFile(): Promise<void> {
+  if (!window.electronAPI) {
+    alert('Không thể kết nối tới Electron API. Vui lòng khởi động lại ứng dụng.');
+    return;
+  }
+  if (!activeRevisionId) {
+    alert('Không tìm thấy revision đang mở để lưu draft.');
+    return;
+  }
+  if (isExportingFile) return;
+  const revisionId = activeRevisionId;
+
+  customerProfile = readCustomerFields();
+  invalidateDraftSnapshot();
+  closeCustomerModal();
+  scheduleDraftPersist();
+  await flushDraftPersist();
+
+  isExportingFile = true;
+  setExportMenuBusy(true);
+  try {
+    await window.electronAPI.saveQuoteDraftFile({
+      revisionId,
+      snapshot: buildDraftSnapshot()
+    });
+  } catch (error) {
+    console.error(error);
+    alert(asErrorMessage(error, 'Không thể lưu file draft.'));
+  } finally {
+    isExportingFile = false;
+    setExportMenuBusy(false);
+  }
+}
+
+function performSaveDraftFile(): void {
+  void saveActiveQuoteDraftFile();
+}
+
 function saveCustomerProfile(): void {
   customerProfile = readCustomerFields();
   invalidateDraftSnapshot();
@@ -630,22 +724,6 @@ function saveCustomerProfile(): void {
   closeCustomerModal();
   render('sidebar');
   scheduleDraftPersist();
-}
-
-async function saveCurrentDraft(): Promise<void> {
-  const saveBtnPdf = optionalElement('btnExportPdf');
-  const saveBtnExcel = optionalElement('btnExportExcel');
-  if (saveBtnPdf) { saveBtnPdf.style.opacity = '0.65'; saveBtnPdf.style.pointerEvents = 'none'; }
-  if (saveBtnExcel) { saveBtnExcel.style.opacity = '0.65'; saveBtnExcel.style.pointerEvents = 'none'; }
-
-  try {
-    invalidateDraftSnapshot();
-    scheduleDraftPersist();
-    await flushDraftPersist();
-  } finally {
-    if (saveBtnPdf) { saveBtnPdf.style.opacity = '1'; saveBtnPdf.style.pointerEvents = 'auto'; }
-    if (saveBtnExcel) { saveBtnExcel.style.opacity = '1'; saveBtnExcel.style.pointerEvents = 'auto'; }
-  }
 }
 
 function toLocalYMD(date: Date): string {
@@ -1440,19 +1518,88 @@ function bindEvents() {
     exportMenuWrapper.classList.remove('is-open');
     performExportExcel();
   });
+  document.getElementById('btnSaveDraftFile').addEventListener('click', () => {
+    exportMenuWrapper.classList.remove('is-open');
+    performSaveDraftFile();
+  });
 
   window.addEventListener('keydown', (event) => {
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'e') {
+    const isMod = event.metaKey || event.ctrlKey;
+    const isShift = event.shiftKey;
+    const key = event.key.toLowerCase();
+
+    // Undo/Redo
+    if (isMod && key === 'z') {
+      event.preventDefault();
+      if (isShift) {
+        void performRedo();
+      } else {
+        void performUndo();
+      }
+      return;
+    }
+
+    // Export PDF: Cmd+E
+    if (isMod && key === 'e' && !isShift) {
       event.preventDefault();
       performExportPdf();
+      return;
     }
-    if (event.key.toLowerCase() === 'e') {
+
+    // Export Excel: Shift+Cmd+E (Fixes plain 'e' bug)
+    if (isMod && key === 'e' && isShift) {
       event.preventDefault();
       performExportExcel();
+      return;
     }
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 's') {
+
+    // Save: Cmd+S
+    if (isMod && key === 's') {
       event.preventDefault();
-      void saveCurrentDraft();
+      performSaveDraftFile();
+      return;
+    }
+
+    // New Quote: Cmd+N
+    if (isMod && key === 'n' && !isShift) {
+      event.preventDefault();
+      void createNewQuote();
+      return;
+    }
+
+    // New Revision: Shift+Cmd+N
+    if (isMod && key === 'n' && isShift) {
+      event.preventDefault();
+      void createNewRevision();
+      return;
+    }
+
+    // Import: Cmd+O
+    if (isMod && key === 'o') {
+      event.preventDefault();
+      void importQuoteFromPdf();
+      return;
+    }
+
+    // Navigation and Deletion (when not in an input)
+    const activeEl = document.activeElement;
+    const isInput = activeEl && (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName) || activeEl.hasAttribute('contenteditable'));
+    if (!isInput) {
+      // Sidebar Navigation: Up/Down
+      if (key === 'arrowup' || key === 'arrowdown') {
+        event.preventDefault();
+        navigateSidebar(key === 'arrowup' ? -1 : 1);
+        return;
+      }
+
+      // Branch Deletion: Delete/Backspace
+      if (key === 'backspace' || key === 'delete') {
+        event.preventDefault();
+        if (activeTabId) {
+          removeStore(activeTabId);
+        }
+        return;
+      }
     }
   });
 

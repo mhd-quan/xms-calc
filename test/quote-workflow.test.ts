@@ -15,6 +15,9 @@ import {
   buildEmbeddedManifest,
   buildQuotePayload
 } from '../src/services/quote-payload';
+import { exportExcel } from '../src/services/excel-exporter';
+import { extractManifestFromExcelFile } from '../src/services/excel-import-service';
+import { extractManifestFromDraftFile, saveDraftFile } from '../src/services/draft-file-service';
 import {
   buildImportPreview,
   embedManifestInPdf,
@@ -157,4 +160,73 @@ test('import preview reports same revision conflict based on fingerprint', () =>
   assert.equal(preview.recommendedAction, 'replace_existing_revision');
 
   repo.close();
+});
+
+test('excel export embeds a full manifest for lossless workbook import', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xms-excel-export-'));
+  const filePath = path.join(tmpDir, 'quote.xlsx');
+  const payload = buildQuotePayload(
+    makeSnapshot({
+      customer: { companyName: 'Công ty Excel', contactName: 'Excel Buyer' },
+      preparedBy: { name: 'BD Excel', email: 'bd@example.com' }
+    }),
+    { companyName: 'Công ty Excel', contactName: 'Excel Buyer' },
+    { name: 'BD Excel', email: 'bd@example.com' },
+    {
+      quoteDateInput: new Date('2026-05-05T00:00:00.000Z'),
+      quoteIdentity: buildQuoteIdentity('XMS-260505-001', 0)
+    }
+  );
+  const manifest = buildEmbeddedManifest(payload, {
+    appVersion: '1.11.2',
+    exportedAt: '2026-05-05T10:00:00.000Z'
+  });
+
+  const result = await exportExcel({
+    app: { getPath: () => tmpDir },
+    dialog: { showSaveDialog: async () => ({ filePath }) },
+    payload,
+    manifest
+  });
+  assert.equal(result?.filePath, filePath);
+
+  const extracted = await extractManifestFromExcelFile(filePath);
+  assert.equal(extracted.manifest.quoteIdentity.displayQuoteNumber, 'XMS-260505-001');
+  assert.equal(extracted.manifest.customer.companyName, 'Công ty Excel');
+  assert.equal(extracted.manifest.preparedBy.email, 'bd@example.com');
+  assert.equal(extracted.manifest.stores[0]?.name, 'Chi nhánh 1');
+});
+
+test('draft file preserves the complete editable quote snapshot', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xms-draft-file-'));
+  const filePath = path.join(tmpDir, 'quote.xmsdraft');
+  const payload = buildQuotePayload(
+    makeSnapshot({
+      customer: { companyName: 'Công ty Draft', phone: '0900000000' },
+      preparedBy: { name: 'BD Draft', title: 'Sales' }
+    }),
+    { companyName: 'Công ty Draft', phone: '0900000000' },
+    { name: 'BD Draft', title: 'Sales' },
+    {
+      quoteDateInput: new Date('2026-05-05T00:00:00.000Z'),
+      quoteIdentity: buildQuoteIdentity('XMS-260505-002', 1)
+    }
+  );
+  const manifest = buildEmbeddedManifest(payload, {
+    appVersion: '1.11.2',
+    exportedAt: '2026-05-05T11:00:00.000Z'
+  });
+
+  const result = await saveDraftFile({
+    app: { getPath: () => tmpDir },
+    dialog: { showSaveDialog: async () => ({ filePath }) },
+    manifest
+  });
+  assert.equal(result?.filePath, filePath);
+
+  const extracted = await extractManifestFromDraftFile(filePath);
+  assert.equal(extracted.manifest.quoteIdentity.displayQuoteNumber, 'XMS-260505-002-R1');
+  assert.equal(extracted.manifest.customer.phone, '0900000000');
+  assert.equal(extracted.manifest.preparedBy.title, 'Sales');
+  assert.equal(extracted.manifest.stores[0]?.area, '100');
 });

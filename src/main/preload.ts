@@ -36,6 +36,21 @@ const electronAPI: ElectronAPI = {
   },
   saveQuoteDraft(payload: SaveQuoteDraftPayload) {
     return ipcRenderer.invoke('save-quote-draft', payload);
+  },
+  saveQuoteDraftFile(payload: ExportQuotePayload) {
+    return ipcRenderer.invoke('save-quote-draft-file', payload);
+  },
+  historyPush(snapshot: QuoteSnapshot) {
+    return ipcRenderer.invoke('history:push', snapshot);
+  },
+  historyUndo() {
+    return ipcRenderer.invoke('history:undo');
+  },
+  historyRedo() {
+    return ipcRenderer.invoke('history:redo');
+  },
+  historyClear() {
+    return ipcRenderer.invoke('history:clear');
   }
 };
 
