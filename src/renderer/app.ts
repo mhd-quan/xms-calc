@@ -1410,23 +1410,23 @@ function bindEvents() {
     void importQuoteFromPdf();
   });
   document.getElementById('btnCustomer').addEventListener('click', openCustomerModal);
-  const exportMenu = document.getElementById('exportMenu');
+  const exportMenuWrapper = document.getElementById('exportDropdownWrapper');
   document.getElementById('btnExportMenu').addEventListener('click', (e) => {
     e.stopPropagation();
-    exportMenu.classList.toggle('is-open');
+    exportMenuWrapper.classList.toggle('is-open');
   });
   document.addEventListener('click', (e) => {
-    if (!exportMenu.contains(e.target as Node) && e.target !== document.getElementById('btnExportMenu')) {
-      exportMenu.classList.remove('is-open');
+    if (!exportMenuWrapper.contains(e.target as Node) && e.target !== document.getElementById('btnExportMenu')) {
+      exportMenuWrapper.classList.remove('is-open');
     }
   });
 
   document.getElementById('btnExportPdf').addEventListener('click', () => {
-    exportMenu.classList.remove('is-open');
+    exportMenuWrapper.classList.remove('is-open');
     performExportPdf();
   });
   document.getElementById('btnExportExcel').addEventListener('click', () => {
-    exportMenu.classList.remove('is-open');
+    exportMenuWrapper.classList.remove('is-open');
     performExportExcel();
   });
 
