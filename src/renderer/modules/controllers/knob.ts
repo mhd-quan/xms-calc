@@ -13,15 +13,17 @@ type EnvelopeCache = {
   ctx: CanvasRenderingContext2D;
   width: number;
   height: number;
-  accent: string;
-  fill: string;
-  lineCol: string;
+  dpr: number;
+};
+type EnvelopeDrawState = {
+  norm: number;
+  enabled: boolean;
 };
 
 const knobMap = new WeakMap<HTMLElement, KnobSpec>();
 const wheelRemainders = new WeakMap<HTMLElement, number>();
 const envelopeCache = new WeakMap<HTMLCanvasElement, EnvelopeCache>();
-const pendingEnvelopeValues = new Map<string, number>();
+const pendingEnvelopeValues = new Map<string, EnvelopeDrawState>();
 const pendingEnvelopeFrames = new Map<string, number>();
 
 const WHEEL_THRESHOLD = 64;
@@ -164,11 +166,12 @@ function setKnob(el: HTMLElement, value: number, fire = false): void {
   const readout = el.querySelector<HTMLElement>('.x-knob__readout');
   if (readout) readout.textContent = formatKnobValue(stepped, spec);
 
-  // Draw Ableton-style envelope on the paired canvas
-  // Knob IDs follow pattern "discount{Section}Knob" → canvas IDs are "envelope{Section}Knob"
+  // Draw the paired discount step-line canvas.
+  // Knob IDs follow "discount{Section}Knob"; canvas IDs follow "envelope{Section}Knob".
   const match = el.id.match(/^discount(\w+)Knob$/);
-  if (match) {
-    scheduleEnvelopeDraw('envelope' + match[1] + 'Knob', norm);
+  if (match?.[1]) {
+    const section = match[1];
+    scheduleEnvelopeDraw(`envelope${section}Knob`, norm, isDiscountApplied(section));
   }
 
   if (fire && stepped !== previous) spec.onChange(stepped);
@@ -211,16 +214,20 @@ function formatKnobValue(value: number, spec: KnobSpec): string {
   return `${display}${unit}`;
 }
 
-function scheduleEnvelopeDraw(canvasId: string, norm: number): void {
-  pendingEnvelopeValues.set(canvasId, norm);
+function isDiscountApplied(section: string): boolean {
+  return document.getElementById(`discount${section}Apply`)?.classList.contains('is-on') === true;
+}
+
+function scheduleEnvelopeDraw(canvasId: string, norm: number, enabled: boolean): void {
+  pendingEnvelopeValues.set(canvasId, { norm, enabled });
   if (pendingEnvelopeFrames.has(canvasId)) return;
 
   const frame = requestAnimationFrame(() => {
     pendingEnvelopeFrames.delete(canvasId);
-    const nextNorm = pendingEnvelopeValues.get(canvasId);
-    if (nextNorm === undefined) return;
+    const nextState = pendingEnvelopeValues.get(canvasId);
+    if (!nextState) return;
     pendingEnvelopeValues.delete(canvasId);
-    drawEnvelope(canvasId, nextNorm);
+    drawEnvelope(canvasId, nextState.norm, nextState.enabled);
   });
 
   pendingEnvelopeFrames.set(canvasId, frame);
@@ -229,105 +236,78 @@ function scheduleEnvelopeDraw(canvasId: string, norm: number): void {
 function getEnvelopeCache(canvas: HTMLCanvasElement): EnvelopeCache | null {
   const width = canvas.offsetWidth || canvas.width;
   const height = canvas.offsetHeight || canvas.height;
+  const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
   let cached = envelopeCache.get(canvas);
 
   if (!cached) {
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    const rootStyle = getComputedStyle(document.documentElement);
-    const laneStyle = getComputedStyle(canvas.closest('.x-discount-bank') ?? canvas);
     cached = {
       ctx,
       width,
       height,
-      accent: laneStyle.getPropertyValue('--lane-accent').trim() || rootStyle.getPropertyValue('--active').trim() || '#ffb43a',
-      fill: laneStyle.getPropertyValue('--lane-fill').trim() || rootStyle.getPropertyValue('--active-dim').trim() || 'rgba(255,180,58,0.14)',
-      lineCol: rootStyle.getPropertyValue('--line-2').trim() || '#3c4047'
+      dpr
     };
     envelopeCache.set(canvas, cached);
   }
 
-  if (cached.width !== width || cached.height !== height) {
+  if (cached.width !== width || cached.height !== height || cached.dpr !== dpr) {
     cached.width = width;
     cached.height = height;
-    canvas.width = width;
-    canvas.height = height;
-  } else if (canvas.width !== width || canvas.height !== height) {
-    canvas.width = width;
-    canvas.height = height;
+    cached.dpr = dpr;
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+  } else if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
   }
+  cached.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
   return cached;
 }
 
 /**
- * Draws an Ableton-style automation lane on the envelope canvas paired with
- * the given knob. The line starts at top-left (0% discount = full price)
- * and slopes downward as discount increases (norm=1 → line at bottom).
+ * Draws the discount curve as a crisp step line: full price on the high rail,
+ * discounted price on the low rail. Disabled discounts stay washed out.
  * @param canvasId - ID of the <canvas> element to draw on
  * @param norm - normalised knob value 0..1 (0 = no discount, 1 = 100% discount)
  */
-function drawEnvelope(canvasId: string, norm: number): void {
+function drawEnvelope(canvasId: string, norm: number, enabled: boolean): void {
   const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
   if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
 
   const cached = getEnvelopeCache(canvas);
   if (!cached) return;
 
-  const { ctx, width: W, height: H, accent, fill, lineCol } = cached;
+  const { ctx, width: W, height: H } = cached;
+  const clampedNorm = clamp(norm, 0, 1);
+  const rootStyle = getComputedStyle(document.documentElement);
+  const laneStyle = getComputedStyle(canvas.closest('.x-discount-bank') ?? canvas);
+  const accent = laneStyle.getPropertyValue('--lane-accent').trim() || rootStyle.getPropertyValue('--active').trim() || '#ffb43a';
+  const muted = rootStyle.getPropertyValue('--line-3').trim() || '#5b6069';
 
   ctx.clearRect(0, 0, W, H);
 
-  // Subtle grid lines (every 25%)
-  ctx.strokeStyle = lineCol;
-  ctx.lineWidth = 0.5;
-  ctx.globalAlpha = 0.45;
-  for (let i = 1; i < 4; i++) {
-    const x = Math.round(W * i / 4) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, H);
-    ctx.stroke();
-  }
-  // Horizontal midline
+  const padX = 6.5;
+  const padY = 7.5;
+  const yHigh = Math.round(padY + (H - padY * 2) * 0.1) + 0.5;
+  const yLow = Math.round(yHigh + (H - padY - yHigh) * clampedNorm) + 0.5;
+  const stepX = Math.round(W * 0.58) + 0.5;
+  const endX = Math.max(padX, W - padX);
+
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'miter';
+  ctx.strokeStyle = enabled ? accent : muted;
+  ctx.lineWidth = enabled ? 2.35 : 2.1;
+  ctx.globalAlpha = enabled ? 0.72 + clampedNorm * 0.28 : 0.48;
+  ctx.shadowBlur = enabled && clampedNorm > 0 ? 5 : 0;
+  ctx.shadowColor = accent;
   ctx.beginPath();
-  ctx.moveTo(0, Math.round(H / 2) + 0.5);
-  ctx.lineTo(W, Math.round(H / 2) + 0.5);
+  ctx.moveTo(padX, yHigh);
+  ctx.lineTo(stepX, yHigh);
+  ctx.lineTo(stepX, yLow);
+  ctx.lineTo(endX, yLow);
   ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  // Envelope line coordinates
-  const pad = 4;
-  const yTop = pad + (H - pad * 2) * 0.18;
-  const yEnd = pad + (H - pad * 2) * (0.18 + 0.72 * norm);
-  const xMid = W * 0.58;
-  const yMid = yTop + (yEnd - yTop) * 0.48;
-
-  // Gradient fill area under the line
-  ctx.beginPath();
-  ctx.moveTo(0, yTop);
-  ctx.bezierCurveTo(W * 0.28, yTop, xMid, yMid, W, yEnd);
-  ctx.lineTo(W, H);
-  ctx.lineTo(0, H);
-  ctx.closePath();
-  ctx.fillStyle = fill;
-  ctx.globalAlpha = norm > 0 ? 1 : 0.55;
-  ctx.fill();
-
-  // Main envelope line
-  ctx.beginPath();
-  ctx.moveTo(0, yTop);
-  ctx.bezierCurveTo(W * 0.28, yTop, xMid, yMid, W, yEnd);
-  ctx.strokeStyle = accent;
-  ctx.lineWidth = 1.5;
-  ctx.globalAlpha = norm > 0 ? 1 : 0.58;
-  ctx.stroke();
-
-  // Dot at end of line
-  ctx.beginPath();
-  ctx.arc(W - 3, yEnd, 2.2, 0, Math.PI * 2);
-  ctx.fillStyle = accent;
-  ctx.globalAlpha = norm > 0 ? 1 : 0.65;
-  ctx.fill();
+  ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 }

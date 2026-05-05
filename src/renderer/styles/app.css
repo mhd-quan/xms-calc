@@ -589,18 +589,19 @@
   display: none;
 }
 
-/* Envelope canvas — Ableton automation-lane style line display */
+/* Envelope canvas — minimal discount step-line display */
 .x-knob__envelope {
   width: 100%;
   min-width: 188px;
   max-width: 260px;
-  height: 60px;
-  background: var(--inset-1);
-  border: 1px solid var(--line-1);
-  border-radius: var(--r-2);
+  height: 46px;
+  background: transparent;
+  border: 0;
+  border-radius: var(--r-0);
   display: block;
   justify-self: end;
   contain: strict;
+  opacity: 0.96;
 }
 
 .x-row__info { flex: 1; }
@@ -701,6 +702,7 @@
   .x-knob__envelope {
     min-width: 168px;
     max-width: none;
+    height: 42px;
   }
 }
 
