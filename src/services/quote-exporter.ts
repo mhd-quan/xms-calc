@@ -41,6 +41,10 @@ type BrowserWindowConstructor = new (options: {
   webPreferences: { nodeIntegration: boolean; contextIsolation: boolean };
 }) => BrowserWindowLike;
 
+type TemplateRenderResult =
+  | { ok: true }
+  | { ok: false; name?: string; message: string; stack?: string };
+
 let cachedPrintWindow: BrowserWindowLike | null = null;
 let cachedTemplatePath: string | null = null;
 let cachedTemplateReady = false;
@@ -164,6 +168,64 @@ function createPrintWindow(BrowserWindow: BrowserWindowConstructor): BrowserWind
   return browserWindow;
 }
 
+function escapeScriptJson(value: unknown): string {
+  return JSON.stringify(value)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
+}
+
+function buildRenderQuoteScript(payload: QuotePayload): string {
+  return `
+(() => {
+  try {
+    const render = window.renderQuote;
+    if (typeof render !== 'function') {
+      return { ok: false, message: 'Template renderer is not ready.' };
+    }
+    render(${escapeScriptJson(payload)});
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      name: error && error.name ? String(error.name) : 'Error',
+      message: error && error.message ? String(error.message) : String(error),
+      stack: error && error.stack ? String(error.stack) : ''
+    };
+  }
+})()
+`;
+}
+
+function assertTemplateRenderResult(result: unknown): asserts result is { ok: true } {
+  if (result && typeof result === 'object' && (result as TemplateRenderResult).ok === true) {
+    return;
+  }
+
+  const failure = (result && typeof result === 'object' ? result : {}) as {
+    name?: string;
+    message?: string;
+    stack?: string;
+  };
+  const message = failure.message || 'Template renderer returned an invalid result.';
+  const name = failure.name ? `${failure.name}: ` : '';
+  const stack = failure.stack ? `\n${failure.stack}` : '';
+  throw new Error(`Quote template render failed: ${name}${message}${stack}`);
+}
+
+async function renderQuoteTemplate(webContents: WebContentsLike, payload: QuotePayload): Promise<void> {
+  let result: unknown;
+  try {
+    result = await webContents.executeJavaScript(buildRenderQuoteScript(payload), true);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(`Quote template script could not execute: ${message}`);
+  }
+  assertTemplateRenderResult(result);
+}
+
 async function getPrintWindow(BrowserWindow: BrowserWindowConstructor, templatePath: string): Promise<BrowserWindowLike> {
   if (!cachedPrintWindow || cachedPrintWindow.isDestroyed()) {
     cachedPrintWindow = createPrintWindow(BrowserWindow);
@@ -201,6 +263,11 @@ export async function exportQuote({
   if (!manifest || typeof manifest !== 'object') {
     throw new Error('Invalid export manifest');
   }
+  try {
+    await fs.access(templatePath);
+  } catch {
+    throw new Error(`Quote template file is missing: ${templatePath}`);
+  }
 
   let printWin: BrowserWindowLike | undefined;
   const timings: Record<string, number> = {};
@@ -226,7 +293,7 @@ export async function exportQuote({
     timings.createWindow = performance.now() - createStart;
 
     const renderStart = performance.now();
-    await printWin.webContents.executeJavaScript(`window.renderQuote(JSON.parse(${JSON.stringify(JSON.stringify(payload))}))`, true);
+    await renderQuoteTemplate(printWin.webContents, payload);
     timings.renderTemplate = performance.now() - renderStart;
 
     const pdfStart = performance.now();

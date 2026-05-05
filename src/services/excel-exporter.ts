@@ -1,7 +1,12 @@
 import ExcelJS from 'exceljs';
+import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
 import path from 'node:path';
-import type { QuotePayload } from '../shared/types';
-import { safeFilePart } from './quote-exporter';
+import type { EmbeddedManifest, QuotePayload } from '../shared/types';
+import { safeFilePart, validateQuotePayload } from './quote-exporter';
+
+export const EXCEL_MANIFEST_SHEET = '_xms_manifest';
+export const EXCEL_MANIFEST_CELL = 'A1';
 
 type AppLike = {
   getPath(name: 'documents'): string;
@@ -10,6 +15,15 @@ type AppLike = {
 export type DialogLike = {
   showSaveDialog: (...args: unknown[]) => Promise<{ filePath?: string }>;
 };
+
+function createExcelFingerprint(fileBytes: Uint8Array): string {
+  return crypto.createHash('sha256').update(fileBytes).digest('hex');
+}
+
+function embedManifestInWorkbook(workbook: ExcelJS.Workbook, manifest: EmbeddedManifest): void {
+  const manifestSheet = workbook.addWorksheet(EXCEL_MANIFEST_SHEET, { state: 'veryHidden' });
+  manifestSheet.getCell(EXCEL_MANIFEST_CELL).value = JSON.stringify(manifest);
+}
 
 function getFormula(type: string, rowIndex: number, baseCell: string) {
   const g = `G${rowIndex}`;
@@ -75,13 +89,20 @@ export async function exportExcel({
   app,
   dialog,
   payload,
+  manifest,
   parentWindow = null
 }: {
   app: AppLike;
   dialog: DialogLike;
   payload: QuotePayload;
+  manifest: EmbeddedManifest;
   parentWindow?: unknown;
-}): Promise<{ filePath: string } | null> {
+}): Promise<{ filePath: string; fingerprint: string } | null> {
+  validateQuotePayload(payload);
+  if (!manifest || typeof manifest !== 'object') {
+    throw new Error('Invalid workbook export manifest');
+  }
+
   const customerFileName = safeFilePart(
     payload.customer?.companyName || payload.meta.customer?.companyName || payload.meta.customerName,
     'KhachHang'
@@ -191,7 +212,7 @@ export async function exportExcel({
   }
 
   let rowIdx = 8;
-  const storeCount = payload.computedStores.length;
+  const storeCount = Math.max(1, payload.computedStores.length);
 
   payload.computedStores.forEach((store, idx) => {
     const r = rowIdx++;
@@ -292,6 +313,12 @@ export async function exportExcel({
   note2.value = '- Mức thuế suất được áp dụng tuân thủ theo quy định của pháp luật tại thời điểm phát sinh Phí dịch vụ.';
   note2.font = { name: FONT_NAME, size: 10, color: { argb: 'FFC4604C' } };
 
+  embedManifestInWorkbook(wb, manifest);
+
   await wb.xlsx.writeFile(filePath);
-  return { filePath };
+  const fileBytes = await fs.readFile(filePath);
+  return {
+    filePath,
+    fingerprint: createExcelFingerprint(fileBytes)
+  };
 }

@@ -1,8 +1,11 @@
 import ExcelJS from 'exceljs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
+import path from 'node:path';
 import { BUSINESS_TYPES } from '../shared/calculator';
 import type { EmbeddedManifest } from '../shared/types';
+import { EXCEL_MANIFEST_CELL, EXCEL_MANIFEST_SHEET } from './excel-exporter';
+import { validateManifestSchema } from './pdf-import-service';
 import { EMBEDDED_PAYLOAD_SCHEMA_VERSION } from './quote-identity-service';
 import { normalizeCalcOptions, normalizeProfile, normalizeStores, normalizePreparedBy } from './quote-payload';
 
@@ -12,12 +15,22 @@ export function createExcelFingerprint(fileBytes: Uint8Array): string {
 
 export async function extractManifestFromExcelFile(
   filePath: string
-): Promise<{ manifest: EmbeddedManifest; fingerprint: string; filePath: string }> {
+): Promise<{ manifest: EmbeddedManifest; fingerprint: string; filePath: string; fileName: string }> {
   const fileBytes = await fs.readFile(filePath);
   const fingerprint = createExcelFingerprint(fileBytes);
 
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(filePath);
+  const embeddedManifest = readEmbeddedManifest(wb);
+  if (embeddedManifest) {
+    return {
+      manifest: embeddedManifest,
+      fingerprint,
+      filePath,
+      fileName: path.basename(filePath)
+    };
+  }
+
   const ws = wb.worksheets[0];
 
   if (!ws) {
@@ -64,15 +77,8 @@ export async function extractManifestFromExcelFile(
       area = Number(areaCell) || 0;
     }
 
-    let typeLabel = String(typeLabelCell || '').trim();
-    if (typeLabel && typeof typeLabelCell === 'object' && 'result' in typeLabelCell) {
-        typeLabel = String(typeLabelCell.result || '').trim();
-    }
-
-    let name = String(nameCell || '').trim();
-    if (name && typeof nameCell === 'object' && 'result' in nameCell) {
-        name = String(nameCell.result || '').trim();
-    }
+    const typeLabel = cellText(typeLabelCell);
+    const name = cellText(nameCell);
 
     // Map typeLabel to type key
     let typeKey = 'cafe';
@@ -148,5 +154,40 @@ export async function extractManifestFromExcelFile(
     pdfFingerprintSource: 'sha256:file'
   };
 
-  return { manifest, fingerprint, filePath };
+  return { manifest, fingerprint, filePath, fileName: path.basename(filePath) };
+}
+
+function cellResult(value: ExcelJS.CellValue): unknown {
+  if (value && typeof value === 'object') {
+    if ('result' in value) return value.result;
+    if ('text' in value) return value.text;
+    if ('richText' in value && Array.isArray(value.richText)) {
+      return value.richText.map((part) => part.text).join('');
+    }
+  }
+  return value;
+}
+
+function cellText(value: ExcelJS.CellValue): string {
+  return String(cellResult(value) ?? '').trim();
+}
+
+function readEmbeddedManifest(workbook: ExcelJS.Workbook): EmbeddedManifest | null {
+  const manifestSheet = workbook.getWorksheet(EXCEL_MANIFEST_SHEET);
+  if (!manifestSheet) return null;
+
+  const rawManifest = cellText(manifestSheet.getCell(EXCEL_MANIFEST_CELL).value);
+  if (!rawManifest) {
+    throw new Error('Workbook có manifest XMS nhưng nội dung bị rỗng.');
+  }
+
+  let manifest: unknown;
+  try {
+    manifest = JSON.parse(rawManifest);
+  } catch {
+    throw new Error('Workbook có manifest XMS nhưng JSON bị hỏng.');
+  }
+
+  validateManifestSchema(manifest);
+  return manifest;
 }

@@ -5,6 +5,28 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.11.2] — 2026-05-05
+
+### Added
+- **Draft File Save**: Added `.xmsdraft` save/import support for full quote snapshots, including customer, prepared-by, calculator options, branches, and totals.
+
+### Fixed
+- **PDF Export Diagnostics**: Reworked quote template rendering so renderer errors are returned as explicit export failures instead of Electron's generic `Script failed to execute` wrapper.
+- **Workbook Export Fidelity**: Embedded the full XMS manifest into exported workbooks so XLSX re-import preserves the complete editable quote data.
+- **Export Flow Stability**: Unified PDF, workbook, and draft export preparation around one normalized/recomputed snapshot and guarded concurrent export actions.
+
+## [1.11.1] — 2026-05-05
+
+### Added
+- **Global History System**: Robust Undo/Redo support (`Cmd+Z` / `Shift+Cmd+Z`) with persistent file-based caching (up to 30 steps).
+- **Navigation Shortcuts**: Comprehensive keyboard framework including `Cmd+N` (New Quote), `Cmd+O` (Import), `Cmd+S` (Save), and sidebar branch navigation via arrow keys.
+- **Coarse Knob Adjustments**: Added `Shift + Arrows` support for discount knobs to jump in ±10% increments (standard ±1% without Shift).
+
+### Fixed
+- **Export Bug**: Fixed a critical regression where pressing the "e" key triggered an Excel export. Export is now strictly bound to `Cmd+E` (PDF) and `Shift+Cmd+E` (Workbook).
+- **History Management**: Implemented automatic cache purging on application startup and new quote creation to prevent state bloat.
+
+
 ## [1.11.0] — 2026-05-05
 
 ### Added

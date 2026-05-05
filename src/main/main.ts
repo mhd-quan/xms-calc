@@ -7,7 +7,9 @@ import { EMBEDDED_PAYLOAD_SCHEMA_VERSION, buildQuoteIdentity, generateBaseQuoteC
 import { buildEmbeddedManifest, buildQuotePayload, normalizeCalcOptions, normalizePreparedBy, normalizeProfile, normalizeStores } from '../services/quote-payload';
 import { exportQuote } from '../services/quote-exporter';
 import { exportExcel } from '../services/excel-exporter';
+import { DRAFT_FILE_EXTENSION, extractManifestFromDraftFile, saveDraftFile } from '../services/draft-file-service';
 import { QuoteRepository } from '../services/quote-repository';
+import { HistoryService } from '../services/history-service';
 import { calculateTotals } from '../shared/calculator';
 
 import type {
@@ -16,10 +18,11 @@ import type {
   ExportQuotePayload,
   SaveQuoteDraftPayload
 } from '../shared/preload-contract';
-import type { ImportActionKey, ImportPreview, QuoteSnapshot, RevisionBundle } from '../shared/types';
+import type { EmbeddedManifest, ImportActionKey, ImportPreview, QuotePayload, QuoteSnapshot, RevisionBundle } from '../shared/types';
 import type { DialogLike } from '../services/quote-exporter';
 
 let quoteRepository: QuoteRepository | null = null;
+let historyService: HistoryService | null = null;
 
 function resolvePreloadPath(): string {
   const preloadCandidates = [
@@ -61,6 +64,48 @@ function createNewQuoteFromSnapshot(snapshot: QuoteSnapshot) {
     snapshot: normalizeSnapshot(snapshot),
     source: 'new'
   });
+}
+
+function prepareQuoteFileContext(ipcPayload: ExportQuotePayload): {
+  repository: QuoteRepository;
+  revisionId: number;
+  normalizedSnapshot: QuoteSnapshot;
+  quotePayload: QuotePayload;
+  manifest: EmbeddedManifest;
+  exportedAt: string;
+} {
+  const { revisionId, snapshot } = ipcPayload;
+  const repository = ensureRepository();
+  const normalizedSnapshot = normalizeSnapshot(snapshot, { recomputeTotals: true });
+  const currentRevision = repository.getRevisionById(revisionId);
+  if (!currentRevision) {
+    throw new Error('Không tìm thấy revision đang mở để export.');
+  }
+
+  repository.updateRevisionSnapshot({
+    revisionId,
+    snapshot: normalizedSnapshot
+  });
+
+  const quoteIdentity = buildQuoteIdentity(currentRevision.quoteCode, currentRevision.revisionNumber);
+  const quotePayload = buildQuotePayload(normalizedSnapshot, normalizedSnapshot.customer, normalizedSnapshot.preparedBy, {
+    quoteIdentity,
+    quoteDateInput: new Date()
+  });
+  const exportedAt = new Date().toISOString();
+  const manifest = buildEmbeddedManifest(quotePayload, {
+    appVersion: app.getVersion(),
+    exportedAt
+  });
+
+  return {
+    repository,
+    revisionId,
+    normalizedSnapshot,
+    quotePayload,
+    manifest,
+    exportedAt
+  };
 }
 
 function resolveImport(preview: ImportPreview, action: ImportActionKey) {
@@ -164,8 +209,10 @@ function createWindow(): void {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   ensureRepository();
+  historyService = new HistoryService(30);
+  await historyService.initialize();
   createWindow();
 
   ipcMain.handle('get-startup-revision', async (): Promise<RevisionBundle | null> => {
@@ -203,29 +250,7 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('export-quote', async (event, ipcPayload: ExportQuotePayload) => {
-    const { revisionId, snapshot } = ipcPayload;
-    const repository = ensureRepository();
-    const normalizedSnapshot = normalizeSnapshot(snapshot, { recomputeTotals: true });
-    const currentRevision = repository.getRevisionById(revisionId);
-    if (!currentRevision) {
-      throw new Error('Không tìm thấy revision đang mở để export.');
-    }
-
-    repository.updateRevisionSnapshot({
-      revisionId,
-      snapshot: normalizedSnapshot
-    });
-
-    const quoteIdentity = buildQuoteIdentity(currentRevision.quoteCode, currentRevision.revisionNumber);
-    const quotePayload = buildQuotePayload(normalizedSnapshot, normalizedSnapshot.customer, normalizedSnapshot.preparedBy, {
-      quoteIdentity,
-      quoteDateInput: new Date()
-    });
-    const exportedAt = new Date().toISOString();
-    const manifest = buildEmbeddedManifest(quotePayload, {
-      appVersion: app.getVersion(),
-      exportedAt
-    });
+    const { repository, revisionId, normalizedSnapshot, quotePayload, manifest, exportedAt } = prepareQuoteFileContext(ipcPayload);
 
     const exportResult = await exportQuote({
       BrowserWindow,
@@ -258,33 +283,47 @@ app.whenReady().then(() => {
   });
 
   ipcMain.handle('export-quote-excel', async (event, ipcPayload: ExportQuotePayload) => {
-    const { revisionId, snapshot } = ipcPayload;
-    const repository = ensureRepository();
-    const normalizedSnapshot = normalizeSnapshot(snapshot, { recomputeTotals: true });
-    const currentRevision = repository.getRevisionById(revisionId);
-    if (!currentRevision) {
-      throw new Error('Không tìm thấy revision đang mở để export.');
-    }
-
-    repository.updateRevisionSnapshot({
-      revisionId,
-      snapshot: normalizedSnapshot
-    });
-
-    const quoteIdentity = buildQuoteIdentity(currentRevision.quoteCode, currentRevision.revisionNumber);
-    const quotePayload = buildQuotePayload(normalizedSnapshot, normalizedSnapshot.customer, normalizedSnapshot.preparedBy, {
-      quoteIdentity,
-      quoteDateInput: new Date()
-    });
+    const { repository, revisionId, normalizedSnapshot, quotePayload, manifest, exportedAt } = prepareQuoteFileContext(ipcPayload);
 
     const exportResult = await exportExcel({
       app,
       dialog: dialog as unknown as DialogLike,
       payload: quotePayload,
+      manifest,
       parentWindow: BrowserWindow.fromWebContents(event.sender)
     });
 
-    return exportResult;
+    if (!exportResult) return null;
+
+    const exportedRevision = repository.markRevisionExported({
+      revisionId,
+      snapshot: normalizedSnapshot,
+      embeddedPayloadVersion: EMBEDDED_PAYLOAD_SCHEMA_VERSION,
+      pdfFilePath: exportResult.filePath,
+      pdfFingerprint: exportResult.fingerprint,
+      exportedAt
+    });
+
+    if (!exportedRevision) {
+      throw new Error('Không thể đánh dấu trạng thái export cho revision.');
+    }
+
+    return {
+      filePath: exportResult.filePath,
+      bundle: repository.getRevisionBundle(exportedRevision.id)
+    };
+  });
+
+  ipcMain.handle('save-quote-draft-file', async (event, ipcPayload: ExportQuotePayload) => {
+    const { manifest } = prepareQuoteFileContext(ipcPayload);
+    const result = await saveDraftFile({
+      app,
+      dialog: dialog as unknown as DialogLike,
+      manifest,
+      parentWindow: BrowserWindow.fromWebContents(event.sender)
+    });
+
+    return result ? { filePath: result.filePath } : null;
   });
 
   ipcMain.handle('import-quote-pdf-preview', async (event): Promise<ImportPreview | null> => {
@@ -293,12 +332,12 @@ app.whenReady().then(() => {
       ? await dialog.showOpenDialog(parentWindow, {
           title: 'Chọn báo giá để import',
           properties: ['openFile'],
-          filters: [{ name: 'Supported Files', extensions: ['pdf', 'xlsx'] }]
+          filters: [{ name: 'Supported Files', extensions: ['pdf', 'xlsx', DRAFT_FILE_EXTENSION] }]
         })
       : await dialog.showOpenDialog({
           title: 'Chọn báo giá để import',
           properties: ['openFile'],
-          filters: [{ name: 'Supported Files', extensions: ['pdf', 'xlsx'] }]
+          filters: [{ name: 'Supported Files', extensions: ['pdf', 'xlsx', DRAFT_FILE_EXTENSION] }]
         });
 
     if (canceled || !filePaths.length) return null;
@@ -306,9 +345,12 @@ app.whenReady().then(() => {
     if (!selectedFilePath) return null;
 
     let extracted;
-    if (selectedFilePath.toLowerCase().endsWith('.xlsx')) {
+    const extension = path.extname(selectedFilePath).toLowerCase();
+    if (extension === '.xlsx') {
       const { extractManifestFromExcelFile } = await import('../services/excel-import-service');
       extracted = await extractManifestFromExcelFile(selectedFilePath);
+    } else if (extension === `.${DRAFT_FILE_EXTENSION}`) {
+      extracted = await extractManifestFromDraftFile(selectedFilePath);
     } else {
       extracted = await extractManifestFromPdfFile(selectedFilePath);
     }
@@ -326,9 +368,12 @@ app.whenReady().then(() => {
     }
 
     let extracted;
-    if (preview.filePath.toLowerCase().endsWith('.xlsx')) {
+    const extension = path.extname(preview.filePath).toLowerCase();
+    if (extension === '.xlsx') {
       const { extractManifestFromExcelFile } = await import('../services/excel-import-service');
       extracted = await extractManifestFromExcelFile(preview.filePath);
+    } else if (extension === `.${DRAFT_FILE_EXTENSION}`) {
+      extracted = await extractManifestFromDraftFile(preview.filePath);
     } else {
       extracted = await extractManifestFromPdfFile(preview.filePath);
     }
@@ -343,6 +388,32 @@ app.whenReady().then(() => {
       throw new Error('Không thể hoàn tất import từ dữ liệu PDF.');
     }
     return ensureRepository().getRevisionBundle(resolvedRevision.id);
+  });
+
+  ipcMain.handle('history:push', async (_event, snapshot: QuoteSnapshot) => {
+    if (historyService) {
+      await historyService.push(snapshot);
+    }
+  });
+
+  ipcMain.handle('history:undo', async () => {
+    if (historyService) {
+      return await historyService.undo();
+    }
+    return null;
+  });
+
+  ipcMain.handle('history:redo', async () => {
+    if (historyService) {
+      return await historyService.redo();
+    }
+    return null;
+  });
+
+  ipcMain.handle('history:clear', async () => {
+    if (historyService) {
+      await historyService.clear();
+    }
   });
 
   app.on('activate', () => {
