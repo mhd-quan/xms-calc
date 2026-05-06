@@ -607,7 +607,7 @@
 }
 
 .x-discount-bank:has(.x-discount-toggle.is-on) .x-knob__envelope {
-  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--lane-accent) 36%, transparent));
+  filter: drop-shadow(0 0 2px color-mix(in srgb, var(--lane-accent) 18%, transparent));
   animation: discount-line-breathe 3.8s ease-in-out infinite;
 }
 
@@ -1012,24 +1012,24 @@
 
 /* ─── MICRO-ANIMATIONS ────────────────────────────────────────────────── */
 @keyframes breathe {
-  0%, 100% { box-shadow: 0 0 0 1px var(--active), 0 0 4px var(--active-glow); }
-  50%       { box-shadow: 0 0 0 1px var(--active), 0 0 14px var(--active-glow), 0 0 28px rgba(255,180,58,0.10); }
+  0%, 100% { box-shadow: 0 0 0 1px var(--active), 0 0 3px rgba(255,180,58,0.12); }
+  50%       { box-shadow: 0 0 0 1px var(--active), 0 0 8px rgba(255,180,58,0.18); }
 }
 
 @keyframes hero-glow {
-  0%, 100% { text-shadow: 0 0 6px var(--active-glow); }
-  50%       { text-shadow: 0 0 18px var(--active-glow), 0 0 36px rgba(255,180,58,0.14); }
+  0%, 100% { text-shadow: 0 0 4px rgba(255,180,58,0.12); }
+  50%       { text-shadow: 0 0 10px rgba(255,180,58,0.18); }
 }
 
 @keyframes discount-line-breathe {
-  0%, 100% { filter: drop-shadow(0 0 4px color-mix(in srgb, var(--lane-accent) 30%, transparent)); opacity: 0.94; }
-  50% { filter: drop-shadow(0 0 9px color-mix(in srgb, var(--lane-accent) 50%, transparent)); opacity: 1; }
+  0%, 100% { filter: drop-shadow(0 0 1.5px color-mix(in srgb, var(--lane-accent) 14%, transparent)); opacity: 0.94; }
+  50% { filter: drop-shadow(0 0 3px color-mix(in srgb, var(--lane-accent) 24%, transparent)); opacity: 0.98; }
 }
 
 @keyframes discount-line-pop {
   0% { filter: drop-shadow(0 0 0 transparent); opacity: 0.72; transform: translateY(1px); }
-  45% { filter: drop-shadow(0 0 13px color-mix(in srgb, var(--lane-accent) 66%, transparent)); opacity: 1; transform: translateY(0); }
-  100% { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--lane-accent) 36%, transparent)); opacity: 0.96; transform: translateY(0); }
+  45% { filter: drop-shadow(0 0 5px color-mix(in srgb, var(--lane-accent) 32%, transparent)); opacity: 1; transform: translateY(0); }
+  100% { filter: drop-shadow(0 0 2px color-mix(in srgb, var(--lane-accent) 18%, transparent)); opacity: 0.96; transform: translateY(0); }
 }
 
 @keyframes slide-in-up {
@@ -1073,18 +1073,18 @@
 .csection.is-active .csection__head {
   border-left: 2px solid var(--active);
   padding-left: calc(var(--s-5) - 2px);
-  box-shadow: inset 5px 0 12px -12px var(--active);
+  box-shadow: inset 4px 0 10px -12px var(--active);
 }
 .csection.is-active .csection__total {
   animation: hero-glow 3s ease-in-out infinite;
 }
 
 .x-breadcrumb__color {
-  box-shadow: 0 0 8px color-mix(in srgb, var(--branch-accent, var(--active)) 28%, transparent);
+  box-shadow: 0 0 4px color-mix(in srgb, var(--branch-accent, var(--active)) 16%, transparent);
   animation: branch-dot-breathe 3.6s ease-in-out infinite;
 }
 
 @keyframes branch-dot-breathe {
-  0%, 100% { opacity: 0.82; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.12); }
+  0%, 100% { opacity: 0.86; transform: scale(1); }
+  50% { opacity: 0.98; transform: scale(1.06); }
 }
