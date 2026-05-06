@@ -308,7 +308,7 @@ function drawEnvelope(canvasId: string, norm: number, enabled: boolean): void {
 
   ctx.clearRect(0, 0, W, H);
 
-  const padX = 8.5;
+  const padX = 5;
   const padY = 7.5;
   const yHigh = Math.round(padY + (H - padY * 2) * 0.1) + 0.5;
   const yLow = Math.round(yHigh + (H - padY - yHigh) * clampedNorm) + 0.5;

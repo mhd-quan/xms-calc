@@ -469,7 +469,7 @@
       </div>
 
       <div class="bottombar__savings" data-info="Savings meter|Visualize mức tiết kiệm tổng trước và sau giảm giá.|—">
-        <canvas class="bottombar__savings-ring" id="grandSavingsRing" width="96" height="96" aria-hidden="true"></canvas>
+        <canvas class="bottombar__savings-ring" id="grandSavingsRing" width="64" height="64" aria-hidden="true"></canvas>
       </div>
 
       <div class="bottombar__total" data-info="Grand total|Tổng thanh toán sau VAT của toàn bộ báo giá.|—">
@@ -505,7 +505,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.12.1</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.12.3</div>
     </div>
   </div>
 
@@ -520,8 +520,8 @@
         </div>
         <button id="closeBulkAdd" class="x-modal__close" type="button" aria-label="Close Bulk Add">×</button>
       </div>
-      <div class="x-modal__body bulk-add-modal__body">
-        <div class="x-field-row" style="margin-bottom: var(--s-5);">
+      <div class="bulk-add-modal__template">
+        <div class="x-field-row">
           <label class="x-field-row__label">Template / Mô hình</label>
           <div id="bulkBusinessType" class="x-dropdown" data-value="" tabindex="0">
             <div class="x-dropdown__display">
@@ -539,7 +539,8 @@
             </div>
           </div>
         </div>
-
+      </div>
+      <div class="x-modal__body bulk-add-modal__body">
         <div class="bulk-add-modal__rows">
           <div class="bulk-add-modal__rows-head">
             <span class="x-field-row__label">Branch areas</span>
