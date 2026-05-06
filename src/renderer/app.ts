@@ -958,7 +958,7 @@ function renderBulkRows(focusIndex: number | null = null): void {
   rowsEl.innerHTML = bulkAreas.map((value, index) => {
     const color = paletteVar(startIndex + index - 1);
     return `
-      <div class="x-field-row" data-index="${index}" style="border-left: 2px solid ${color}; padding-left: var(--s-3);">
+      <div class="x-field-row bulk-add-modal__field" data-index="${index}" style="--bulk-accent: ${color};">
         <label class="x-field-row__label" for="bulkArea${index}">STORE ${String(startIndex + index).padStart(2, '0')}</label>
         <div class="x-suffix-wrap">
           <input id="bulkArea${index}" class="x-field x-field--num bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="0">

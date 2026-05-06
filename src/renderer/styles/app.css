@@ -548,7 +548,7 @@
 .csbody-grid--6-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .x-row {
   display: grid;
-  grid-template-columns: minmax(224px, 0.9fr) minmax(360px, 600px);
+  grid-template-columns: minmax(224px, 1fr) minmax(330px, 520px);
   gap: clamp(16px, 2vw, 28px);
   align-items: flex-start;
   padding: var(--s-5) 0;
@@ -587,7 +587,7 @@
 }
 
 .x-row__inline-amount--control {
-  min-width: 148px;
+  min-width: 136px;
   margin-top: 0;
   margin-left: auto;
   padding: 0 0 0 var(--s-4);
@@ -633,12 +633,12 @@
   --knob-accent: var(--lane-accent);
   --knob-accent-dim: var(--lane-fill);
   display: grid;
-  grid-template-columns: auto auto minmax(112px, 0.72fr) minmax(140px, auto);
+  grid-template-columns: auto auto minmax(112px, 0.72fr) minmax(136px, auto);
   align-items: center;
   justify-content: stretch;
-  gap: clamp(10px, 1.55vw, 18px);
+  gap: clamp(10px, 1.25vw, 14px);
   min-width: 0;
-  width: min(540px, 100%);
+  width: min(520px, 100%);
   padding-left: clamp(8px, 1.6vw, 20px);
 }
 
@@ -668,32 +668,48 @@
 }
 
 .x-discount-bank.is-summary-only {
-  grid-template-columns: minmax(148px, auto);
-  justify-content: end;
+  grid-template-columns: minmax(136px, auto);
+  justify-content: start;
+  justify-self: start;
+  width: max-content;
+  padding-left: 0;
 }
 
 .x-discount-bank.is-summary-only .x-discount-toggle,
 .x-discount-bank.is-summary-only .x-knob,
-.x-discount-bank.is-summary-only .x-knob__envelope {
+.x-discount-bank.is-summary-only .x-knob__envelope-frame {
   display: none;
 }
 
-/* Envelope canvas — framed discount step-line display */
-.x-knob__envelope {
+/* Envelope display — framed grid with a step line that can overhang the box. */
+.x-knob__envelope-frame {
+  --meter-bg: #20211f;
+  --meter-grid: rgba(116, 119, 114, 0.38);
+  --meter-border: rgba(100, 103, 99, 0.74);
   width: 100%;
-  min-width: 112px;
-  max-width: 220px;
-  height: 44px;
+  min-width: 124px;
+  max-width: 238px;
+  height: 54px;
+  position: relative;
+  overflow: visible;
   background:
-    linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.016) 1px, transparent 1px),
-    var(--inset-1);
-  background-size: 100% 25%, 25% 100%, auto;
-  border: 1px solid var(--line-1);
+    repeating-linear-gradient(
+      to right,
+      transparent 0 calc(25% - 1px),
+      var(--meter-grid) calc(25% - 1px) calc(25% + 1px),
+      transparent calc(25% + 1px) 25%
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0 calc(25% - 0.75px),
+      color-mix(in srgb, var(--meter-grid) 72%, transparent) calc(25% - 0.75px) calc(25% + 0.75px),
+      transparent calc(25% + 0.75px) 25%
+    ),
+    var(--meter-bg);
+  border: 1px solid var(--meter-border);
   border-radius: var(--r-2);
   display: block;
   justify-self: stretch;
-  contain: strict;
   opacity: 0.72;
   filter: none;
   box-shadow: inset 0 0 0 1px rgba(0,0,0,0.16);
@@ -703,13 +719,28 @@
     opacity var(--t-quick);
 }
 
-.x-discount-bank:has(.x-discount-toggle.is-on) .x-knob__envelope {
+.x-knob__envelope {
+  position: absolute;
+  left: -16px;
+  top: 0;
+  width: calc(100% + 32px);
+  height: 100%;
+  min-width: 0;
+  max-width: none;
+  display: block;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  pointer-events: none;
+}
+
+.x-discount-bank:has(.x-discount-toggle.is-on) .x-knob__envelope-frame {
   border-color: color-mix(in srgb, var(--lane-accent) 28%, var(--line-2));
   opacity: 0.98;
   animation: discount-frame-breathe 4.4s ease-in-out infinite;
 }
 
-.x-discount-bank.motion-accent-pop .x-knob__envelope {
+.x-discount-bank.motion-accent-pop .x-knob__envelope-frame {
   animation: discount-line-pop 420ms var(--ease-out) both;
 }
 
@@ -783,7 +814,7 @@
   }
 
   .x-row {
-    grid-template-columns: minmax(212px, 0.85fr) minmax(328px, 560px);
+    grid-template-columns: minmax(212px, 1fr) minmax(320px, 480px);
     gap: 16px;
   }
 
@@ -794,14 +825,14 @@
   .x-discount-bank {
     grid-template-columns: auto auto minmax(104px, 0.64fr) minmax(132px, auto);
     gap: 12px;
-    width: min(500px, 100%);
+    width: min(480px, 100%);
     padding-left: var(--s-4);
   }
 
-  .x-knob__envelope {
-    min-width: 104px;
-    max-width: 188px;
-    height: 42px;
+  .x-knob__envelope-frame {
+    min-width: 112px;
+    max-width: 204px;
+    height: 50px;
   }
 }
 
@@ -835,7 +866,7 @@
     padding-left: 0;
   }
 
-  .x-knob__envelope {
+  .x-knob__envelope-frame {
     max-width: none;
   }
 }
@@ -1088,7 +1119,7 @@
   grid-column: 1 / -1;
   grid-row: 3;
   display: grid;
-  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr) minmax(260px, 300px);
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(104px, 128px) minmax(260px, 300px);
   align-items: stretch;
   min-width: 0;
   background: var(--shell-2);
@@ -1153,6 +1184,23 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.bottombar__savings {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  padding: var(--s-2) var(--s-4);
+  border-left: 1px solid var(--line-1);
+  background: var(--shell-2);
+}
+
+.bottombar__savings-ring {
+  width: 74px;
+  height: 74px;
+  display: block;
+  opacity: 0.92;
+  animation: savings-ring-breathe 3.8s ease-in-out infinite;
 }
 
 .bottombar__total {
@@ -1238,11 +1286,12 @@
   }
 
   .bottombar {
-    grid-template-columns: 180px minmax(0, 1fr) 240px;
+    grid-template-columns: 176px minmax(0, 1fr) 96px 240px;
   }
 
   .bottombar .x-infoview,
   .bottombar__breakdown__cell,
+  .bottombar__savings,
   .bottombar__total {
     padding-inline: var(--s-3);
   }
@@ -1267,7 +1316,12 @@
   }
 
   .bottombar {
-    grid-template-columns: minmax(164px, 208px) minmax(0, 1fr) minmax(230px, 260px);
+    grid-template-columns: minmax(156px, 196px) minmax(0, 1fr) 82px minmax(222px, 252px);
+  }
+
+  .bottombar__savings-ring {
+    width: 64px;
+    height: 64px;
   }
 
   .bottombar__breakdown {
@@ -1285,6 +1339,66 @@
 
   .bottombar__breakdown__cell:nth-child(-n+2) {
     border-bottom: 1px solid var(--line-1);
+  }
+}
+
+/* Bulk Add modal keeps action buttons reachable while large row sets scroll. */
+.bulk-add-modal__panel {
+  width: min(920px, calc(100vw - 48px));
+  min-width: min(580px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+}
+
+.bulk-add-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+  padding: var(--s-6);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.bulk-add-modal__rows {
+  margin-top: var(--s-5);
+  padding: var(--s-4);
+  background: var(--inset-0);
+  border: 1px solid var(--line-1);
+  border-radius: var(--r-2);
+}
+
+.bulk-add-modal__rows-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--s-4);
+}
+
+.bulk-add-modal__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s-4);
+}
+
+.bulk-add-modal__field {
+  border-left: 2px solid var(--bulk-accent);
+  padding-left: var(--s-3);
+}
+
+#bulkAddModal .bulk-add-modal__panel:has(#bulkBusinessType.is-open),
+#bulkAddModal .bulk-add-modal__body:has(#bulkBusinessType.is-open) {
+  overflow: visible;
+}
+
+#bulkAddModal #bulkBusinessType.is-open .x-dropdown__menu {
+  z-index: 1200;
+  max-height: min(280px, calc(100vh - 320px));
+}
+
+@media (max-width: 720px) {
+  .bulk-add-modal__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -1340,6 +1454,11 @@
 @keyframes slide-in-popover {
   from { opacity: 0; transform: translateX(-4px); }
   to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes savings-ring-breathe {
+  0%, 100% { opacity: 0.86; filter: saturate(0.98); }
+  50% { opacity: 1; filter: saturate(1.08); }
 }
 
 /* Breathing on primary Save button */
