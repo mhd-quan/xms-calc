@@ -1,6 +1,7 @@
 import { BUSINESS_TYPES } from '../../shared/calculator';
 import { formatVND } from './format';
 import { paletteToken } from './palette';
+import { revisionLabel, statusLabel } from './render-revisions';
 
 import type { RenderSnapshot } from '../app';
 import type { Store } from '../../shared/types';
@@ -20,6 +21,11 @@ export function renderSidebar(snapshot: RenderSnapshot): void {
   setText('sidebarCustomerName', snapshot.customer.companyName || 'Khách hàng chưa đặt');
   setText('sidebarCustomerId', snapshot.customer.contactName || '—');
   setText('sidebarQuoteCode', snapshot.activeQuoteCode || snapshot.activeDisplayQuoteNumber || '—');
+  setText('sidebarQuoteMiniText', customerInitials(snapshot));
+  setText('sidebarQuotePopoverCustomer', snapshot.customer.companyName || 'Khách hàng chưa đặt');
+  setText('sidebarQuotePopoverCode', snapshot.activeQuoteCode || snapshot.activeDisplayQuoteNumber || '—');
+  setText('sidebarQuotePopoverRevision', revisionLabel(snapshot.activeRevisionNumber));
+  setText('sidebarQuotePopoverStatus', statusLabel(snapshot.activeRevisionStatus));
   setText('branchCount', String(stores.length));
   setText('branchLineCount', `${countLines(stores)} lines`);
 
@@ -81,6 +87,22 @@ function trackTemplate(store: Store, index: number, isActive: boolean, snapshot:
 
 function countLines(stores: Store[]): number {
   return stores.length;
+}
+
+function customerInitials(snapshot: RenderSnapshot): string {
+  const source = (snapshot.customer.companyName || snapshot.customer.contactName || '').trim();
+  if (!source) return 'KH';
+
+  const words = source.split(/\s+/).filter(Boolean);
+  const letters = words.length > 1
+    ? words.slice(0, 2).map(firstGlyph)
+    : Array.from(words[0] ?? '').slice(0, 2);
+  const initials = letters.join('').toUpperCase();
+  return initials || 'KH';
+}
+
+function firstGlyph(value: string): string {
+  return Array.from(value)[0] ?? '';
 }
 
 function setText(id: string, value: string): void {
