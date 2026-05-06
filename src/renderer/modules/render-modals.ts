@@ -9,15 +9,24 @@ const FOCUSABLE_SELECTOR = [
 
 let returnFocus: HTMLElement | null = null;
 let activeModal: HTMLElement | null = null;
+const closeTimers = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+const MODAL_EXIT_MS = 150;
 
 export function showModal(id: string, focusSelector?: string): void {
   const modal = getModal(id);
+  const closeTimer = closeTimers.get(modal);
+  if (closeTimer) {
+    clearTimeout(closeTimer);
+    closeTimers.delete(modal);
+  }
+
   returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   activeModal = modal;
-  modal.classList.remove('hidden');
+  modal.classList.remove('hidden', 'is-closing');
   modal.setAttribute('aria-hidden', 'false');
 
   requestAnimationFrame(() => {
+    modal.classList.add('is-visible');
     const target = focusSelector ? modal.querySelector<HTMLElement>(focusSelector) : firstFocusable(modal);
     (target ?? firstFocusable(modal) ?? modal).focus();
   });
@@ -25,14 +34,31 @@ export function showModal(id: string, focusSelector?: string): void {
 
 export function hideModal(id: string): void {
   const modal = getModal(id);
-  modal.classList.add('hidden');
+  if (modal.classList.contains('hidden')) return;
+
+  const closeTimer = closeTimers.get(modal);
+  if (closeTimer) clearTimeout(closeTimer);
+
+  modal.classList.remove('is-visible');
+  modal.classList.add('is-closing');
   modal.setAttribute('aria-hidden', 'true');
   if (activeModal === modal) activeModal = null;
 
-  if (returnFocus && document.contains(returnFocus)) {
-    returnFocus.focus();
+  const finish = (): void => {
+    modal.classList.add('hidden');
+    modal.classList.remove('is-closing');
+    closeTimers.delete(modal);
+    if (returnFocus && document.contains(returnFocus)) returnFocus.focus();
+    returnFocus = null;
+  };
+
+  if (prefersReducedMotion()) {
+    finish();
+    return;
   }
-  returnFocus = null;
+
+  const timer = setTimeout(finish, MODAL_EXIT_MS);
+  closeTimers.set(modal, timer);
 }
 
 export function bindModalFrame(id: string, onClose: () => void): void {
@@ -56,6 +82,10 @@ function getModal(id: string): HTMLElement {
   const modal = document.getElementById(id);
   if (!modal) throw new Error(`Modal not found: ${id}`);
   return modal;
+}
+
+function prefersReducedMotion(): boolean {
+  return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
 }
 
 function firstFocusable(modal: HTMLElement): HTMLElement | null {

@@ -3,6 +3,23 @@
    Instrument-grade controls. Vector-rendered. 0ms feedback.
    ═══════════════════════════════════════════════════════════════════════════ */
 
+@keyframes motion-press-sheen {
+  0% { opacity: 0; transform: scale(0.72); }
+  38% { opacity: 0.95; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.42); }
+}
+
+@keyframes motion-menu-item-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes motion-track-accent-pop {
+  0% { box-shadow: 0 0 0 0 var(--track-accent); opacity: 0.72; }
+  48% { box-shadow: 0 0 13px 1px var(--track-accent); opacity: 1; }
+  100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+}
+
 /* ════ FIELDS ════════════════════════════════════════════════════════════ */
 .x-field {
   width: 100%;
@@ -55,6 +72,7 @@
 
 /* ════ BUTTON — instrument toggle ═══════════════════════════════════════ */
 .x-btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -71,12 +89,46 @@
   border-radius: var(--r-2);
   cursor: pointer;
   user-select: none;
-  transition: background var(--t-instant), color var(--t-instant), border-color var(--t-instant), transform var(--t-quick);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--t-instant), color var(--t-instant), border-color var(--t-instant), box-shadow var(--t-quick), filter var(--t-quick), transform var(--t-quick);
   white-space: nowrap;
 }
 .x-btn:hover { background: var(--shell-3); color: var(--ink-1); border-color: var(--line-3); }
 .x-btn:active { background: var(--shell-4); transform: translateY(1px); }
 .x-btn:focus-visible { outline: none; box-shadow: var(--focus-glow); border-color: var(--active); }
+
+.x-btn::after,
+.x-toggle-pill::after,
+.x-seg__btn::after,
+.x-discount-toggle::after,
+.x-counter__btn::after,
+.x-dropdown__item::after,
+.x-datepicker__nav::after,
+.x-datepicker__cell::after,
+.x-modal__close::after,
+.x-track::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(230, 232, 236, 0.18), transparent 58%);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
+}
+
+.x-btn.motion-press::after,
+.x-toggle-pill.motion-press::after,
+.x-seg__btn.motion-press::after,
+.x-discount-toggle.motion-press::after,
+.x-counter__btn.motion-press::after,
+.x-dropdown__item.motion-press::after,
+.x-datepicker__nav.motion-press::after,
+.x-datepicker__cell.motion-press::after,
+.x-modal__close.motion-press::after,
+.x-track.motion-press::after {
+  animation: motion-press-sheen 320ms var(--ease-out) both;
+}
 
 /* Active/armed mode-bearing (fill invert) */
 .x-btn.is-active,
@@ -101,6 +153,7 @@
 
 /* Compact pill toggle (row 22px) */
 .x-toggle-pill {
+  position: relative;
   display: inline-flex;
   align-items: center;
   height: 20px;
@@ -115,6 +168,8 @@
   text-transform: uppercase;
   border-radius: var(--r-2);
   cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
   transition: background var(--t-instant), color var(--t-instant), border-color var(--t-instant), transform var(--t-quick);
   min-width: 52px;
   justify-content: center;
@@ -145,6 +200,7 @@
   isolation: isolate;
 }
 .x-seg__btn {
+  position: relative;
   flex: 1;
   display: inline-flex;
   align-items: center;
@@ -160,15 +216,19 @@
   letter-spacing: var(--track-label);
   text-transform: uppercase;
   cursor: pointer;
-  transition: background var(--t-instant), color var(--t-instant);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--t-instant), color var(--t-instant), box-shadow var(--t-quick), transform var(--t-quick);
   min-width: 56px;
   white-space: nowrap;
 }
 .x-seg__btn:last-child { border-right: none; }
 .x-seg__btn:hover { background: var(--shell-3); color: var(--ink-1); }
+.x-seg__btn:active { transform: translateY(1px); }
 .x-seg__btn.is-active {
   background: var(--active);
   color: var(--active-ink);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--active) 42%, transparent), 0 0 8px var(--active-glow);
 }
 .x-seg__btn.is-active:hover { background: var(--active-hover); }
 
@@ -280,6 +340,7 @@
 .x-knob.is-dragging { cursor: grabbing; }
 
 .x-discount-toggle {
+  position: relative;
   width: 38px;
   height: 24px;
   display: inline-grid;
@@ -294,7 +355,9 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   cursor: pointer;
-  transition: background var(--t-quick), border-color var(--t-quick), color var(--t-quick), transform var(--t-quick);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--t-quick), border-color var(--t-quick), box-shadow var(--t-quick), color var(--t-quick), filter var(--t-quick), transform var(--t-quick);
 }
 .x-discount-toggle:hover {
   border-color: var(--line-3);
@@ -307,6 +370,18 @@
   background: var(--knob-accent);
   border-color: var(--knob-accent);
   color: var(--active-ink);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--knob-accent) 28%, transparent), 0 0 10px color-mix(in srgb, var(--knob-accent) 34%, transparent);
+  animation: discount-toggle-breathe 3.4s ease-in-out infinite;
+}
+
+.x-discount-toggle.is-on:hover,
+.x-discount-toggle.is-on:active {
+  animation: none;
+}
+
+@keyframes discount-toggle-breathe {
+  0%, 100% { filter: saturate(1); box-shadow: 0 0 0 1px color-mix(in srgb, var(--knob-accent) 24%, transparent), 0 0 7px color-mix(in srgb, var(--knob-accent) 28%, transparent); }
+  50% { filter: saturate(1.06); box-shadow: 0 0 0 1px color-mix(in srgb, var(--knob-accent) 36%, transparent), 0 0 14px color-mix(in srgb, var(--knob-accent) 42%, transparent); }
 }
 
 /* ════ FADER (horizontal, vector) ═══════════════════════════════════════ */
@@ -433,6 +508,7 @@
   overflow: hidden;
 }
 .x-counter__btn {
+  position: relative;
   width: 26px;
   background: transparent;
   border: none;
@@ -441,11 +517,14 @@
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: background var(--t-instant), color var(--t-instant);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--t-instant), color var(--t-instant), transform var(--t-quick);
   display: grid;
   place-items: center;
 }
 .x-counter__btn:hover { background: var(--shell-3); color: var(--ink-1); }
+.x-counter__btn:active { transform: translateY(1px); }
 .x-counter__input {
   width: 44px;
   background: transparent;
@@ -481,7 +560,7 @@
   border-radius: var(--r-2);
   cursor: pointer;
   outline: none;
-  transition: border-color var(--t-instant);
+  transition: border-color var(--t-instant), box-shadow var(--t-quick), background var(--t-quick);
   user-select: none;
 }
 .x-dropdown__display:hover { border-color: var(--line-2); }
@@ -511,26 +590,49 @@
   border-radius: var(--r-2);
   z-index: 100;
   opacity: 0;
+  visibility: hidden;
   pointer-events: none;
+  transform: translateY(-5px) scale(0.985);
+  transform-origin: top center;
   max-height: 280px;
   overflow-y: auto;
   box-shadow: 0 0 0 1px var(--active-dim);
+  transition: opacity var(--t-struct) var(--ease-out), transform var(--t-struct) var(--ease-out), visibility 0s linear var(--t-struct);
+  will-change: opacity, transform;
 }
-.x-dropdown.is-open .x-dropdown__menu { opacity: 1; pointer-events: auto; }
+.x-dropdown.is-open .x-dropdown__menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+}
 .x-dropdown__item {
+  position: relative;
   padding: 8px var(--s-5);
   font-size: var(--t-body);
   color: var(--ink-2);
   border-left: 2px solid transparent;
   cursor: pointer;
-  transition: background var(--t-instant), color var(--t-instant);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--t-instant), color var(--t-instant), border-color var(--t-quick), transform var(--t-quick);
 }
-.x-dropdown__item:hover { background: var(--shell-3); color: var(--ink-1); }
+.x-dropdown__item:hover { background: var(--shell-3); color: var(--ink-1); transform: translateX(1px); }
 .x-dropdown__item.is-selected {
   background: var(--active-dim);
   color: var(--ink-1);
   border-left-color: var(--active);
 }
+.x-dropdown.is-open .x-dropdown__item {
+  animation: motion-menu-item-in var(--t-struct) var(--ease-out) both;
+}
+.x-dropdown.is-open .x-dropdown__item:nth-child(2) { animation-delay: 14ms; }
+.x-dropdown.is-open .x-dropdown__item:nth-child(3) { animation-delay: 28ms; }
+.x-dropdown.is-open .x-dropdown__item:nth-child(4) { animation-delay: 42ms; }
+.x-dropdown.is-open .x-dropdown__item:nth-child(5) { animation-delay: 56ms; }
+.x-dropdown.is-open .x-dropdown__item:nth-child(6) { animation-delay: 70ms; }
+.x-dropdown.is-open .x-dropdown__item:nth-child(n+7) { animation-delay: 84ms; }
 
 /* ════ DATEPICKER ═══════════════════════════════════════════════════════ */
 .x-datepicker {
@@ -553,7 +655,7 @@
   font-size: var(--t-control);
   font-variant-numeric: tabular-nums;
   color: var(--ink-1);
-  transition: border-color var(--t-instant);
+  transition: border-color var(--t-instant), box-shadow var(--t-quick), background var(--t-quick);
 }
 .x-datepicker__display:hover { border-color: var(--line-2); }
 .x-datepicker.is-open .x-datepicker__display {
@@ -574,24 +676,38 @@
   z-index: 100;
   opacity: 0;
   visibility: hidden;
+  transform: translateY(-5px) scale(0.985);
+  transform-origin: top left;
   box-shadow: 0 0 0 1px var(--active-dim);
+  transition: opacity var(--t-struct) var(--ease-out), transform var(--t-struct) var(--ease-out), visibility 0s linear var(--t-struct);
+  will-change: opacity, transform;
 }
-.x-datepicker.is-open .x-datepicker__popup { opacity: 1; visibility: visible; }
+.x-datepicker.is-open .x-datepicker__popup {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0) scale(1);
+  transition-delay: 0s;
+}
 .x-datepicker__head {
   display: flex; align-items: center; justify-content: space-between;
   margin-bottom: var(--s-4);
 }
 .x-datepicker__nav {
+  position: relative;
   width: 22px; height: 22px;
   background: transparent;
   border: 1px solid var(--line-2);
   border-radius: var(--r-2);
   color: var(--ink-2);
   cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
   display: grid; place-items: center;
   font-size: 9px;
+  transition: background var(--t-instant), border-color var(--t-instant), color var(--t-instant), transform var(--t-quick);
 }
 .x-datepicker__nav:hover { background: var(--shell-3); color: var(--ink-1); border-color: var(--line-3); }
+.x-datepicker__nav:active { transform: translateY(1px); }
 .x-datepicker__monthyear {
   font-family: var(--font-ui);
   font-size: var(--t-control);
@@ -615,6 +731,7 @@
   gap: 2px;
 }
 .x-datepicker__cell {
+  position: relative;
   aspect-ratio: 1;
   display: grid; place-items: center;
   font-family: var(--font-num);
@@ -625,9 +742,12 @@
   border: 1px solid transparent;
   border-radius: var(--r-2);
   cursor: pointer;
-  transition: background var(--t-instant);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--t-instant), border-color var(--t-quick), color var(--t-quick), transform var(--t-quick);
 }
 .x-datepicker__cell:hover { background: var(--shell-3); }
+.x-datepicker__cell:active { transform: translateY(1px); }
 .x-datepicker__cell.is-dim { color: var(--ink-4); }
 .x-datepicker__cell.is-today { border-color: var(--line-3); }
 .x-datepicker__cell.is-selected {
@@ -682,7 +802,13 @@
   );
   background-size: 100vw 100%;
   background-position: 0 0;
-  transition: width var(--t-meter) var(--ease-meter);
+  filter: saturate(1.02);
+  transition: filter var(--t-meter) var(--ease-meter), width var(--t-meter) var(--ease-meter);
+}
+.x-vu:hover .x-vu__fill,
+.x-track.is-active .x-vu__fill,
+.bottombar__total__vu .x-vu__fill {
+  filter: saturate(1.12) drop-shadow(0 0 5px color-mix(in srgb, var(--vu-low) 26%, transparent));
 }
 /* LED ladder overlay — vertical hairlines every 4px */
 .x-vu__ladder {
@@ -883,12 +1009,23 @@
 .x-modal {
   position: fixed; inset: 0; z-index: 1000;
   display: flex; align-items: center; justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--t-struct) var(--ease-out);
 }
+.x-modal.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.x-modal.is-closing { opacity: 0; }
 .x-modal__overlay {
   position: absolute; inset: 0;
   background: rgba(0,0,0,0.7);
   backdrop-filter: none; /* no glass blur */
+  opacity: 0;
+  transition: opacity var(--t-struct) var(--ease-out);
 }
+.x-modal.is-visible .x-modal__overlay { opacity: 1; }
 .x-modal__panel {
   position: relative;
   background: var(--shell-1);
@@ -899,6 +1036,15 @@
   /* No drop shadow — scrim provides separation. Glass focus only. */
   box-shadow: 0 0 0 1px var(--active-dim);
   overflow: hidden;
+  opacity: 0;
+  transform: translateY(10px) scale(0.985);
+  transition: opacity var(--t-struct) var(--ease-out), transform var(--t-struct) var(--ease-out), box-shadow var(--t-quick);
+  will-change: opacity, transform;
+}
+.x-modal.is-visible .x-modal__panel {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  box-shadow: 0 0 0 1px var(--active-dim), 0 0 18px rgba(255, 180, 58, 0.08);
 }
 .x-modal__head {
   display: flex; align-items: center; justify-content: space-between;
@@ -922,6 +1068,7 @@
   margin-top: 2px;
 }
 .x-modal__close {
+  position: relative;
   width: 24px; height: 24px;
   background: transparent;
   border: 1px solid transparent;
@@ -929,6 +1076,8 @@
   color: var(--ink-3);
   font-size: 16px;
   cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
   display: grid; place-items: center;
   transition: all var(--t-instant);
 }
@@ -947,6 +1096,7 @@
 
 /* ════ TRACK ROW (sidebar chi nhánh — Ableton-style strip) ═════════════ */
 .x-track {
+  --track-accent: var(--active);
   position: relative;
   display: flex;
   align-items: stretch;
@@ -955,20 +1105,40 @@
   border-radius: var(--r-2);
   cursor: pointer;
   margin-bottom: 2px;
-  transition: background var(--t-instant), border-color var(--t-instant), transform var(--t-quick) var(--ease-out);
+  overflow: hidden;
+  isolation: isolate;
+  transition: background var(--t-instant), border-color var(--t-instant), box-shadow var(--t-quick), filter var(--t-quick), transform var(--t-quick) var(--ease-out);
   min-height: 48px;
 }
 .x-track:hover { background: var(--shell-2); border-color: var(--line-1); transform: translateX(1px); }
-.x-track.is-active { background: var(--shell-3); border-color: var(--line-2); }
+.x-track.is-active {
+  background: var(--shell-3);
+  border-color: color-mix(in srgb, var(--track-accent) 34%, var(--line-2));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--track-accent) 14%, transparent);
+}
+.x-track.motion-accent-pop {
+  animation: motion-track-accent-pop 420ms var(--ease-out) both;
+  will-change: opacity, transform;
+}
 .x-track__color {
   width: 4px;
   flex-shrink: 0;
   border-radius: var(--r-1) 0 0 var(--r-1);
+  background: var(--track-accent);
   opacity: 0.88;
-  transition: opacity var(--t-quick), width var(--t-quick);
+  transition: box-shadow var(--t-quick), filter var(--t-quick), opacity var(--t-quick), width var(--t-quick);
 }
 .x-track:hover .x-track__color { opacity: 1; }
-.x-track.is-active .x-track__color { opacity: 1; width: 5px; }
+.x-track.is-active .x-track__color {
+  opacity: 1;
+  width: 5px;
+  box-shadow: 0 0 12px var(--track-accent);
+  animation: track-line-breathe 3.8s ease-in-out infinite;
+}
+.x-track.motion-accent-pop .x-track__color {
+  box-shadow: 0 0 18px var(--track-accent);
+  filter: saturate(1.14);
+}
 .x-track__body {
   flex: 1;
   min-width: 0;
@@ -990,8 +1160,13 @@
   color: var(--active-ink);
   line-height: 1.2;
   opacity: 0.86;
+  transition: filter var(--t-quick), opacity var(--t-quick), transform var(--t-quick);
 }
-.x-track.is-active .x-track__badge { opacity: 1; }
+.x-track.is-active .x-track__badge {
+  opacity: 1;
+  filter: saturate(1.08);
+}
+.x-track:hover .x-track__badge { transform: translateY(-1px); }
 .x-track__name {
   font-family: var(--font-ui);
   font-size: var(--t-control);
@@ -1047,6 +1222,11 @@
   margin-top: 4px;
 }
 
+@keyframes track-line-breathe {
+  0%, 100% { box-shadow: 0 0 7px color-mix(in srgb, var(--track-accent) 36%, transparent); filter: saturate(1); }
+  50% { box-shadow: 0 0 15px color-mix(in srgb, var(--track-accent) 54%, transparent); filter: saturate(1.12); }
+}
+
 /* ════ BREADCRUMB ═══════════════════════════════════════════════════════ */
 .x-breadcrumb {
   display: flex;
@@ -1069,4 +1249,21 @@
   border-radius: var(--r-1);
   vertical-align: -1px;
   margin-right: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0ms !important;
+  }
+
+  .x-dropdown__menu,
+  .x-datepicker__popup,
+  .x-modal__panel {
+    transform: none !important;
+  }
 }
