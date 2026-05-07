@@ -1,6 +1,7 @@
 import { BUSINESS_TYPES } from '../../shared/calculator';
 import { formatVND } from './format';
 import { paletteToken } from './palette';
+import { revisionLabel, statusLabel } from './render-revisions';
 
 import type { RenderSnapshot } from '../app';
 import type { Store } from '../../shared/types';
@@ -20,6 +21,11 @@ export function renderSidebar(snapshot: RenderSnapshot): void {
   setText('sidebarCustomerName', snapshot.customer.companyName || 'Khách hàng chưa đặt');
   setText('sidebarCustomerId', snapshot.customer.contactName || '—');
   setText('sidebarQuoteCode', snapshot.activeQuoteCode || snapshot.activeDisplayQuoteNumber || '—');
+  setText('sidebarQuoteMiniText', customerInitials(snapshot));
+  setText('sidebarQuotePopoverCustomer', snapshot.customer.companyName || 'Khách hàng chưa đặt');
+  setText('sidebarQuotePopoverCode', snapshot.activeQuoteCode || snapshot.activeDisplayQuoteNumber || '—');
+  setText('sidebarQuotePopoverRevision', revisionLabel(snapshot.activeRevisionNumber));
+  setText('sidebarQuotePopoverStatus', statusLabel(snapshot.activeRevisionStatus));
   setText('branchCount', String(stores.length));
   setText('branchLineCount', `${countLines(stores)} lines`);
 
@@ -30,12 +36,14 @@ export function renderSidebar(snapshot: RenderSnapshot): void {
   const filtered = search
     ? stores.filter((store) => store.name.toLowerCase().includes(search))
     : stores;
+  const indexById = new Map(stores.map((store, index) => [store.id, index]));
 
   const html = filtered.length
-    ? filtered.map((store) => trackTemplate(store, stores.indexOf(store), store.id === activeId, snapshot)).join('')
+    ? filtered.map((store) => trackTemplate(store, indexById.get(store.id) ?? 0, store.id === activeId, snapshot)).join('')
     : '<div class="eyebrow" style="padding: 24px 6px; color: var(--ink-4);">Không tìm thấy</div>';
 
-  if (list.innerHTML !== html) list.innerHTML = html;
+  if (list.innerHTML === html) return;
+  list.innerHTML = html;
 
   list.querySelectorAll<HTMLElement>('.x-vu').forEach((vu) => {
     vu.style.setProperty('--vu', vu.dataset.vu ?? '0');
@@ -53,8 +61,8 @@ function trackTemplate(store: Store, index: number, isActive: boolean, snapshot:
   const badge = String(index + 1).padStart(2, '0');
   const detail = `${typeLabel} · ${areaRaw} · ${formatVND(total)} ₫`;
 
-  return `<div class="x-track${isActive ? ' is-active' : ''}" data-id="${store.id}" data-info="${escapeAttr(store.name)}|${escapeAttr(detail)}|—">
-    <div class="x-track__color" style="background: ${color}"></div>
+  return `<div class="x-track${isActive ? ' is-active' : ''}" data-id="${store.id}" style="--track-accent: ${color}" data-info="${escapeAttr(store.name)}|${escapeAttr(detail)}|—">
+    <div class="x-track__color"></div>
     <div class="x-track__body">
       <div class="x-track__head">
         <span class="x-track__badge" style="background: ${color}">${badge}</span>
@@ -79,6 +87,22 @@ function trackTemplate(store: Store, index: number, isActive: boolean, snapshot:
 
 function countLines(stores: Store[]): number {
   return stores.length;
+}
+
+function customerInitials(snapshot: RenderSnapshot): string {
+  const source = (snapshot.customer.companyName || snapshot.customer.contactName || '').trim();
+  if (!source) return 'KH';
+
+  const words = source.split(/\s+/).filter(Boolean);
+  const letters = words.length > 1
+    ? words.slice(0, 2).map(firstGlyph)
+    : Array.from(words[0] ?? '').slice(0, 2);
+  const initials = letters.join('').toUpperCase();
+  return initials || 'KH';
+}
+
+function firstGlyph(value: string): string {
+  return Array.from(value)[0] ?? '';
 }
 
 function setText(id: string, value: string): void {

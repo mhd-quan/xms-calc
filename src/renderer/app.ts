@@ -22,6 +22,7 @@ import { attachInfoView } from './modules/controllers/infoview';
 import { attachKnob, setKnobValue } from './modules/controllers/knob';
 import { cycleDisplayAmount } from './modules/billing-cycle';
 import { formatVND } from './modules/format';
+import { animatePanelSwitch, animateTrackEntry, bindPressFeedback, restartMotionClass } from './modules/motion';
 import { paletteVar } from './modules/palette';
 import { renderBottombar } from './modules/render-bottombar';
 import { bindModalFrame, hideModal, showModal } from './modules/render-modals';
@@ -170,6 +171,40 @@ const MOTION_STRUCT_SECONDS = 0.14;
 const MOTION_METER_SECONDS = 0.4;
 const SIDEBAR_REMOVE_SECONDS = 0.18;
 const STRIKE_PRICE_EPSILON = 0.5;
+
+function afterNextRender(callback: () => void): void {
+  requestAnimationFrame(() => requestAnimationFrame(callback));
+}
+
+function queueTrackEntryMotion(storeId: number, delayMs = 0): void {
+  afterNextRender(() => animateTrackEntry(storeId, delayMs));
+}
+
+function queueActiveTrackPulse(): void {
+  const activeId = activeTabId;
+  if (!activeId) return;
+  afterNextRender(() => {
+    const track = document.querySelector<HTMLElement>(`[data-id="${activeId}"]`);
+    if (track) restartMotionClass(track, 'motion-accent-pop', 420);
+  });
+}
+
+function queueMainPanelSwitch(): void {
+  afterNextRender(() => animatePanelSwitch('#mainContent'));
+}
+
+function setLooseDropdownOpen(wrapper: HTMLElement | null, isOpen: boolean): void {
+  if (!wrapper) return;
+  wrapper.classList.toggle('is-open', isOpen);
+  wrapper.setAttribute('aria-expanded', String(isOpen));
+  wrapper.querySelector<HTMLElement>('button')?.setAttribute('aria-expanded', String(isOpen));
+}
+
+function closeLooseDropdowns(except?: HTMLElement | null): void {
+  document.querySelectorAll<HTMLElement>('.topbar__actions .x-dropdown.is-open').forEach((wrapper) => {
+    if (wrapper !== except) setLooseDropdownOpen(wrapper, false);
+  });
+}
 
 function blankCustomer(): CustomerProfile {
   return {
@@ -424,6 +459,8 @@ function navigateSidebar(direction: number) {
   if (nextStore && nextStore.id !== activeTabId) {
     activeTabId = nextStore.id;
     commitQuoteMutation('all');
+    queueMainPanelSwitch();
+    queueActiveTrackPulse();
   }
 }
 
@@ -782,7 +819,8 @@ function addStore() {
   activeTabId = store.id;
   clearSidebarSearch();
   commitQuoteMutation();
-  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: MOTION_STRUCT_SECONDS });
+  queueTrackEntryMotion(store.id);
+  queueMainPanelSwitch();
 }
 
 function duplicateActiveStore(): void {
@@ -797,7 +835,8 @@ function duplicateActiveStore(): void {
   activeTabId = store.id;
   clearSidebarSearch();
   commitQuoteMutation();
-  gsap.fromTo(`[data-id="${store.id}"]`, { x: -20, opacity: 0 }, { x: 0, opacity: 1, duration: MOTION_STRUCT_SECONDS });
+  queueTrackEntryMotion(store.id);
+  queueMainPanelSwitch();
 }
 
 function animateStoreRemoval(el: Element | null, onComplete: () => void): void {
@@ -919,7 +958,7 @@ function renderBulkRows(focusIndex: number | null = null): void {
   rowsEl.innerHTML = bulkAreas.map((value, index) => {
     const color = paletteVar(startIndex + index - 1);
     return `
-      <div class="x-field-row" data-index="${index}" style="border-left: 2px solid ${color}; padding-left: var(--s-3);">
+      <div class="x-field-row bulk-add-modal__field" data-index="${index}" style="--bulk-accent: ${color};">
         <label class="x-field-row__label" for="bulkArea${index}">STORE ${String(startIndex + index).padStart(2, '0')}</label>
         <div class="x-suffix-wrap">
           <input id="bulkArea${index}" class="x-field x-field--num bulk-area-input tnum" type="text" inputmode="decimal" value="${escapeHTML(value)}" data-index="${index}" placeholder="0">
@@ -961,17 +1000,21 @@ function addBulkRows() {
   }
 
   let firstCreatedId: number | null = null;
+  const createdIds: number[] = [];
   areas.forEach((areaValue) => {
     const store = createStore(stores.length + 1);
     store.type = bulkType;
     store.area = areaValue;
     stores.push(store);
+    createdIds.push(store.id);
     if (!firstCreatedId) firstCreatedId = store.id;
   });
 
   activeTabId = firstCreatedId || activeTabId;
   closeBulkAddModal();
   commitQuoteMutation();
+  createdIds.forEach((storeId, index) => queueTrackEntryMotion(storeId, Math.min(index * 28, 180)));
+  queueMainPanelSwitch();
 }
 
 function animateNumber(elementId: string, newValue: number): void {
@@ -1245,6 +1288,20 @@ function setupScrubbableInput(inputId: string, baseStep = 1, min = -Infinity, ma
 
 function bindEvents() {
   attachInfoView(document.body);
+  bindPressFeedback(document.body);
+
+  const sidebarQuoteMini = optionalElement('sidebarQuoteMini');
+  const sidebarQuotePopover = optionalElement('sidebarQuotePopover');
+  const setSidebarQuotePopoverOpen = (isOpen: boolean) => {
+    sidebarQuoteMini?.classList.toggle('is-open', isOpen);
+    sidebarQuotePopover?.classList.toggle('is-open', isOpen);
+    sidebarQuoteMini?.setAttribute('aria-expanded', String(isOpen));
+    sidebarQuotePopover?.setAttribute('aria-hidden', String(!isOpen));
+  };
+  sidebarQuoteMini?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setSidebarQuotePopoverOpen(!sidebarQuoteMini.classList.contains('is-open'));
+  });
 
   const searchInput = optionalElement('searchInput');
   const searchClear = optionalElement('searchClear');
@@ -1272,8 +1329,9 @@ function bindEvents() {
     const newId = resolveStoreId(item.dataset.id);
     if (newId !== null && newId !== activeTabId) {
       activeTabId = newId;
-      gsap.fromTo('#mainContent', { opacity: 0, y: 5 }, { opacity: 1, y: 0, duration: MOTION_STRUCT_SECONDS });
       render(['main', 'sidebar']);
+      queueMainPanelSwitch();
+      queueActiveTrackPulse();
     }
   });
 
@@ -1448,6 +1506,8 @@ function bindEvents() {
       const field = discountApplyById[id];
       if (!field) return;
       discountEnabled[field] = !discountEnabled[field];
+      const bank = optionalElement(id)?.closest<HTMLElement>('.x-discount-bank');
+      if (bank) restartMotionClass(bank, 'motion-accent-pop', 420);
       commitQuoteMutation();
     });
   });
@@ -1489,41 +1549,48 @@ function bindEvents() {
     btnNewMenu.addEventListener('click', (e) => {
       e.stopPropagation();
       const isOpen = newDropdownWrapper.classList.contains('is-open');
-      document.querySelectorAll('.x-dropdown.is-open').forEach((el) => el.classList.remove('is-open'));
-      if (!isOpen) newDropdownWrapper.classList.add('is-open');
+      closeLooseDropdowns(newDropdownWrapper);
+      setLooseDropdownOpen(newDropdownWrapper, !isOpen);
     });
   }
-  if (btnNewQuote) btnNewQuote.addEventListener('click', () => { void createNewQuote(); newDropdownWrapper?.classList.remove('is-open'); });
-  if (btnNewRevision) btnNewRevision.addEventListener('click', () => { void createNewRevision(); newDropdownWrapper?.classList.remove('is-open'); });
-  if (btnImportQuote) btnImportQuote.addEventListener('click', () => { void importQuoteFromPdf(); newDropdownWrapper?.classList.remove('is-open'); });
+  if (btnNewQuote) btnNewQuote.addEventListener('click', () => { void createNewQuote(); setLooseDropdownOpen(newDropdownWrapper, false); });
+  if (btnNewRevision) btnNewRevision.addEventListener('click', () => { void createNewRevision(); setLooseDropdownOpen(newDropdownWrapper, false); });
+  if (btnImportQuote) btnImportQuote.addEventListener('click', () => { void importQuoteFromPdf(); setLooseDropdownOpen(newDropdownWrapper, false); });
 
   document.getElementById('btnCustomer').addEventListener('click', openCustomerModal);
   const exportMenuWrapper = document.getElementById('exportDropdownWrapper');
   document.getElementById('btnExportMenu').addEventListener('click', (e) => {
     e.stopPropagation();
-    document.querySelectorAll('.x-dropdown.is-open').forEach((el) => el.classList.remove('is-open'));
-    exportMenuWrapper.classList.toggle('is-open');
+    const isOpen = exportMenuWrapper.classList.contains('is-open');
+    closeLooseDropdowns(exportMenuWrapper);
+    setLooseDropdownOpen(exportMenuWrapper, !isOpen);
   });
   document.addEventListener('click', (e) => {
-    if (!exportMenuWrapper.contains(e.target as Node) && e.target !== document.getElementById('btnExportMenu')) {
-      exportMenuWrapper.classList.remove('is-open');
+    const target = e.target instanceof Node ? e.target : null;
+    if (!target) return;
+    if (!newDropdownWrapper?.contains(target)) setLooseDropdownOpen(newDropdownWrapper, false);
+    if (!exportMenuWrapper.contains(target)) setLooseDropdownOpen(exportMenuWrapper, false);
+    if (!sidebarQuoteMini?.contains(target) && !sidebarQuotePopover?.contains(target)) {
+      setSidebarQuotePopoverOpen(false);
     }
   });
 
   document.getElementById('btnExportPdf').addEventListener('click', () => {
-    exportMenuWrapper.classList.remove('is-open');
+    setLooseDropdownOpen(exportMenuWrapper, false);
     performExportPdf();
   });
   document.getElementById('btnExportExcel').addEventListener('click', () => {
-    exportMenuWrapper.classList.remove('is-open');
+    setLooseDropdownOpen(exportMenuWrapper, false);
     performExportExcel();
   });
   document.getElementById('btnSaveDraftFile').addEventListener('click', () => {
-    exportMenuWrapper.classList.remove('is-open');
+    setLooseDropdownOpen(exportMenuWrapper, false);
     performSaveDraftFile();
   });
 
   window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setSidebarQuotePopoverOpen(false);
+
     const isMod = event.metaKey || event.ctrlKey;
     const isShift = event.shiftKey;
     const key = event.key.toLowerCase();

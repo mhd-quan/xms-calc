@@ -5,6 +5,37 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.12.1] — 2026-05-07
+
+### Changed
+- **Discount Visualization**: Reworked the meter frame toward the Ableton-style reference with a taller dark box, stronger grid, and step lines that overhang both ends.
+- **Savings Ring**: Added a bottom-bar tick ring beside Grand Total to visualize the total savings ratio after all discounts.
+- **Pricing Spacing**: Tightened pricing row spacing so inline subtotals sit closer to their controls instead of drifting to the far edge.
+- **Bulk Add Modal**: Fixed clipped dropdowns and capped the modal height so large branch batches scroll while footer actions remain reachable.
+- **Version Display**: Updated the status bar version label to match the packaged `1.12.1` release.
+
+## [1.12.0] — 2026-05-06
+
+### Changed
+- **Responsive Layout**: Kept the workbench in its dense two-column layout longer for square and moderately narrow windows, with the discount visualization shrinking first instead of forcing the whole row to stack.
+- **Discount Visualization**: Added an inset framed meter with grid cues and resize-safe canvas redraws so the discount level remains readable without stretched line artifacts.
+- **Compact Sidebar**: Added a short-height sidebar mode with logo-only branding, branch cue tiles, and a two-letter quote-chain button that opens the current revision popover.
+- **Bottom Bar**: Let the four subtotal groups switch to a 2x2 matrix at narrower widths while preserving the full-width bottom/status frame.
+- **Version Display**: Updated the status bar version label to match the packaged `1.12.0` release.
+
+## [1.11.4] — 2026-05-06
+
+### Changed
+- **Motion Refinement**: Added transition motion for button presses, dropdowns, date popups, modals, branch switching, branch creation, and bulk branch entry while respecting reduced-motion preferences.
+- **Accent Glow**: Extended restrained breathing/glow treatments to active branch accent lines, branch color chips, discount lines, VU fills, and active discount toggles.
+- **Performance**: Optimized sidebar branch rendering by removing per-row index scans and deferring branch entry animations until after the scheduled render frame.
+- **Version Display**: Updated the status bar version label to match the packaged `1.11.4` release.
+
+## [1.11.3] — 2026-05-05
+
+### Changed
+- **Discount Visualization**: Replaced the heavy automation-lane canvas with a cleaner step-line indicator. Disabled discounts render as washed gray, while enabled discounts use the section accent color and drop lower as the discount increases.
+
 ## [1.11.2] — 2026-05-05
 
 ### Added
