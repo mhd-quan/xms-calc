@@ -1290,6 +1290,19 @@ function bindEvents() {
   attachInfoView(document.body);
   bindPressFeedback(document.body);
 
+  const sidebarQuoteMini = optionalElement('sidebarQuoteMini');
+  const sidebarQuotePopover = optionalElement('sidebarQuotePopover');
+  const setSidebarQuotePopoverOpen = (isOpen: boolean) => {
+    sidebarQuoteMini?.classList.toggle('is-open', isOpen);
+    sidebarQuotePopover?.classList.toggle('is-open', isOpen);
+    sidebarQuoteMini?.setAttribute('aria-expanded', String(isOpen));
+    sidebarQuotePopover?.setAttribute('aria-hidden', String(!isOpen));
+  };
+  sidebarQuoteMini?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    setSidebarQuotePopoverOpen(!sidebarQuoteMini.classList.contains('is-open'));
+  });
+
   const searchInput = optionalElement('searchInput');
   const searchClear = optionalElement('searchClear');
   if (searchInput instanceof HTMLInputElement) {
@@ -1557,6 +1570,9 @@ function bindEvents() {
     if (!target) return;
     if (!newDropdownWrapper?.contains(target)) setLooseDropdownOpen(newDropdownWrapper, false);
     if (!exportMenuWrapper.contains(target)) setLooseDropdownOpen(exportMenuWrapper, false);
+    if (!sidebarQuoteMini?.contains(target) && !sidebarQuotePopover?.contains(target)) {
+      setSidebarQuotePopoverOpen(false);
+    }
   });
 
   document.getElementById('btnExportPdf').addEventListener('click', () => {
@@ -1573,6 +1589,8 @@ function bindEvents() {
   });
 
   window.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') setSidebarQuotePopoverOpen(false);
+
     const isMod = event.metaKey || event.ctrlKey;
     const isShift = event.shiftKey;
     const key = event.key.toLowerCase();

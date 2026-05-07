@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.12.0] — 2026-05-06
+
+### Changed
+- **Responsive Layout**: Kept the workbench in its dense two-column layout longer for square and moderately narrow windows, with the discount visualization shrinking first instead of forcing the whole row to stack.
+- **Discount Visualization**: Added an inset framed meter with grid cues and resize-safe canvas redraws so the discount level remains readable without stretched line artifacts.
+- **Compact Sidebar**: Added a short-height sidebar mode with logo-only branding, branch cue tiles, and a two-letter quote-chain button that opens the current revision popover.
+- **Bottom Bar**: Let the four subtotal groups switch to a 2x2 matrix at narrower widths while preserving the full-width bottom/status frame.
+- **Version Display**: Updated the status bar version label to match the packaged `1.12.0` release.
+
 ## [1.11.4] — 2026-05-06
 
 ### Changed

@@ -25,6 +25,9 @@ const wheelRemainders = new WeakMap<HTMLElement, number>();
 const envelopeCache = new WeakMap<HTMLCanvasElement, EnvelopeCache>();
 const pendingEnvelopeValues = new Map<string, EnvelopeDrawState>();
 const pendingEnvelopeFrames = new Map<string, number>();
+const lastEnvelopeValues = new Map<string, EnvelopeDrawState>();
+const observedEnvelopeCanvases = new WeakSet<HTMLCanvasElement>();
+let envelopeResizeObserver: ResizeObserver | null = null;
 
 const WHEEL_THRESHOLD = 64;
 const MAX_WHEEL_STEPS_PER_EVENT = 1;
@@ -219,6 +222,7 @@ function isDiscountApplied(section: string): boolean {
 }
 
 function scheduleEnvelopeDraw(canvasId: string, norm: number, enabled: boolean): void {
+  lastEnvelopeValues.set(canvasId, { norm, enabled });
   pendingEnvelopeValues.set(canvasId, { norm, enabled });
   if (pendingEnvelopeFrames.has(canvasId)) return;
 
@@ -266,6 +270,21 @@ function getEnvelopeCache(canvas: HTMLCanvasElement): EnvelopeCache | null {
   return cached;
 }
 
+function observeEnvelopeResize(canvas: HTMLCanvasElement): void {
+  if (observedEnvelopeCanvases.has(canvas) || typeof ResizeObserver === 'undefined') return;
+  if (!envelopeResizeObserver) {
+    envelopeResizeObserver = new ResizeObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!(entry.target instanceof HTMLCanvasElement)) return;
+        const state = lastEnvelopeValues.get(entry.target.id);
+        if (state) scheduleEnvelopeDraw(entry.target.id, state.norm, state.enabled);
+      });
+    });
+  }
+  observedEnvelopeCanvases.add(canvas);
+  envelopeResizeObserver.observe(canvas);
+}
+
 /**
  * Draws the discount curve as a crisp step line: full price on the high rail,
  * discounted price on the low rail. Disabled discounts stay washed out.
@@ -275,6 +294,7 @@ function getEnvelopeCache(canvas: HTMLCanvasElement): EnvelopeCache | null {
 function drawEnvelope(canvasId: string, norm: number, enabled: boolean): void {
   const canvas = document.getElementById(canvasId) as HTMLCanvasElement | null;
   if (!canvas || !(canvas instanceof HTMLCanvasElement)) return;
+  observeEnvelopeResize(canvas);
 
   const cached = getEnvelopeCache(canvas);
   if (!cached) return;
@@ -285,22 +305,45 @@ function drawEnvelope(canvasId: string, norm: number, enabled: boolean): void {
   const laneStyle = getComputedStyle(canvas.closest('.x-discount-bank') ?? canvas);
   const accent = laneStyle.getPropertyValue('--lane-accent').trim() || rootStyle.getPropertyValue('--active').trim() || '#ffb43a';
   const muted = rootStyle.getPropertyValue('--line-3').trim() || '#5b6069';
+  const grid = rootStyle.getPropertyValue('--line-2').trim() || '#3c4047';
 
   ctx.clearRect(0, 0, W, H);
 
-  const padX = 6.5;
+  const padX = 8.5;
   const padY = 7.5;
   const yHigh = Math.round(padY + (H - padY * 2) * 0.1) + 0.5;
   const yLow = Math.round(yHigh + (H - padY - yHigh) * clampedNorm) + 0.5;
-  const stepX = Math.round(W * 0.58) + 0.5;
+  const stepX = Math.round(W * 0.56) + 0.5;
   const endX = Math.max(padX, W - padX);
+
+  ctx.save();
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'miter';
+  ctx.strokeStyle = grid;
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = enabled ? 0.24 : 0.18;
+  for (let index = 1; index <= 3; index += 1) {
+    const x = Math.round(padX + ((endX - padX) * index) / 4) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, padY);
+    ctx.lineTo(x, H - padY);
+    ctx.stroke();
+  }
+  for (let index = 1; index <= 3; index += 1) {
+    const y = Math.round(padY + ((H - padY * 2) * index) / 4) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(padX, y);
+    ctx.lineTo(endX, y);
+    ctx.stroke();
+  }
+  ctx.restore();
 
   ctx.lineCap = 'butt';
   ctx.lineJoin = 'miter';
   ctx.strokeStyle = enabled ? accent : muted;
-  ctx.lineWidth = enabled ? 2.25 : 2.1;
-  ctx.globalAlpha = enabled ? 0.76 + clampedNorm * 0.18 : 0.48;
-  ctx.shadowBlur = enabled && clampedNorm > 0 ? 1.6 : 0;
+  ctx.lineWidth = enabled ? 2.15 : 2;
+  ctx.globalAlpha = enabled ? 0.8 + clampedNorm * 0.16 : 0.46;
+  ctx.shadowBlur = enabled && clampedNorm > 0 ? 0.8 : 0;
   ctx.shadowColor = accent;
   ctx.beginPath();
   ctx.moveTo(padX, yHigh);
