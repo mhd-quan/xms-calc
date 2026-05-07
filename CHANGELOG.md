@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.11.3] — 2026-05-05
+
+### Changed
+- **Discount Visualization**: Replaced the heavy automation-lane canvas with a cleaner step-line indicator. Disabled discounts render as washed gray, while enabled discounts use the section accent color and drop lower as the discount increases.
+
 ## [1.11.2] — 2026-05-05
 
 ### Added
