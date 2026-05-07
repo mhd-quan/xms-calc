@@ -5,7 +5,7 @@
 .app {
   --sidebar-w: clamp(216px, 18vw, 240px);
   --topbar-h: 44px;
-  --bottombar-h: 64px;
+  --bottombar-h: 74px;
   --statusbar-h: 22px;
   display: grid;
   grid-template-rows: var(--topbar-h) minmax(0, 1fr) var(--bottombar-h) var(--statusbar-h);
@@ -548,8 +548,8 @@
 .csbody-grid--6-6 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .x-row {
   display: grid;
-  grid-template-columns: minmax(224px, 0.9fr) minmax(360px, 600px);
-  gap: clamp(16px, 2vw, 28px);
+  grid-template-columns: minmax(280px, 0.58fr) minmax(640px, 1.05fr);
+  gap: clamp(18px, 1.4vw, 26px);
   align-items: flex-start;
   padding: var(--s-5) 0;
 }
@@ -587,10 +587,10 @@
 }
 
 .x-row__inline-amount--control {
-  min-width: 148px;
+  min-width: 136px;
   margin-top: 0;
   margin-left: auto;
-  padding: 0 0 0 var(--s-4);
+  padding: 0 0 0 var(--s-3);
   border-top: 0;
   border-left: 1px solid var(--line-1);
   align-self: center;
@@ -633,13 +633,14 @@
   --knob-accent: var(--lane-accent);
   --knob-accent-dim: var(--lane-fill);
   display: grid;
-  grid-template-columns: auto auto minmax(112px, 0.72fr) minmax(140px, auto);
+  grid-template-columns: auto auto minmax(260px, 1fr) minmax(136px, max-content);
   align-items: center;
   justify-content: stretch;
-  gap: clamp(10px, 1.55vw, 18px);
+  gap: clamp(14px, 1.25vw, 22px);
   min-width: 0;
-  width: min(540px, 100%);
-  padding-left: clamp(8px, 1.6vw, 20px);
+  width: 100%;
+  max-width: 880px;
+  padding-left: 0;
 }
 
 .x-discount-bank .x-knob {
@@ -668,11 +669,12 @@
 }
 
 .x-discount-bank.is-summary-only {
-  grid-template-columns: minmax(148px, auto);
+  grid-template-columns: minmax(136px, max-content);
   justify-content: end;
   justify-self: stretch;
-  width: min(540px, 100%);
-  padding-left: clamp(8px, 1.6vw, 20px);
+  width: 100%;
+  max-width: 880px;
+  padding-left: 0;
 }
 
 .x-discount-bank.is-summary-only .x-discount-toggle,
@@ -687,9 +689,9 @@
   --meter-grid: rgba(148, 154, 144, 0.20);
   --meter-border: rgba(100, 103, 99, 0.74);
   width: 100%;
-  min-width: 124px;
-  max-width: 220px;
-  height: 62px;
+  min-width: 220px;
+  max-width: none;
+  height: 66px;
   position: relative;
   overflow: hidden;
   background:
@@ -814,7 +816,7 @@
   }
 
   .x-row {
-    grid-template-columns: minmax(212px, 0.85fr) minmax(328px, 560px);
+    grid-template-columns: minmax(228px, 0.55fr) minmax(520px, 1fr);
     gap: 16px;
   }
 
@@ -823,16 +825,15 @@
   }
 
   .x-discount-bank {
-    grid-template-columns: auto auto minmax(104px, 0.64fr) minmax(140px, auto);
+    grid-template-columns: auto auto minmax(188px, 1fr) minmax(132px, max-content);
     gap: 14px;
-    width: min(500px, 100%);
-    padding-left: var(--s-4);
+    max-width: 720px;
+    padding-left: 0;
   }
 
   .x-knob__envelope-frame {
-    min-width: 112px;
-    max-width: 188px;
-    height: 58px;
+    min-width: 164px;
+    height: 60px;
   }
 }
 
@@ -863,11 +864,14 @@
   .x-discount-bank {
     width: 100%;
     grid-template-columns: auto auto minmax(104px, 1fr) minmax(132px, auto);
+    max-width: none;
     padding-left: 0;
   }
 
   .x-knob__envelope-frame {
+    min-width: 104px;
     max-width: none;
+    height: 58px;
   }
 }
 
@@ -1119,7 +1123,7 @@
   grid-column: 1 / -1;
   grid-row: 3;
   display: grid;
-  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(104px, 128px) minmax(260px, 300px);
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(128px, 148px) minmax(260px, 300px);
   align-items: stretch;
   min-width: 0;
   background: var(--shell-2);
@@ -1190,18 +1194,49 @@
   display: grid;
   place-items: center;
   min-width: 0;
-  padding: 0 var(--s-3);
+  padding: 0 var(--s-2);
   border-left: 1px solid var(--line-1);
   background: var(--shell-2);
   overflow: hidden;
 }
 
+.bottombar__savings-meter {
+  position: relative;
+  width: 68px;
+  height: 68px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+  animation: savings-ring-breathe 3.8s ease-in-out infinite;
+}
+
 .bottombar__savings-ring {
-  width: 56px;
-  height: 56px;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
   display: block;
   opacity: 0.92;
-  animation: savings-ring-breathe 3.8s ease-in-out infinite;
+}
+
+.bottombar__savings-value {
+  position: relative;
+  z-index: 1;
+  transform: translateY(0.5px);
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--active);
+  letter-spacing: 0;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--active) 16%, transparent);
+  transition: color var(--t-quick), opacity var(--t-quick);
+}
+
+.bottombar__savings-meter.is-zero .bottombar__savings-value {
+  color: var(--ink-3);
+  opacity: 0.82;
+  text-shadow: none;
 }
 
 .bottombar__total {
@@ -1287,7 +1322,7 @@
   }
 
   .bottombar {
-    grid-template-columns: 176px minmax(0, 1fr) 96px 240px;
+    grid-template-columns: 176px minmax(0, 1fr) 116px 240px;
   }
 
   .bottombar .x-infoview,
@@ -1317,12 +1352,16 @@
   }
 
   .bottombar {
-    grid-template-columns: minmax(156px, 196px) minmax(0, 1fr) 82px minmax(222px, 252px);
+    grid-template-columns: minmax(156px, 196px) minmax(0, 1fr) 96px minmax(222px, 252px);
   }
 
-  .bottombar__savings-ring {
-    width: 52px;
-    height: 52px;
+  .bottombar__savings-meter {
+    width: 62px;
+    height: 62px;
+  }
+
+  .bottombar__savings-value {
+    font-size: 12px;
   }
 
   .bottombar__breakdown {

@@ -40,10 +40,11 @@ export function renderBottombar(snapshot: RenderSnapshot): void {
 
   const grand = cycleDisplayAmount(totals.grand, displayCycle);
   const grandOriginal = cycleDisplayAmount(totals.grandOriginal, displayCycle);
+  const grandSavingsRatio = savingsRatio(grandOriginal, grand);
   setStrikeMoney('grandTotalOriginal', grandOriginal, grand);
   setText('grandTotal', formatVND(grand));
   setText('grandTotalLabel', `Grand total · ${cycleLabel(displayCycle)}`);
-  renderSavingsRing('grandSavingsRing', savingsRatio(grandOriginal, grand));
+  renderSavingsMeter(grandSavingsRatio);
 
   document.querySelectorAll<HTMLElement>('#vatControl .x-seg__btn').forEach((button) => {
     const buttonRate = Number(button.dataset.vat);
@@ -82,6 +83,18 @@ function getElement(id: string): HTMLElement | null {
 function savingsRatio(originalValue: number, currentValue: number): number {
   if (originalValue <= currentValue + STRIKE_PRICE_EPSILON || originalValue <= 0) return 0;
   return clamp((originalValue - currentValue) / originalValue, 0, 1);
+}
+
+function renderSavingsMeter(ratio: number): void {
+  const clampedRatio = clamp(ratio, 0, 1);
+  const roundedPercent = Math.round(clampedRatio * 100);
+  const meter = getElement('grandSavingsMeter');
+  if (meter) {
+    meter.classList.toggle('is-zero', roundedPercent === 0);
+    meter.setAttribute('aria-label', `Savings ${roundedPercent}%`);
+  }
+  setText('grandSavingsValue', `${roundedPercent}%`);
+  renderSavingsRing('grandSavingsRing', clampedRatio);
 }
 
 function renderSavingsRing(id: string, targetRatio: number): void {
@@ -153,9 +166,10 @@ function drawSavingsRing(canvas: HTMLCanvasElement, ratio: number): void {
   const centerX = width / 2;
   const centerY = height / 2;
   const size = Math.min(width, height);
-  const radius = Math.max(14, size * 0.42);
-  const innerRadius = Math.max(8, size * 0.28);
-  const activeTicks = Math.round(SAVINGS_RING_TICKS * clamp(ratio, 0, 1));
+  const outerRadius = Math.max(20, size / 2 - 5);
+  const tickLength = clamp(size * 0.15, 9, 13);
+  const innerRadius = outerRadius - tickLength;
+  const activeTicks = SAVINGS_RING_TICKS * clamp(ratio, 0, 1);
   const rootStyle = getComputedStyle(document.documentElement);
   const active = rootStyle.getPropertyValue('--active').trim() || '#ffb43a';
 
@@ -165,26 +179,19 @@ function drawSavingsRing(canvas: HTMLCanvasElement, ratio: number): void {
 
   for (let index = 0; index < SAVINGS_RING_TICKS; index += 1) {
     const angle = -Math.PI / 2 + (index / SAVINGS_RING_TICKS) * Math.PI * 2;
-    const isActive = index < activeTicks;
-    const isMajor = index % 12 === 0;
-    const tickInner = innerRadius - (isMajor ? 1.5 : 0);
-    const tickOuter = radius + (isActive ? 2 : 0) + (isMajor ? 1.5 : 0);
+    const activeCoverage = clamp(activeTicks - index, 0, 1);
+    const isActive = activeCoverage > 0;
+    const isMajor = index % 18 === 0;
+    const isMid = index % 6 === 0;
+    const tickInner = innerRadius - (isMajor ? 2.4 : isMid ? 1.2 : 0);
+    const tickOuter = Math.min(size / 2 - 3, outerRadius + (isMajor ? 1.9 : isMid ? 0.8 : 0));
     ctx.beginPath();
     ctx.moveTo(centerX + Math.cos(angle) * tickInner, centerY + Math.sin(angle) * tickInner);
     ctx.lineTo(centerX + Math.cos(angle) * tickOuter, centerY + Math.sin(angle) * tickOuter);
     ctx.strokeStyle = active;
-    ctx.globalAlpha = isActive ? 0.92 : isMajor ? 0.28 : 0.16;
-    ctx.lineWidth = isActive ? 2.1 : isMajor ? 1.65 : 1.35;
+    ctx.globalAlpha = isActive ? 0.48 + activeCoverage * 0.46 : isMajor ? 0.32 : 0.2;
+    ctx.lineWidth = isActive ? 2.2 : isMajor ? 1.75 : 1.35;
     ctx.stroke();
-  }
-
-  if (activeTicks > 0) {
-    const markerAngle = -Math.PI / 2 + (activeTicks / SAVINGS_RING_TICKS) * Math.PI * 2;
-    ctx.beginPath();
-    ctx.arc(centerX + Math.cos(markerAngle) * (radius + 1.5), centerY + Math.sin(markerAngle) * (radius + 1.5), 1.35, 0, Math.PI * 2);
-    ctx.fillStyle = active;
-    ctx.globalAlpha = 0.95;
-    ctx.fill();
   }
 
   ctx.globalAlpha = 1;
@@ -203,7 +210,13 @@ function getSavingsRingCache(canvas: HTMLCanvasElement): SavingsRingCache | null
     savingsRingCache.set(canvas, cached);
   }
 
-  if (cached.width !== width || cached.height !== height || cached.dpr !== dpr) {
+  if (
+    cached.width !== width ||
+    cached.height !== height ||
+    cached.dpr !== dpr ||
+    canvas.width !== Math.round(width * dpr) ||
+    canvas.height !== Math.round(height * dpr)
+  ) {
     cached.width = width;
     cached.height = height;
     cached.dpr = dpr;

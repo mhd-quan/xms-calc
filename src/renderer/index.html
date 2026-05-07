@@ -469,7 +469,10 @@
       </div>
 
       <div class="bottombar__savings" data-info="Savings meter|Visualize mức tiết kiệm tổng trước và sau giảm giá.|—">
-        <canvas class="bottombar__savings-ring" id="grandSavingsRing" width="64" height="64" aria-hidden="true"></canvas>
+        <div class="bottombar__savings-meter is-zero" id="grandSavingsMeter" aria-label="Savings 0%">
+          <canvas class="bottombar__savings-ring" id="grandSavingsRing" width="80" height="80" aria-hidden="true"></canvas>
+          <span class="bottombar__savings-value tnum" id="grandSavingsValue">0%</span>
+        </div>
       </div>
 
       <div class="bottombar__total" data-info="Grand total|Tổng thanh toán sau VAT của toàn bộ báo giá.|—">
@@ -505,7 +508,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.12.3</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.12.4</div>
     </div>
   </div>
 

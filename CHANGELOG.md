@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.12.4] — 2026-05-07
+
+### Fixed
+- **Subtotal Row Spacing**: Rebalanced the discount row grid so meters, knobs, toggles, and inline subtotals distribute horizontally without leaving a large empty readout lane.
+- **Savings Ring**: Rebuilt the bottom-bar savings meter as a full circular tick ring with a centered `% saved` readout and ratio-driven active ticks.
+- **Version Display**: Updated the status bar version label to match the `1.12.4` PR.
+
 ## [1.12.3] — 2026-05-07
 
 ### Fixed
