@@ -298,9 +298,9 @@ function drawEnvelope(canvasId: string, norm: number, enabled: boolean): void {
   ctx.lineCap = 'butt';
   ctx.lineJoin = 'miter';
   ctx.strokeStyle = enabled ? accent : muted;
-  ctx.lineWidth = enabled ? 2.35 : 2.1;
-  ctx.globalAlpha = enabled ? 0.72 + clampedNorm * 0.28 : 0.48;
-  ctx.shadowBlur = enabled && clampedNorm > 0 ? 5 : 0;
+  ctx.lineWidth = enabled ? 2.25 : 2.1;
+  ctx.globalAlpha = enabled ? 0.76 + clampedNorm * 0.18 : 0.48;
+  ctx.shadowBlur = enabled && clampedNorm > 0 ? 1.6 : 0;
   ctx.shadowColor = accent;
   ctx.beginPath();
   ctx.moveTo(padX, yHigh);

@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.11.4] — 2026-05-06
+
+### Changed
+- **Motion Refinement**: Added transition motion for button presses, dropdowns, date popups, modals, branch switching, branch creation, and bulk branch entry while respecting reduced-motion preferences.
+- **Accent Glow**: Extended restrained breathing/glow treatments to active branch accent lines, branch color chips, discount lines, VU fills, and active discount toggles.
+- **Performance**: Optimized sidebar branch rendering by removing per-row index scans and deferring branch entry animations until after the scheduled render frame.
+- **Version Display**: Updated the status bar version label to match the packaged `1.11.4` release.
+
 ## [1.11.3] — 2026-05-05
 
 ### Changed

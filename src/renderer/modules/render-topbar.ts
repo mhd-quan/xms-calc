@@ -10,7 +10,9 @@ export function renderTopbar(snapshot: RenderSnapshot): void {
 
   const colorEl = getElement('bcBranchColor');
   if (colorEl) {
-    colorEl.style.background = paletteVar(snapshot.activeStoreIndex);
+    const color = paletteVar(snapshot.activeStoreIndex);
+    colorEl.style.background = color;
+    colorEl.style.setProperty('--branch-accent', color);
   }
 }
 

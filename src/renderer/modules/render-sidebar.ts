@@ -30,12 +30,14 @@ export function renderSidebar(snapshot: RenderSnapshot): void {
   const filtered = search
     ? stores.filter((store) => store.name.toLowerCase().includes(search))
     : stores;
+  const indexById = new Map(stores.map((store, index) => [store.id, index]));
 
   const html = filtered.length
-    ? filtered.map((store) => trackTemplate(store, stores.indexOf(store), store.id === activeId, snapshot)).join('')
+    ? filtered.map((store) => trackTemplate(store, indexById.get(store.id) ?? 0, store.id === activeId, snapshot)).join('')
     : '<div class="eyebrow" style="padding: 24px 6px; color: var(--ink-4);">Không tìm thấy</div>';
 
-  if (list.innerHTML !== html) list.innerHTML = html;
+  if (list.innerHTML === html) return;
+  list.innerHTML = html;
 
   list.querySelectorAll<HTMLElement>('.x-vu').forEach((vu) => {
     vu.style.setProperty('--vu', vu.dataset.vu ?? '0');
@@ -53,8 +55,8 @@ function trackTemplate(store: Store, index: number, isActive: boolean, snapshot:
   const badge = String(index + 1).padStart(2, '0');
   const detail = `${typeLabel} · ${areaRaw} · ${formatVND(total)} ₫`;
 
-  return `<div class="x-track${isActive ? ' is-active' : ''}" data-id="${store.id}" data-info="${escapeAttr(store.name)}|${escapeAttr(detail)}|—">
-    <div class="x-track__color" style="background: ${color}"></div>
+  return `<div class="x-track${isActive ? ' is-active' : ''}" data-id="${store.id}" style="--track-accent: ${color}" data-info="${escapeAttr(store.name)}|${escapeAttr(detail)}|—">
+    <div class="x-track__color"></div>
     <div class="x-track__body">
       <div class="x-track__head">
         <span class="x-track__badge" style="background: ${color}">${badge}</span>
