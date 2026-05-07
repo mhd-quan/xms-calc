@@ -189,7 +189,7 @@ function resolveImport(preview: ImportPreview, action: ImportActionKey) {
 
 function createWindow(): void {
   const mainWindow = new BrowserWindow({
-    width: 1280,
+    width: 1160,
     height: 800,
     minWidth: 1080,
     minHeight: 600,

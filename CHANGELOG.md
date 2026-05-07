@@ -5,6 +5,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.12.1] — 2026-05-07
+
+### Changed
+- **Discount Visualization**: Reworked the meter frame toward the Ableton-style reference with a taller dark box, stronger grid, and step lines that overhang both ends.
+- **Savings Ring**: Added a bottom-bar tick ring beside Grand Total to visualize the total savings ratio after all discounts.
+- **Pricing Spacing**: Tightened pricing row spacing so inline subtotals sit closer to their controls instead of drifting to the far edge.
+- **Bulk Add Modal**: Fixed clipped dropdowns and capped the modal height so large branch batches scroll while footer actions remain reachable.
+- **Version Display**: Updated the status bar version label to match the packaged `1.12.1` release.
+
 ## [1.12.0] — 2026-05-06
 
 ### Changed

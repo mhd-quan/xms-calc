@@ -269,7 +269,9 @@
                     <div class="x-knob__readout" id="discountAccountVal">0%</div>
                     <div class="x-knob__label">Discount</div>
                   </div>
-                    <canvas class="x-knob__envelope" id="envelopeAccountKnob" width="96" height="60" aria-hidden="true"></canvas>
+                    <div class="x-knob__envelope-frame" aria-hidden="true">
+                      <canvas class="x-knob__envelope" id="envelopeAccountKnob" width="120" height="72"></canvas>
+                    </div>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
                       <span class="x-row__inline-amount__strike tnum" id="accountOriginalAmount" hidden>0 ₫</span>
                       <span class="x-row__inline-amount__current">
@@ -317,7 +319,9 @@
                       <div class="x-knob__readout" id="discountBoxVal">0%</div>
                       <div class="x-knob__label">Discount</div>
                     </div>
-                      <canvas class="x-knob__envelope" id="envelopeBoxKnob" width="96" height="60" aria-hidden="true"></canvas>
+                      <div class="x-knob__envelope-frame" aria-hidden="true">
+                        <canvas class="x-knob__envelope" id="envelopeBoxKnob" width="120" height="72"></canvas>
+                      </div>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
                       <span class="x-row__inline-amount__strike tnum" id="boxOriginalAmount" hidden>0 ₫</span>
                       <span class="x-row__inline-amount__current">
@@ -367,7 +371,9 @@
                     <div class="x-knob__readout" id="discountQTGVal">0%</div>
                     <div class="x-knob__label">Discount</div>
                   </div>
-                    <canvas class="x-knob__envelope" id="envelopeQTGKnob" width="96" height="60" aria-hidden="true"></canvas>
+                    <div class="x-knob__envelope-frame" aria-hidden="true">
+                      <canvas class="x-knob__envelope" id="envelopeQTGKnob" width="120" height="72"></canvas>
+                    </div>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
                       <span class="x-row__inline-amount__strike tnum" id="qtgOriginalAmount" hidden>0 ₫</span>
                       <span class="x-row__inline-amount__current">
@@ -406,7 +412,9 @@
                     <div class="x-knob__readout" id="discountQLQVal">0%</div>
                     <div class="x-knob__label">Discount</div>
                   </div>
-                    <canvas class="x-knob__envelope" id="envelopeQLQKnob" width="96" height="60" aria-hidden="true"></canvas>
+                    <div class="x-knob__envelope-frame" aria-hidden="true">
+                      <canvas class="x-knob__envelope" id="envelopeQLQKnob" width="120" height="72"></canvas>
+                    </div>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
                       <span class="x-row__inline-amount__strike tnum" id="qlqOriginalAmount" hidden>0 ₫</span>
                       <span class="x-row__inline-amount__current">
@@ -460,6 +468,10 @@
         </div>
       </div>
 
+      <div class="bottombar__savings" data-info="Savings meter|Visualize mức tiết kiệm tổng trước và sau giảm giá.|—">
+        <canvas class="bottombar__savings-ring" id="grandSavingsRing" width="64" height="64" aria-hidden="true"></canvas>
+      </div>
+
       <div class="bottombar__total" data-info="Grand total|Tổng thanh toán sau VAT của toàn bộ báo giá.|—">
         <div class="bottombar__total__head">
           <div class="bottombar__total__label" id="grandTotalLabel">Grand total · yearly</div>
@@ -493,14 +505,14 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.12.0</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.12.3</div>
     </div>
   </div>
 
   <!-- BULK ADD MODAL -->
   <div id="bulkAddModal" class="x-modal hidden" role="dialog" aria-modal="true" aria-labelledby="bulkAddTitle">
     <div class="x-modal__overlay"></div>
-    <div class="x-modal__panel" style="min-width: 580px;">
+    <div class="x-modal__panel bulk-add-modal__panel">
       <div class="x-modal__head">
         <div>
           <div class="x-modal__title" id="bulkAddTitle">Bulk Add</div>
@@ -508,8 +520,8 @@
         </div>
         <button id="closeBulkAdd" class="x-modal__close" type="button" aria-label="Close Bulk Add">×</button>
       </div>
-      <div class="x-modal__body" style="padding: var(--s-6); max-height: none;">
-        <div class="x-field-row" style="margin-bottom: var(--s-5);">
+      <div class="bulk-add-modal__template">
+        <div class="x-field-row">
           <label class="x-field-row__label">Template / Mô hình</label>
           <div id="bulkBusinessType" class="x-dropdown" data-value="" tabindex="0">
             <div class="x-dropdown__display">
@@ -527,13 +539,14 @@
             </div>
           </div>
         </div>
-
-        <div style="margin-top: var(--s-5); padding: var(--s-4); background: var(--inset-0); border: 1px solid var(--line-1); border-radius: var(--r-2);">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--s-4);">
+      </div>
+      <div class="x-modal__body bulk-add-modal__body">
+        <div class="bulk-add-modal__rows">
+          <div class="bulk-add-modal__rows-head">
             <span class="x-field-row__label">Branch areas</span>
             <span class="tnum" id="bulkRowCount" style="font-family: var(--font-num); font-size: var(--t-label); color: var(--ink-2);">0 rows</span>
           </div>
-          <div id="bulkRows" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-4);"></div>
+          <div id="bulkRows" class="bulk-add-modal__grid"></div>
         </div>
       </div>
       <div class="x-modal__foot">

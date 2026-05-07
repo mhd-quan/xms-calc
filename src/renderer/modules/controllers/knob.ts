@@ -305,38 +305,15 @@ function drawEnvelope(canvasId: string, norm: number, enabled: boolean): void {
   const laneStyle = getComputedStyle(canvas.closest('.x-discount-bank') ?? canvas);
   const accent = laneStyle.getPropertyValue('--lane-accent').trim() || rootStyle.getPropertyValue('--active').trim() || '#ffb43a';
   const muted = rootStyle.getPropertyValue('--line-3').trim() || '#5b6069';
-  const grid = rootStyle.getPropertyValue('--line-2').trim() || '#3c4047';
 
   ctx.clearRect(0, 0, W, H);
 
-  const padX = 8.5;
+  const padX = 5;
   const padY = 7.5;
   const yHigh = Math.round(padY + (H - padY * 2) * 0.1) + 0.5;
   const yLow = Math.round(yHigh + (H - padY - yHigh) * clampedNorm) + 0.5;
   const stepX = Math.round(W * 0.56) + 0.5;
   const endX = Math.max(padX, W - padX);
-
-  ctx.save();
-  ctx.lineCap = 'butt';
-  ctx.lineJoin = 'miter';
-  ctx.strokeStyle = grid;
-  ctx.lineWidth = 1;
-  ctx.globalAlpha = enabled ? 0.24 : 0.18;
-  for (let index = 1; index <= 3; index += 1) {
-    const x = Math.round(padX + ((endX - padX) * index) / 4) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(x, padY);
-    ctx.lineTo(x, H - padY);
-    ctx.stroke();
-  }
-  for (let index = 1; index <= 3; index += 1) {
-    const y = Math.round(padY + ((H - padY * 2) * index) / 4) + 0.5;
-    ctx.beginPath();
-    ctx.moveTo(padX, y);
-    ctx.lineTo(endX, y);
-    ctx.stroke();
-  }
-  ctx.restore();
 
   ctx.lineCap = 'butt';
   ctx.lineJoin = 'miter';
