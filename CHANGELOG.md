@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.12.3] — 2026-05-07
+
+### Fixed
+- **Discount Row Spacing**: Restored the wider v1.12.0-style discount control layout so the DISC toggle no longer floats after a large empty gap.
+- **Discount Meter Masking**: Kept the step line visually cut at the meter frame instead of protruding beyond the box.
+- **Savings Ring**: Rebuilt the bottom-bar savings visualization with a full visible tick scale and active ticks driven by aggregate Grand Total savings.
+- **Version Display**: Updated the status bar version label to match the `1.12.3` PR.
+
 ## [1.12.1] — 2026-05-07
 
 ### Changed

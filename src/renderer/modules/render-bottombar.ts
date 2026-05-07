@@ -6,7 +6,7 @@ import type { RenderSnapshot } from '../app';
 
 const GRAND_TOTAL_CEILING = 50000000;
 const STRIKE_PRICE_EPSILON = 0.5;
-const SAVINGS_RING_TICKS = 64;
+const SAVINGS_RING_TICKS = 72;
 const SAVINGS_RING_DURATION_MS = 560;
 
 type SavingsRingState = {
@@ -152,28 +152,39 @@ function drawSavingsRing(canvas: HTMLCanvasElement, ratio: number): void {
   const { ctx, width, height } = cache;
   const centerX = width / 2;
   const centerY = height / 2;
-  const radius = Math.max(12, Math.min(width, height) * 0.39);
-  const innerRadius = radius - Math.max(6, Math.min(width, height) * 0.08);
+  const size = Math.min(width, height);
+  const radius = Math.max(14, size * 0.42);
+  const innerRadius = Math.max(8, size * 0.28);
   const activeTicks = Math.round(SAVINGS_RING_TICKS * clamp(ratio, 0, 1));
   const rootStyle = getComputedStyle(document.documentElement);
   const active = rootStyle.getPropertyValue('--active').trim() || '#ffb43a';
-  const muted = rootStyle.getPropertyValue('--line-3').trim() || '#5b6069';
 
   ctx.clearRect(0, 0, width, height);
   ctx.lineCap = 'butt';
+  ctx.lineJoin = 'miter';
 
   for (let index = 0; index < SAVINGS_RING_TICKS; index += 1) {
     const angle = -Math.PI / 2 + (index / SAVINGS_RING_TICKS) * Math.PI * 2;
     const isActive = index < activeTicks;
-    const tickInner = isActive ? innerRadius - 1.5 : innerRadius;
-    const tickOuter = isActive ? radius + 2 : radius;
+    const isMajor = index % 12 === 0;
+    const tickInner = innerRadius - (isMajor ? 1.5 : 0);
+    const tickOuter = radius + (isActive ? 2 : 0) + (isMajor ? 1.5 : 0);
     ctx.beginPath();
     ctx.moveTo(centerX + Math.cos(angle) * tickInner, centerY + Math.sin(angle) * tickInner);
     ctx.lineTo(centerX + Math.cos(angle) * tickOuter, centerY + Math.sin(angle) * tickOuter);
-    ctx.strokeStyle = isActive ? active : muted;
-    ctx.globalAlpha = isActive ? 0.9 : 0.24;
-    ctx.lineWidth = isActive ? 2.1 : 1.4;
+    ctx.strokeStyle = active;
+    ctx.globalAlpha = isActive ? 0.92 : isMajor ? 0.28 : 0.16;
+    ctx.lineWidth = isActive ? 2.1 : isMajor ? 1.65 : 1.35;
     ctx.stroke();
+  }
+
+  if (activeTicks > 0) {
+    const markerAngle = -Math.PI / 2 + (activeTicks / SAVINGS_RING_TICKS) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(centerX + Math.cos(markerAngle) * (radius + 1.5), centerY + Math.sin(markerAngle) * (radius + 1.5), 1.35, 0, Math.PI * 2);
+    ctx.fillStyle = active;
+    ctx.globalAlpha = 0.95;
+    ctx.fill();
   }
 
   ctx.globalAlpha = 1;
