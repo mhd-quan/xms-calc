@@ -119,6 +119,22 @@
     </section>
   </main>
 
+  <script>
+    window.__quoteTemplateDiagnostics = [];
+    window.addEventListener('error', function (event) {
+      window.__quoteTemplateDiagnostics.push(
+        String(event.message || 'Script error') + ' @ ' +
+        String(event.filename || 'unknown') + ':' +
+        String(event.lineno || 0) + ':' +
+        String(event.colno || 0)
+      );
+    });
+    window.addEventListener('unhandledrejection', function (event) {
+      window.__quoteTemplateDiagnostics.push(
+        'Unhandled rejection: ' + String(event.reason && event.reason.message ? event.reason.message : event.reason)
+      );
+    });
+  </script>
   <script src="./template-renderer.js"></script>
 </body>
 </html>

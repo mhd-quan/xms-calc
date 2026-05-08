@@ -1,6 +1,9 @@
-import type { QuotePayload } from '../../shared/types';
-
+type QuotePayload = import('../../shared/types').QuotePayload;
 type TemplateStore = QuotePayload['computedStores'][number];
+type QuoteTemplateWindow = Window & {
+  renderQuote?: (payload: QuotePayload) => true;
+  __quoteTemplateRendererReady?: boolean;
+};
 
 type PricingRowInput = {
   index: number | string;
@@ -13,12 +16,7 @@ type PricingRowInput = {
   originalAmount?: number;
 };
 
-declare global {
-  interface Window {
-    renderQuote: (payload: QuotePayload) => true;
-  }
-}
-
+const templateWindow = window as QuoteTemplateWindow;
 const formatVND = (n: number | string): string =>
   `${new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0))} VND`;
 
@@ -183,7 +181,7 @@ function buildNotes(payload: QuotePayload): string {
   return notes.map((note) => `<li>${escapeHTML(note)}</li>`).join('');
 }
 
-window.renderQuote = function renderQuote(payload: QuotePayload): true {
+templateWindow.renderQuote = function renderQuote(payload: QuotePayload): true {
   const customer = payload.customer || payload.meta.customer || {};
   const prepared = payload.preparedBy || payload.meta.preparedBy || {};
   const stores = payload.computedStores || [];
@@ -243,3 +241,5 @@ window.renderQuote = function renderQuote(payload: QuotePayload): true {
   byId('notes').innerHTML = buildNotes(payload);
   return true;
 };
+
+templateWindow.__quoteTemplateRendererReady = true;

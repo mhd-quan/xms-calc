@@ -182,8 +182,26 @@ function buildRenderQuoteScript(payload: QuotePayload): string {
 (() => {
   try {
     const render = window.renderQuote;
-    if (typeof render !== 'function') {
-      return { ok: false, message: 'Template renderer is not ready.' };
+    const diagnostics = Array.isArray(window.__quoteTemplateDiagnostics)
+      ? window.__quoteTemplateDiagnostics.slice(-8).map(String)
+      : [];
+    const scripts = Array.from(document.scripts).map((script) => ({
+      src: script.getAttribute('src') || 'inline',
+      type: script.type || 'classic'
+    }));
+    const readyFlag = window.__quoteTemplateRendererReady === true;
+    if (readyFlag !== true || typeof render !== 'function') {
+      return {
+        ok: false,
+        message: 'Template renderer is not ready.',
+        stack: JSON.stringify({
+          documentReadyState: document.readyState,
+          readyFlag,
+          renderQuoteType: typeof render,
+          diagnostics,
+          scripts
+        }, null, 2)
+      };
     }
     render(${escapeScriptJson(payload)});
     return { ok: true };
@@ -224,6 +242,11 @@ async function renderQuoteTemplate(webContents: WebContentsLike, payload: QuoteP
     throw new Error(`Quote template script could not execute: ${message}`);
   }
   assertTemplateRenderResult(result);
+}
+
+function isTemplateReadinessError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.includes('Template renderer is not ready.') || message.includes('Quote template script could not execute');
 }
 
 async function getPrintWindow(BrowserWindow: BrowserWindowConstructor, templatePath: string): Promise<BrowserWindowLike> {
@@ -293,7 +316,15 @@ export async function exportQuote({
     timings.createWindow = performance.now() - createStart;
 
     const renderStart = performance.now();
-    await renderQuoteTemplate(printWin.webContents, payload);
+    try {
+      await renderQuoteTemplate(printWin.webContents, payload);
+    } catch (error) {
+      if (isTemplateReadinessError(error)) {
+        cachedTemplateReady = false;
+        cachedTemplatePath = null;
+      }
+      throw error;
+    }
     timings.renderTemplate = performance.now() - renderStart;
 
     const pdfStart = performance.now();
