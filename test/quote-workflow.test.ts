@@ -40,8 +40,8 @@ function makeSnapshot(overrides: Record<string, unknown> = {}) {
       hasWebsiteFee: false,
       hasQTG: true,
       hasQLQ: true,
-      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
-      discountEnabled: { account: false, box: false, qtg: false, qlq: false }
+      globalDiscounts: { account: 0, website: 0, box: 0, qtg: 0, qlq: 0 },
+      discountEnabled: { account: false, website: false, box: false, qtg: false, qlq: false }
     },
     stores: [{
       id: 1,
@@ -215,8 +215,8 @@ test('excel export includes visible platform and equipment rows', async () => {
       hasWebsiteFee: true,
       hasQTG: false,
       hasQLQ: false,
-      globalDiscounts: { account: 10, box: 50, qtg: 0, qlq: 0 },
-      discountEnabled: { account: true, box: true, qtg: false, qlq: false }
+      globalDiscounts: { account: 10, website: 25, box: 50, qtg: 0, qlq: 0 },
+      discountEnabled: { account: true, website: true, box: true, qtg: false, qlq: false }
     }
   });
   const payload = buildQuotePayload(
@@ -229,9 +229,11 @@ test('excel export includes visible platform and equipment rows', async () => {
     }
   );
   const manifest = buildEmbeddedManifest(payload, {
-    appVersion: '1.13.0',
+    appVersion: '1.13.1',
     exportedAt: '2026-05-12T10:00:00.000Z'
   });
+  assert.equal(Math.round(payload.totals.subtotalWebsite), 450000);
+  assert.equal(Math.round(payload.totals.subtotalWebsiteOriginal), 600000);
 
   await exportExcel({
     app: { getPath: () => tmpDir },

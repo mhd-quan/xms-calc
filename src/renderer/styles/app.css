@@ -661,9 +661,14 @@
   --lane-fill: rgba(255, 180, 58, 0.16);
 }
 
-.x-discount-bank--box {
+.x-discount-bank--website {
   --lane-accent: var(--data);
   --lane-fill: rgba(92, 212, 196, 0.14);
+}
+
+.x-discount-bank--box {
+  --lane-accent: var(--active-hover);
+  --lane-fill: rgba(255, 151, 72, 0.14);
 }
 
 .x-discount-bank--qtg {
@@ -1159,7 +1164,7 @@
   grid-column: 1 / -1;
   grid-row: 3;
   display: grid;
-  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(172px, 196px) minmax(260px, 300px);
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr) minmax(132px, 152px) minmax(260px, 300px);
   align-items: stretch;
   min-width: 0;
   background: var(--shell-2);
@@ -1230,7 +1235,7 @@
   display: flex;
   align-items: stretch;
   min-width: 0;
-  padding: 0 var(--s-4);
+  padding: 0 var(--s-3);
   border-left: 1px solid var(--line-1);
   background: var(--shell-2);
   overflow: hidden;
@@ -1241,10 +1246,13 @@
   position: relative;
   width: 100%;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--s-2);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10px;
+  grid-template-rows: auto auto;
+  column-gap: var(--s-3);
+  row-gap: var(--s-2);
+  align-content: center;
+  align-items: center;
 }
 
 .bottombar__savings-head {
@@ -1259,6 +1267,8 @@
   text-transform: uppercase;
   color: var(--ink-4);
   font-weight: 700;
+  grid-column: 1;
+  grid-row: 1;
 }
 
 .bottombar__savings-head strong {
@@ -1281,15 +1291,34 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  grid-column: 1;
+  grid-row: 2;
 }
 
 .bottombar__savings-rail {
   position: relative;
-  height: 6px;
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  justify-self: end;
+  align-self: stretch;
+  width: 8px;
+  min-height: 46px;
   background: var(--inset-1);
   border: 1px solid var(--line-1);
   border-radius: var(--r-1);
   overflow: hidden;
+}
+
+.bottombar__savings-rail::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: var(--line-2);
+  z-index: 2;
+  pointer-events: none;
 }
 
 .bottombar__savings-rail::after {
@@ -1297,20 +1326,24 @@
   position: absolute;
   inset: 0;
   background: repeating-linear-gradient(
-    90deg,
+    0deg,
     transparent 0,
     transparent 7px,
     var(--shell-1) 7px,
     var(--shell-1) 8px
   );
+  opacity: 0.72;
   pointer-events: none;
 }
 
 .bottombar__savings-fill {
-  width: calc(var(--savings-ratio) * 100%);
-  height: 100%;
-  background: linear-gradient(90deg, var(--active), var(--active-hover));
-  transition: width var(--t-meter) var(--ease-meter);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(var(--savings-ratio) * 100%);
+  background: linear-gradient(0deg, var(--active), var(--active-hover));
+  transition: height var(--t-meter) var(--ease-meter);
 }
 
 .bottombar__savings-meter.is-zero .bottombar__savings-head strong,
@@ -1402,7 +1435,7 @@
   }
 
   .bottombar {
-    grid-template-columns: 176px minmax(0, 1fr) 152px 240px;
+    grid-template-columns: 176px minmax(0, 1fr) 132px 240px;
   }
 
   .bottombar .x-infoview,
@@ -1432,7 +1465,7 @@
   }
 
   .bottombar {
-    grid-template-columns: minmax(156px, 196px) minmax(0, 1fr) 96px minmax(222px, 252px);
+    grid-template-columns: minmax(156px, 196px) minmax(0, 1fr) 112px minmax(222px, 252px);
   }
 
   .bottombar__savings-amount {
