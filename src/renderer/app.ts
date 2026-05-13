@@ -1181,9 +1181,9 @@ function renderMain(snapshot: RenderSnapshot): void {
   if (document.activeElement !== boxInput) boxInput.value = String(globalBoxCount);
 
   const boxDiscountRow = document.getElementById('boxDiscountRow');
+  boxDiscountRow.classList.toggle('is-summary-only', boxMode === 'none');
   renderDiscountApply('discountBoxApply', discountEnabled.box);
   setKnobValue('discountBoxKnob', globalDiscounts.box);
-  boxDiscountRow.classList.toggle('is-summary-only', boxMode === 'none');
 
   const boxPriceDesc = document.getElementById('boxPriceDesc');
   if (boxMode === 'buy') {

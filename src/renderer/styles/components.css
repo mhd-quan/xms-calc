@@ -1000,9 +1000,10 @@
   color: var(--ink-3);
 }
 .x-statusbar__cell {
-  display: flex; align-items: center; gap: var(--s-3);
+  display: flex; align-items: center; gap: var(--s-3); min-width: 0; white-space: nowrap;
 }
 .x-statusbar__cell + .x-statusbar__cell { border-left: 1px solid var(--line-1); padding-left: var(--s-5); }
+.x-statusbar__cell--metric { color: var(--ink-2); }
 .x-statusbar__sep { color: var(--ink-5); }
 
 /* ════ MODAL ════════════════════════════════════════════════════════════ */
