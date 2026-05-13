@@ -1,8 +1,13 @@
 /* XMusic Station — Quote Workflow v1.6 */
 
 import {
+  ACCOUNT_FEE_STANDALONE_YEARLY,
+  ACCOUNT_FEE_YEARLY,
   BUSINESS_TYPES,
+  BOX_BUY_PRICE,
+  BOX_RENT_YEARLY,
   DEFAULT_BASE_SALARY,
+  WEBSITE_FEE_YEARLY,
   calculateCoef,
   calculateDurationMonths,
   calculateTotals
@@ -108,8 +113,10 @@ let stores: Store[] = [];
 let activeTabId: number | null = null;
 
 let boxMode: CalcOptions['boxMode'] = 'none';
+let accountFeeMode: CalcOptions['accountFeeMode'] = 'standard';
 let globalBoxCount: number = 1;
 let hasAccountFee: boolean = true;
+let hasWebsiteFee: boolean = false;
 let hasQTG: boolean = true;
 let hasQLQ: boolean = true;
 
@@ -226,14 +233,31 @@ function blankPreparedBy(): PreparedByProfile {
   };
 }
 
+function canUseStandaloneAccountFee(): boolean {
+  return !hasQTG && !hasQLQ;
+}
+
+function normalizeAccountFeeMode(): void {
+  if (!canUseStandaloneAccountFee() && accountFeeMode === 'standalone') {
+    accountFeeMode = 'standard';
+  }
+}
+
+function feePerYearLabel(value: number): string {
+  return `${formatVND(value)} ₫ / năm`;
+}
+
 function getCalcOptions(): CalcOptions {
+  normalizeAccountFeeMode();
   return {
     baseSalary,
     vatRate,
     billingCycle,
     boxMode,
+    accountFeeMode,
     globalBoxCount,
     hasAccountFee,
+    hasWebsiteFee,
     hasQTG,
     hasQLQ,
     globalDiscounts: { ...globalDiscounts },
@@ -258,8 +282,10 @@ function buildInitialDraftSnapshot(): QuoteSnapshot {
       vatRate: 0,
       billingCycle: 'y',
       boxMode: 'none',
+      accountFeeMode: 'standard',
       globalBoxCount: 1,
       hasAccountFee: true,
+      hasWebsiteFee: false,
       hasQTG: true,
       hasQLQ: true,
       globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
@@ -399,8 +425,10 @@ function hydrateFromSnapshot(snapshot: QuoteSnapshot): void {
   vatRate = snapshot.calcOptions.vatRate;
   billingCycle = snapshot.calcOptions.billingCycle;
   boxMode = snapshot.calcOptions.boxMode;
+  accountFeeMode = snapshot.calcOptions.accountFeeMode;
   globalBoxCount = snapshot.calcOptions.globalBoxCount;
   hasAccountFee = snapshot.calcOptions.hasAccountFee;
+  hasWebsiteFee = snapshot.calcOptions.hasWebsiteFee;
   hasQTG = snapshot.calcOptions.hasQTG;
   hasQLQ = snapshot.calcOptions.hasQLQ;
   globalDiscounts = { ...snapshot.calcOptions.globalDiscounts };
@@ -1082,6 +1110,30 @@ function renderMain(snapshot: RenderSnapshot): void {
   const accRow = accToggle.closest('.x-row') ?? accToggle;
   const accRight = document.getElementById('accountFeeRight');
   const accAmount = accRow.querySelector<HTMLElement>('.x-row__inline-amount');
+  const accountModeAllowed = canUseStandaloneAccountFee();
+  const activeAccountMode = accountModeAllowed ? accountFeeMode : 'standard';
+  const accountPriceDesc = document.getElementById('accountPriceDesc');
+  if (accountPriceDesc) {
+    accountPriceDesc.textContent =
+      activeAccountMode === 'standalone'
+        ? `${feePerYearLabel(ACCOUNT_FEE_STANDALONE_YEARLY)} / cửa hàng · chỉ áp dụng khi tắt cả hai quyền`
+        : `${feePerYearLabel(ACCOUNT_FEE_YEARLY)} · prorated theo chu kỳ`;
+  }
+  const accountModeSeg = document.getElementById('accountFeeModeSeg');
+  accountModeSeg?.classList.toggle('is-disabled', !hasAccountFee);
+  accountModeSeg?.querySelectorAll<HTMLButtonElement>('.x-seg__btn').forEach((button) => {
+    const mode = button.dataset.accountMode;
+    const isStandalone = mode === 'standalone';
+    const disabled = !hasAccountFee || (isStandalone && !accountModeAllowed);
+    button.disabled = disabled;
+    button.classList.toggle('is-active', mode === activeAccountMode);
+    button.setAttribute(
+      'data-info',
+      isStandalone
+        ? 'Tài khoản độc lập|1.500.000₫/năm/cửa hàng. Chỉ bật được khi Quyền tác giả và Quyền liên quan đều tắt.|—'
+        : 'Tài khoản chuẩn|600.000₫/năm, prorated theo chu kỳ.|—'
+    );
+  });
   renderDiscountApply('discountAccountApply', discountEnabled.account);
   setKnobValue('discountAccountKnob', globalDiscounts.account);
 
@@ -1097,6 +1149,23 @@ function renderMain(snapshot: RenderSnapshot): void {
     renderStrikePrice('accountOriginalAmount', 0, 0);
   }
 
+  const websiteToggle = document.getElementById('websiteToggle');
+  websiteToggle.classList.toggle('is-on', hasWebsiteFee);
+  websiteToggle.textContent = hasWebsiteFee ? 'BẬT' : 'TẮT';
+  const websitePriceDesc = document.getElementById('websitePriceDesc');
+  if (websitePriceDesc) websitePriceDesc.textContent = `${feePerYearLabel(WEBSITE_FEE_YEARLY)} · prorated theo chu kỳ`;
+  const websiteRight = document.getElementById('websiteFeeRight');
+  const websiteAmount = websiteRight?.querySelector<HTMLElement>('.x-row__inline-amount');
+  if (hasWebsiteFee) {
+    websiteRight?.classList.remove('is-disabled');
+    websiteAmount?.classList.remove('is-disabled');
+    animateNumber('websiteAmount', cycleDisplayAmount(breakdown?.websiteAmount || 0, billingCycle));
+  } else {
+    websiteRight?.classList.add('is-disabled');
+    websiteAmount?.classList.add('is-disabled');
+    animateNumber('websiteAmount', 0);
+  }
+
   document.querySelectorAll('#boxModeSeg .x-seg__btn').forEach((btn) => {
     btn.classList.toggle('is-active', btn.dataset.mode === boxMode);
   });
@@ -1107,12 +1176,16 @@ function renderMain(snapshot: RenderSnapshot): void {
   const boxDiscountRow = document.getElementById('boxDiscountRow');
   renderDiscountApply('discountBoxApply', discountEnabled.box);
   setKnobValue('discountBoxKnob', globalDiscounts.box);
-  boxDiscountRow.classList.toggle('is-summary-only', boxMode !== 'buy');
+  boxDiscountRow.classList.toggle('is-summary-only', boxMode === 'none');
 
   const boxPriceDesc = document.getElementById('boxPriceDesc');
-  if (boxMode === 'buy') boxPriceDesc.textContent = '2.000.000 ₫ / thiết bị · chi phí một lần · cấp mỗi chi nhánh';
-  else if (boxMode === 'rent') boxPriceDesc.textContent = '1.000.000 ₫ / thiết bị / năm · prorated · cấp mỗi chi nhánh';
-  else boxPriceDesc.textContent = 'Chọn hình thức trang bị cho mỗi chi nhánh';
+  if (boxMode === 'buy') {
+    boxPriceDesc.textContent = `${feePerYearLabel(BOX_BUY_PRICE).replace(' / năm', '')} / thiết bị · chi phí một lần · cấp mỗi chi nhánh`;
+  } else if (boxMode === 'rent') {
+    boxPriceDesc.textContent = `${feePerYearLabel(BOX_RENT_YEARLY)} / thiết bị · prorated · có thể chiết khấu`;
+  } else {
+    boxPriceDesc.textContent = 'Chọn hình thức trang bị cho mỗi chi nhánh';
+  }
   animateNumber('boxAmount', boxMode === 'none' ? 0 : cycleDisplayAmount(breakdown?.boxAmount || 0, billingCycle));
   renderStrikePrice(
     'boxOriginalAmount',
@@ -1458,13 +1531,29 @@ function bindEvents() {
     hasAccountFee = !hasAccountFee;
     commitQuoteMutation();
   });
+  document.getElementById('websiteToggle').addEventListener('click', () => {
+    hasWebsiteFee = !hasWebsiteFee;
+    commitQuoteMutation();
+  });
   document.getElementById('qtgToggle').addEventListener('click', () => {
     hasQTG = !hasQTG;
+    normalizeAccountFeeMode();
     commitQuoteMutation();
   });
   document.getElementById('qlqToggle').addEventListener('click', () => {
     hasQLQ = !hasQLQ;
+    normalizeAccountFeeMode();
     commitQuoteMutation();
+  });
+
+  document.getElementById('accountFeeModeSeg').addEventListener('click', (event) => {
+    const btn = closestFromEvent<HTMLButtonElement>(event, '.x-seg__btn');
+    if (!btn || btn.disabled) return;
+    const nextAccountMode = btn.dataset.accountMode;
+    if (nextAccountMode === 'standard' || (nextAccountMode === 'standalone' && canUseStandaloneAccountFee())) {
+      accountFeeMode = nextAccountMode;
+      commitQuoteMutation();
+    }
   });
 
   document.getElementById('boxModeSeg').addEventListener('click', (event) => {

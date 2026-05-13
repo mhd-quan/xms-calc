@@ -34,7 +34,12 @@ function setSectionTotals(snapshot: RenderSnapshot): void {
   }
 
   setText('facilitySectionTotal', `${breakdown.duration.toFixed(1)}m`);
-  setText('platformSectionTotal', formatVND(cycleDisplayAmount(breakdown.accountAmount + breakdown.boxAmount, snapshot.billingCycle)));
+  setText(
+    'platformSectionTotal',
+    formatVND(
+      cycleDisplayAmount(breakdown.accountAmount + breakdown.websiteAmount + breakdown.boxAmount, snapshot.billingCycle)
+    )
+  );
   setText('copyrightSectionTotal', formatVND(cycleDisplayAmount(breakdown.qtgAmount + breakdown.qlqAmount, snapshot.billingCycle)));
 }
 

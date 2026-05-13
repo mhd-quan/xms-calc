@@ -70,6 +70,13 @@ function addRow(rows: string[], { index, group, title, detail, scope, unit, amou
   `);
 }
 
+function accountFeeDetail(payload: QuotePayload): string {
+  if (payload.globals.accountFeeMode === 'standalone' && !payload.globals.hasQTG && !payload.globals.hasQLQ) {
+    return 'Tài khoản vận hành độc lập khi khách hàng không sử dụng Quyền tác giả và Quyền liên quan trong báo giá; đơn giá 1.500.000 VND/năm/cửa hàng.';
+  }
+  return 'Tài khoản quản trị, phân phối và vận hành danh sách phát XMusic Station; đơn giá 600.000 VND/năm.';
+}
+
 function buildPricingRows(payload: QuotePayload): string {
   const rows: string[] = [];
   const stores = payload.computedStores || [];
@@ -119,11 +126,24 @@ function buildPricingRows(payload: QuotePayload): string {
       index: index++,
       group: true,
       title: 'Phí sử dụng tài khoản',
-      detail: 'Tài khoản quản trị, phân phối và vận hành danh sách phát XMusic Station',
+      detail: accountFeeDetail(payload),
       scope: `${branchCount} tài khoản / ${branchCount} chi nhánh`,
       unit: duration,
       amount: payload.totals.subtotalAccount,
       originalAmount: payload.totals.subtotalAccountOriginal
+    });
+  }
+
+  if (payload.totals.subtotalWebsite > 0) {
+    addRow(rows, {
+      index: index++,
+      group: true,
+      title: 'Phí sử dụng Website',
+      detail: 'Phí sử dụng website XMusic Station; đơn giá 600.000 VND/năm và prorated theo thời hạn từng chi nhánh.',
+      scope: `${branchCount} website / ${branchCount} chi nhánh`,
+      unit: duration,
+      amount: payload.totals.subtotalWebsite,
+      originalAmount: payload.totals.subtotalWebsiteOriginal
     });
   }
 
@@ -136,7 +156,7 @@ function buildPricingRows(payload: QuotePayload): string {
       title: 'Box phát nhạc',
       detail: isBuy
         ? 'Thiết bị phát nhạc cấu hình sẵn cho từng địa điểm'
-        : 'Thuê thiết bị phát nhạc cấu hình sẵn cho từng địa điểm',
+        : 'Thuê thiết bị phát nhạc cấu hình sẵn cho từng địa điểm; đơn giá 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
       scope: `${totalBoxes} box · ${branchCount} chi nhánh`,
       unit: isBuy ? 'Một lần' : duration,
       amount: payload.totals.subtotalBox,
@@ -169,7 +189,15 @@ function buildNotes(payload: QuotePayload): string {
   const discountEnabled = payload.globals.discountEnabled || {};
   const activeDiscounts = Object.entries(discounts)
     .filter(([key, value]) => discountEnabled[key as keyof typeof discountEnabled] === true && Number(value) > 0)
-    .map(([key, value]) => `${key.toUpperCase()} ${value}%`);
+    .map(([key, value]) => {
+      const labels: Record<string, string> = {
+        account: 'Tài khoản',
+        box: 'Box',
+        qtg: 'Quyền tác giả',
+        qlq: 'Quyền liên quan'
+      };
+      return `${labels[key] ?? key.toUpperCase()} ${value}%`;
+    });
   if (activeDiscounts.length) {
     notes.push(`Bảng báo giá này đã ghi nhận mức chiết khấu: ${activeDiscounts.join(', ')}.`);
   }
@@ -177,6 +205,12 @@ function buildNotes(payload: QuotePayload): string {
     notes.push(
       'Chi phí Box theo phương án mua là chi phí thiết bị phát sinh một lần và không được cộng vào giá trị tạm tính cho chu kỳ tiếp theo.'
     );
+  }
+  if (payload.globals.boxMode === 'rent') {
+    notes.push('Chi phí thuê Box được tính theo năm, prorated theo thời hạn của từng chi nhánh và được đưa vào tạm tính chu kỳ tiếp theo.');
+  }
+  if (payload.globals.hasWebsiteFee) {
+    notes.push('Phí sử dụng Website được tính theo năm và prorated theo thời hạn của từng chi nhánh.');
   }
   return notes.map((note) => `<li>${escapeHTML(note)}</li>`).join('');
 }
@@ -192,6 +226,7 @@ templateWindow.renderQuote = function renderQuote(payload: QuotePayload): true {
     payload.totals.subtotalQTG +
     payload.totals.subtotalQLQ +
     payload.totals.subtotalAccount +
+    payload.totals.subtotalWebsite +
     (payload.globals.boxMode === 'rent' ? payload.totals.subtotalBox : 0);
   const revisionBadge = byId('revisionBadge');
 
