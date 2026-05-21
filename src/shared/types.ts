@@ -9,6 +9,7 @@ export type BusinessType =
 
 export type BoxMode = 'none' | 'buy' | 'rent';
 export type BillingCycle = 'm' | 'q' | 'y';
+export type AccountFeeMode = 'standard' | 'standalone';
 
 export type RevisionStatus = 'draft' | 'imported' | 'exported';
 
@@ -27,6 +28,7 @@ export type ImportActionKey =
 
 export interface GlobalDiscounts {
   account: number;
+  website: number;
   box: number;
   qtg: number;
   qlq: number;
@@ -34,6 +36,7 @@ export interface GlobalDiscounts {
 
 export interface DiscountToggles {
   account: boolean;
+  website: boolean;
   box: boolean;
   qtg: boolean;
   qlq: boolean;
@@ -43,9 +46,11 @@ export interface CalcOptions {
   baseSalary: number;
   vatRate: number;
   boxMode: BoxMode;
+  accountFeeMode: AccountFeeMode;
   billingCycle: BillingCycle;
   globalBoxCount: number;
   hasAccountFee: boolean;
+  hasWebsiteFee: boolean;
   hasQTG: boolean;
   hasQLQ: boolean;
   globalDiscounts: GlobalDiscounts;
@@ -68,6 +73,8 @@ export interface Totals {
   subtotalQLQOriginal: number;
   subtotalAccount: number;
   subtotalAccountOriginal: number;
+  subtotalWebsite: number;
+  subtotalWebsiteOriginal: number;
   subtotalBox: number;
   subtotalBoxOriginal: number;
   subtotal: number;
@@ -217,6 +224,8 @@ export interface QuotePayload extends QuoteSnapshot {
       qlqAmountOriginal: number;
       accountAmount: number;
       accountAmountOriginal: number;
+      websiteAmount: number;
+      websiteAmountOriginal: number;
       boxAmount: number;
       boxAmountOriginal: number;
       total: number;

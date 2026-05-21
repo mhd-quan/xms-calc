@@ -10,13 +10,16 @@ export const BUSINESS_TYPES: Record<string, { label: string; short: string }> = 
 
 export const DEFAULT_BASE_SALARY = 2340000;
 export const ACCOUNT_FEE_YEARLY = 600000;
+export const ACCOUNT_FEE_STANDALONE_YEARLY = 1500000;
+export const WEBSITE_FEE_YEARLY = 600000;
 export const BOX_BUY_PRICE = 2000000;
-export const BOX_RENT_YEARLY = 1000000;
+export const BOX_RENT_YEARLY = 900000;
 
 export type BusinessType = keyof typeof BUSINESS_TYPES;
 
 type DiscountInput = {
   account?: number;
+  website?: number;
   box?: number;
   qtg?: number;
   qlq?: number;
@@ -24,6 +27,7 @@ type DiscountInput = {
 
 type DiscountToggleInput = {
   account?: boolean;
+  website?: boolean;
   box?: boolean;
   qtg?: boolean;
   qlq?: boolean;
@@ -33,9 +37,11 @@ export type CalculatorOptionsInput = {
   baseSalary?: number;
   vatRate?: number;
   boxMode?: 'none' | 'buy' | 'rent';
+  accountFeeMode?: 'standard' | 'standalone';
   billingCycle?: 'm' | 'q' | 'y';
   globalBoxCount?: number;
   hasAccountFee?: boolean;
+  hasWebsiteFee?: boolean;
   hasQTG?: boolean;
   hasQLQ?: boolean;
   globalDiscounts?: DiscountInput;
@@ -46,19 +52,23 @@ type NormalizedOptions = {
   baseSalary: number;
   vatRate: number;
   boxMode: 'none' | 'buy' | 'rent';
+  accountFeeMode: 'standard' | 'standalone';
   billingCycle: 'm' | 'q' | 'y';
   globalBoxCount: number;
   hasAccountFee: boolean;
+  hasWebsiteFee: boolean;
   hasQTG: boolean;
   hasQLQ: boolean;
   globalDiscounts: {
     account: number;
+    website: number;
     box: number;
     qtg: number;
     qlq: number;
   };
   discountEnabled: {
     account: boolean;
+    website: boolean;
     box: boolean;
     qtg: boolean;
     qlq: boolean;
@@ -160,19 +170,23 @@ function normalizeOptions(options: CalculatorOptionsInput = {}): NormalizedOptio
     baseSalary: Number(options.baseSalary) || DEFAULT_BASE_SALARY,
     vatRate: Number(options.vatRate) || 0,
     boxMode: options.boxMode || 'none',
+    accountFeeMode: options.accountFeeMode === 'standalone' ? 'standalone' : 'standard',
     billingCycle,
     globalBoxCount: Math.max(1, Number(options.globalBoxCount) || 1),
     hasAccountFee: options.hasAccountFee !== false,
+    hasWebsiteFee: options.hasWebsiteFee === true,
     hasQTG: options.hasQTG !== false,
     hasQLQ: options.hasQLQ !== false,
     globalDiscounts: {
       account: clampDiscount(discounts.account),
+      website: clampDiscount(discounts.website),
       box: clampDiscount(discounts.box),
       qtg: clampDiscount(discounts.qtg),
       qlq: clampDiscount(discounts.qlq)
     },
     discountEnabled: {
       account: discountEnabled.account === true,
+      website: discountEnabled.website === true,
       box: discountEnabled.box === true,
       qtg: discountEnabled.qtg === true,
       qlq: discountEnabled.qlq === true
@@ -182,6 +196,12 @@ function normalizeOptions(options: CalculatorOptionsInput = {}): NormalizedOptio
 
 function effectiveDiscount(opts: NormalizedOptions, key: keyof NormalizedOptions['globalDiscounts']): number {
   return opts.discountEnabled[key] ? opts.globalDiscounts[key] : 0;
+}
+
+function accountFeeYearly(opts: NormalizedOptions): number {
+  return opts.accountFeeMode === 'standalone' && !opts.hasQTG && !opts.hasQLQ
+    ? ACCOUNT_FEE_STANDALONE_YEARLY
+    : ACCOUNT_FEE_YEARLY;
 }
 
 export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOptionsInput = {}) {
@@ -194,11 +214,13 @@ export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOp
 
   const qtgAmountOriginal = opts.hasQTG ? periodBase : 0;
   const qlqAmountOriginal = opts.hasQLQ ? periodBase : 0;
-  const accountAmountOriginal = opts.hasAccountFee ? (ACCOUNT_FEE_YEARLY / 12) * duration : 0;
+  const accountAmountOriginal = opts.hasAccountFee ? (accountFeeYearly(opts) / 12) * duration : 0;
+  const websiteAmountOriginal = opts.hasWebsiteFee ? (WEBSITE_FEE_YEARLY / 12) * duration : 0;
 
   const qtgAmount = qtgAmountOriginal * (1 - effectiveDiscount(opts, 'qtg') / 100);
   const qlqAmount = qlqAmountOriginal * (1 - effectiveDiscount(opts, 'qlq') / 100);
   const accountAmount = accountAmountOriginal * (1 - effectiveDiscount(opts, 'account') / 100);
+  const websiteAmount = websiteAmountOriginal * (1 - effectiveDiscount(opts, 'website') / 100);
 
   let boxAmount = 0;
   let boxAmountOriginal = 0;
@@ -207,11 +229,11 @@ export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOp
     boxAmount = boxAmountOriginal * (1 - effectiveDiscount(opts, 'box') / 100);
   } else if (opts.boxMode === 'rent') {
     boxAmountOriginal = (BOX_RENT_YEARLY / 12) * duration * opts.globalBoxCount;
-    boxAmount = boxAmountOriginal;
+    boxAmount = boxAmountOriginal * (1 - effectiveDiscount(opts, 'box') / 100);
   }
 
-  const total = qtgAmount + qlqAmount + accountAmount + boxAmount;
-  const totalOriginal = qtgAmountOriginal + qlqAmountOriginal + accountAmountOriginal + boxAmountOriginal;
+  const total = qtgAmount + qlqAmount + accountAmount + websiteAmount + boxAmount;
+  const totalOriginal = qtgAmountOriginal + qlqAmountOriginal + accountAmountOriginal + websiteAmountOriginal + boxAmountOriginal;
   return {
     name: store.name,
     type: store.type,
@@ -226,6 +248,8 @@ export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOp
     qlqAmountOriginal,
     accountAmount,
     accountAmountOriginal,
+    websiteAmount,
+    websiteAmountOriginal,
     boxAmount,
     boxAmountOriginal,
     total,
@@ -243,6 +267,8 @@ export function calculateTotals(stores: StoreInput[], options: CalculatorOptions
     subtotalQLQOriginal: number;
     subtotalAccount: number;
     subtotalAccountOriginal: number;
+    subtotalWebsite: number;
+    subtotalWebsiteOriginal: number;
     subtotalBox: number;
     subtotalBoxOriginal: number;
     subtotal: number;
@@ -261,6 +287,8 @@ export function calculateTotals(stores: StoreInput[], options: CalculatorOptions
       acc.subtotalQLQOriginal += s.qlqAmountOriginal;
       acc.subtotalAccount += s.accountAmount;
       acc.subtotalAccountOriginal += s.accountAmountOriginal;
+      acc.subtotalWebsite += s.websiteAmount;
+      acc.subtotalWebsiteOriginal += s.websiteAmountOriginal;
       acc.subtotalBox += s.boxAmount;
       acc.subtotalBoxOriginal += s.boxAmountOriginal;
       return acc;
@@ -272,6 +300,8 @@ export function calculateTotals(stores: StoreInput[], options: CalculatorOptions
       subtotalQLQOriginal: 0,
       subtotalAccount: 0,
       subtotalAccountOriginal: 0,
+      subtotalWebsite: 0,
+      subtotalWebsiteOriginal: 0,
       subtotalBox: 0,
       subtotalBoxOriginal: 0,
       subtotal: 0,
@@ -283,9 +313,14 @@ export function calculateTotals(stores: StoreInput[], options: CalculatorOptions
       grandOriginal: 0
     }
   );
-  totals.subtotal = totals.subtotalQTG + totals.subtotalQLQ + totals.subtotalAccount + totals.subtotalBox;
+  totals.subtotal =
+    totals.subtotalQTG + totals.subtotalQLQ + totals.subtotalAccount + totals.subtotalWebsite + totals.subtotalBox;
   totals.subtotalOriginal =
-    totals.subtotalQTGOriginal + totals.subtotalQLQOriginal + totals.subtotalAccountOriginal + totals.subtotalBoxOriginal;
+    totals.subtotalQTGOriginal +
+    totals.subtotalQLQOriginal +
+    totals.subtotalAccountOriginal +
+    totals.subtotalWebsiteOriginal +
+    totals.subtotalBoxOriginal;
   totals.vatRate = opts.vatRate;
   totals.vat = totals.subtotal * opts.vatRate;
   totals.vatOriginal = totals.subtotalOriginal * opts.vatRate;

@@ -27,13 +27,15 @@ const baseOptions: CalcOptions = {
   baseSalary: 2340000,
   vatRate: 0.1,
   boxMode: 'none',
+  accountFeeMode: 'standard',
   billingCycle: 'y',
   globalBoxCount: 1,
   hasAccountFee: true,
+  hasWebsiteFee: false,
   hasQTG: true,
   hasQLQ: true,
-  globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
-  discountEnabled: { account: true, box: true, qtg: true, qlq: true }
+  globalDiscounts: { account: 0, website: 0, box: 0, qtg: 0, qlq: 0 },
+  discountEnabled: { account: true, website: true, box: true, qtg: true, qlq: true }
 };
 
 const cafeStore: Store = {
@@ -95,14 +97,77 @@ test('box rent is prorated per branch duration', () => {
 
   assert.ok(rows[0]);
   assert.ok(rows[1]);
-  moneyEqual(rows[0].boxAmount, 2000000);
-  moneyEqual(rows[1].boxAmount, 1000000);
-  moneyEqual(totals.subtotalBox, 3000000);
+  moneyEqual(rows[0].boxAmount, 1800000);
+  moneyEqual(rows[1].boxAmount, 900000);
+  moneyEqual(totals.subtotalBox, 2700000);
+});
+
+test('box rent can use the interface discount', () => {
+  const { stores: rows, totals } = calculateTotals([cafeStore], {
+    ...baseOptions,
+    boxMode: 'rent',
+    globalBoxCount: 2,
+    globalDiscounts: { ...baseOptions.globalDiscounts, box: 50 }
+  });
+
+  moneyEqual(rows[0]?.boxAmount ?? 0, 900000);
+  moneyEqual(rows[0]?.boxAmountOriginal ?? 0, 1800000);
+  moneyEqual(totals.subtotalBox, 900000);
+  moneyEqual(totals.subtotalBoxOriginal, 1800000);
+});
+
+test('website fee is optional and prorated by branch duration', () => {
+  const stores = [
+    cafeStore,
+    { ...cafeStore, name: 'Chi nhánh 2', endDate: '2026-06-30' }
+  ];
+  const { stores: rows, totals } = calculateTotals(stores, {
+    ...baseOptions,
+    hasWebsiteFee: true
+  });
+
+  moneyEqual(rows[0]?.websiteAmount ?? 0, 600000);
+  moneyEqual(rows[1]?.websiteAmount ?? 0, 300000);
+  moneyEqual(totals.subtotalWebsite, 900000);
+});
+
+test('website fee can use the interface discount', () => {
+  const { stores: rows, totals } = calculateTotals([cafeStore], {
+    ...baseOptions,
+    hasWebsiteFee: true,
+    globalDiscounts: { ...baseOptions.globalDiscounts, website: 25 }
+  });
+
+  moneyEqual(rows[0]?.websiteAmount ?? 0, 450000);
+  moneyEqual(rows[0]?.websiteAmountOriginal ?? 0, 600000);
+  moneyEqual(totals.subtotalWebsite, 450000);
+  moneyEqual(totals.subtotalWebsiteOriginal, 600000);
+});
+
+test('standalone account fee only applies when both rights are disabled', () => {
+  const standalone = calculateStoreBreakdown(cafeStore, {
+    ...baseOptions,
+    accountFeeMode: 'standalone',
+    hasQTG: false,
+    hasQLQ: false
+  });
+  const blockedByRights = calculateStoreBreakdown(cafeStore, {
+    ...baseOptions,
+    accountFeeMode: 'standalone',
+    hasQTG: false,
+    hasQLQ: true
+  });
+
+  moneyEqual(standalone.accountAmount, 1500000);
+  moneyEqual(blockedByRights.accountAmount, 600000);
 });
 
 test('VAT is derived from the shared subtotal', () => {
   const { totals } = calculateTotals([cafeStore], { ...baseOptions, vatRate: 0.08 });
-  moneyEqual(totals.subtotal, totals.subtotalQTG + totals.subtotalQLQ + totals.subtotalAccount + totals.subtotalBox);
+  moneyEqual(
+    totals.subtotal,
+    totals.subtotalQTG + totals.subtotalQLQ + totals.subtotalAccount + totals.subtotalWebsite + totals.subtotalBox
+  );
   moneyEqual(totals.vat, totals.subtotal * 0.08);
   moneyEqual(totals.grand, totals.subtotal * 1.08);
 });
@@ -125,6 +190,8 @@ test('discount toggles preserve values but control whether they apply', () => {
 test('missing discount toggles default to off', () => {
   const defaultDisabled = calculateStoreBreakdown(cafeStore, {
     baseSalary: 2340000,
+    accountFeeMode: 'standard',
+    hasWebsiteFee: false,
     globalDiscounts: { qtg: 50 }
   });
 

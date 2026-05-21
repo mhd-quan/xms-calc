@@ -1,6 +1,9 @@
-import type { QuotePayload } from '../../shared/types';
-
+type QuotePayload = import('../../shared/types').QuotePayload;
 type TemplateStore = QuotePayload['computedStores'][number];
+type QuoteTemplateWindow = Window & {
+  renderQuote?: (payload: QuotePayload) => true;
+  __quoteTemplateRendererReady?: boolean;
+};
 
 type PricingRowInput = {
   index: number | string;
@@ -13,12 +16,9 @@ type PricingRowInput = {
   originalAmount?: number;
 };
 
-declare global {
-  interface Window {
-    renderQuote: (payload: QuotePayload) => true;
-  }
-}
-
+const templateWindow = window as QuoteTemplateWindow;
+const PLATFORM_FEE_DESCRIPTION =
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
 const formatVND = (n: number | string): string =>
   `${new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0))} VND`;
 
@@ -72,6 +72,13 @@ function addRow(rows: string[], { index, group, title, detail, scope, unit, amou
   `);
 }
 
+function accountFeeDetail(payload: QuotePayload): string {
+  if (payload.globals.accountFeeMode === 'standalone' && !payload.globals.hasQTG && !payload.globals.hasQLQ) {
+    return 'Tài khoản XMS vận hành độc lập khi khách hàng không sử dụng Quyền tác giả và Quyền liên quan trong báo giá; đơn giá 1.500.000 VND/năm/cửa hàng.';
+  }
+  return 'Tài khoản XMS quản trị, phân phối và vận hành danh sách phát XMusic Station; đơn giá 600.000 VND/năm.';
+}
+
 function buildPricingRows(payload: QuotePayload): string {
   const rows: string[] = [];
   const stores = payload.computedStores || [];
@@ -116,12 +123,12 @@ function buildPricingRows(payload: QuotePayload): string {
     }
   }
 
-  if (payload.totals.subtotalAccount > 0) {
+  if (payload.totals.subtotalAccountOriginal > 0) {
     addRow(rows, {
       index: index++,
       group: true,
-      title: 'Phí sử dụng tài khoản',
-      detail: 'Tài khoản quản trị, phân phối và vận hành danh sách phát XMusic Station',
+      title: 'Phí Sử dụng Tài khoản XMS',
+      detail: accountFeeDetail(payload),
       scope: `${branchCount} tài khoản / ${branchCount} chi nhánh`,
       unit: duration,
       amount: payload.totals.subtotalAccount,
@@ -129,17 +136,30 @@ function buildPricingRows(payload: QuotePayload): string {
     });
   }
 
-  if (payload.totals.subtotalBox > 0 && payload.globals.boxMode !== 'none') {
+  if (payload.totals.subtotalWebsiteOriginal > 0) {
+    addRow(rows, {
+      index: index++,
+      group: true,
+      title: 'Phí Nền tảng',
+      detail: PLATFORM_FEE_DESCRIPTION,
+      scope: `${branchCount} nền tảng / ${branchCount} cửa hàng`,
+      unit: duration,
+      amount: payload.totals.subtotalWebsite,
+      originalAmount: payload.totals.subtotalWebsiteOriginal
+    });
+  }
+
+  if (payload.totals.subtotalBoxOriginal > 0 && payload.globals.boxMode !== 'none') {
     const totalBoxes = branchCount * (Number(payload.globals.globalBoxCount) || 1);
     const isBuy = payload.globals.boxMode === 'buy';
     addRow(rows, {
       index: index++,
       group: true,
-      title: 'Box phát nhạc',
+      title: 'Thiết bị phát (Boxset)',
       detail: isBuy
-        ? 'Thiết bị phát nhạc cấu hình sẵn cho từng địa điểm'
-        : 'Thuê thiết bị phát nhạc cấu hình sẵn cho từng địa điểm',
-      scope: `${totalBoxes} box · ${branchCount} chi nhánh`,
+        ? 'Thiết bị phát (Boxset) cấu hình sẵn cho từng địa điểm'
+        : 'Thuê Thiết bị phát (Boxset) cấu hình sẵn cho từng địa điểm; đơn giá 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
+      scope: `${totalBoxes} boxset · ${branchCount} chi nhánh`,
       unit: isBuy ? 'Một lần' : duration,
       amount: payload.totals.subtotalBox,
       originalAmount: payload.totals.subtotalBoxOriginal
@@ -171,19 +191,34 @@ function buildNotes(payload: QuotePayload): string {
   const discountEnabled = payload.globals.discountEnabled || {};
   const activeDiscounts = Object.entries(discounts)
     .filter(([key, value]) => discountEnabled[key as keyof typeof discountEnabled] === true && Number(value) > 0)
-    .map(([key, value]) => `${key.toUpperCase()} ${value}%`);
+    .map(([key, value]) => {
+      const labels: Record<string, string> = {
+        account: 'Tài khoản XMS',
+        website: 'Nền tảng',
+        box: 'Thiết bị phát (Boxset)',
+        qtg: 'Quyền tác giả',
+        qlq: 'Quyền liên quan'
+      };
+      return `${labels[key] ?? key.toUpperCase()} ${value}%`;
+    });
   if (activeDiscounts.length) {
     notes.push(`Bảng báo giá này đã ghi nhận mức chiết khấu: ${activeDiscounts.join(', ')}.`);
   }
   if (payload.globals.boxMode === 'buy') {
     notes.push(
-      'Chi phí Box theo phương án mua là chi phí thiết bị phát sinh một lần và không được cộng vào giá trị tạm tính cho chu kỳ tiếp theo.'
+      'Chi phí Thiết bị phát (Boxset) theo phương án mua là chi phí thiết bị phát sinh một lần và không được cộng vào giá trị tạm tính cho chu kỳ tiếp theo.'
     );
+  }
+  if (payload.globals.boxMode === 'rent') {
+    notes.push('Chi phí thuê Thiết bị phát (Boxset) được tính theo năm, prorated theo thời hạn của từng chi nhánh và được đưa vào tạm tính chu kỳ tiếp theo.');
+  }
+  if (payload.globals.hasWebsiteFee) {
+    notes.push(`Phí Nền tảng: ${PLATFORM_FEE_DESCRIPTION}.`);
   }
   return notes.map((note) => `<li>${escapeHTML(note)}</li>`).join('');
 }
 
-window.renderQuote = function renderQuote(payload: QuotePayload): true {
+templateWindow.renderQuote = function renderQuote(payload: QuotePayload): true {
   const customer = payload.customer || payload.meta.customer || {};
   const prepared = payload.preparedBy || payload.meta.preparedBy || {};
   const stores = payload.computedStores || [];
@@ -194,6 +229,7 @@ window.renderQuote = function renderQuote(payload: QuotePayload): true {
     payload.totals.subtotalQTG +
     payload.totals.subtotalQLQ +
     payload.totals.subtotalAccount +
+    payload.totals.subtotalWebsite +
     (payload.globals.boxMode === 'rent' ? payload.totals.subtotalBox : 0);
   const revisionBadge = byId('revisionBadge');
 
@@ -243,3 +279,5 @@ window.renderQuote = function renderQuote(payload: QuotePayload): true {
   byId('notes').innerHTML = buildNotes(payload);
   return true;
 };
+
+templateWindow.__quoteTemplateRendererReady = true;

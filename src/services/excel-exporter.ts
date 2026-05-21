@@ -7,6 +7,8 @@ import { safeFilePart, validateQuotePayload } from './quote-exporter';
 
 export const EXCEL_MANIFEST_SHEET = '_xms_manifest';
 export const EXCEL_MANIFEST_CELL = 'A1';
+const PLATFORM_FEE_DESCRIPTION =
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
 
 type AppLike = {
   getPath(name: 'documents'): string;
@@ -298,6 +300,141 @@ export async function exportExcel({
     applyStyle(cell, false, c === 1 ? alignLeft : alignCenter);
     if (c >= 12) cell.numFmt = '#,##0';
   }
+
+  rowIdx++;
+  const platformRows = [
+    payload.totals.subtotalAccountOriginal > 0
+      ? {
+          title: 'Phí Sử dụng Tài khoản XMS',
+          detail:
+            payload.globals.accountFeeMode === 'standalone' && !payload.globals.hasQTG && !payload.globals.hasQLQ
+              ? 'Tài khoản XMS độc lập: 1.500.000 VND/năm/cửa hàng; chỉ áp dụng khi không tính Quyền tác giả và Quyền liên quan.'
+              : 'Tài khoản XMS: 600.000 VND/năm, prorated theo thời hạn từng chi nhánh.',
+          scope: `${storeCount} cửa hàng`,
+          unit: 'Năm prorated',
+          original: payload.totals.subtotalAccountOriginal,
+          amount: payload.totals.subtotalAccount
+        }
+      : null,
+    payload.totals.subtotalWebsiteOriginal > 0
+      ? {
+          title: 'Phí Nền tảng',
+          detail: PLATFORM_FEE_DESCRIPTION,
+          scope: `${storeCount} cửa hàng`,
+          unit: 'Năm prorated',
+          original: payload.totals.subtotalWebsiteOriginal,
+          amount: payload.totals.subtotalWebsite
+        }
+      : null,
+    payload.totals.subtotalBoxOriginal > 0 && payload.globals.boxMode !== 'none'
+      ? {
+          title: payload.globals.boxMode === 'buy' ? 'Thiết bị phát (Boxset) - Mua' : 'Thiết bị phát (Boxset) - Thuê',
+          detail:
+            payload.globals.boxMode === 'buy'
+              ? 'Mua Thiết bị phát (Boxset): 2.000.000 VND/thiết bị, chi phí một lần.'
+              : 'Thuê Thiết bị phát (Boxset): 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
+          scope: `${storeCount * Math.max(1, Number(payload.globals.globalBoxCount) || 1)} boxset`,
+          unit: payload.globals.boxMode === 'buy' ? 'Một lần' : 'Năm prorated',
+          original: payload.totals.subtotalBoxOriginal,
+          amount: payload.totals.subtotalBox
+        }
+      : null
+  ].filter((row): row is {
+    title: string;
+    detail: string;
+    scope: string;
+    unit: string;
+    original: number;
+    amount: number;
+  } => row !== null);
+
+  if (platformRows.length > 0) {
+    const sectionRow = rowIdx++;
+    ws.mergeCells(`A${sectionRow}:N${sectionRow}`);
+    ws.getCell(`A${sectionRow}`).value = 'HẠNG MỤC NỀN TẢNG & THIẾT BỊ';
+    for (let c = 1; c <= 14; c++) applyStyle(ws.getCell(sectionRow, c), true, alignLeft, true);
+
+    const platformHeadRow = rowIdx++;
+    ws.mergeCells(`A${platformHeadRow}:C${platformHeadRow}`);
+    ws.mergeCells(`D${platformHeadRow}:G${platformHeadRow}`);
+    ws.mergeCells(`H${platformHeadRow}:I${platformHeadRow}`);
+    ws.mergeCells(`K${platformHeadRow}:L${platformHeadRow}`);
+    ws.mergeCells(`M${platformHeadRow}:N${platformHeadRow}`);
+    ws.getCell(`A${platformHeadRow}`).value = 'Hạng mục';
+    ws.getCell(`D${platformHeadRow}`).value = 'Mô tả';
+    ws.getCell(`H${platformHeadRow}`).value = 'Phạm vi';
+    ws.getCell(`J${platformHeadRow}`).value = 'Đơn vị tính';
+    ws.getCell(`K${platformHeadRow}`).value = 'Giá gốc';
+    ws.getCell(`M${platformHeadRow}`).value = 'Thành tiền';
+    for (let c = 1; c <= 14; c++) applyStyle(ws.getCell(platformHeadRow, c), true, alignCenter, true);
+
+    platformRows.forEach((item) => {
+      const r = rowIdx++;
+      ws.mergeCells(`A${r}:C${r}`);
+      ws.mergeCells(`D${r}:G${r}`);
+      ws.mergeCells(`H${r}:I${r}`);
+      ws.mergeCells(`K${r}:L${r}`);
+      ws.mergeCells(`M${r}:N${r}`);
+      ws.getCell(`A${r}`).value = item.title;
+      ws.getCell(`D${r}`).value = item.detail;
+      ws.getCell(`H${r}`).value = item.scope;
+      ws.getCell(`J${r}`).value = item.unit;
+      ws.getCell(`K${r}`).value = item.original;
+      ws.getCell(`M${r}`).value = item.amount;
+      for (let c = 1; c <= 14; c++) {
+        const cell = ws.getCell(r, c);
+        applyStyle(cell, false, c === 1 || c === 4 ? alignLeft : alignCenter);
+        if (c >= 11) cell.numFmt = '#,##0';
+      }
+    });
+
+    const platformTotalRow = rowIdx++;
+    ws.mergeCells(`A${platformTotalRow}:J${platformTotalRow}`);
+    ws.mergeCells(`K${platformTotalRow}:L${platformTotalRow}`);
+    ws.mergeCells(`M${platformTotalRow}:N${platformTotalRow}`);
+    ws.getCell(`A${platformTotalRow}`).value = 'Tổng hạng mục Nền tảng & Thiết bị:';
+    ws.getCell(`K${platformTotalRow}`).value = payload.totals.subtotalAccountOriginal + payload.totals.subtotalWebsiteOriginal + payload.totals.subtotalBoxOriginal;
+    ws.getCell(`M${platformTotalRow}`).value = payload.totals.subtotalAccount + payload.totals.subtotalWebsite + payload.totals.subtotalBox;
+    for (let c = 1; c <= 14; c++) {
+      const cell = ws.getCell(platformTotalRow, c);
+      applyStyle(cell, true, c === 1 ? alignLeft : alignCenter, true);
+      if (c >= 11) cell.numFmt = '#,##0';
+    }
+  }
+
+  rowIdx++;
+  const quoteSummaryRows = [
+    {
+      label: 'Tổng giá trị báo giá trước VAT:',
+      original: payload.totals.subtotalOriginal,
+      amount: payload.totals.subtotal
+    },
+    {
+      label: `VAT (${Math.round(payload.totals.vatRate * 100)}%):`,
+      original: payload.totals.vatOriginal,
+      amount: payload.totals.vat
+    },
+    {
+      label: 'Tổng thanh toán sau VAT:',
+      original: payload.totals.grandOriginal,
+      amount: payload.totals.grand
+    }
+  ];
+
+  quoteSummaryRows.forEach((item, index) => {
+    const r = rowIdx++;
+    ws.mergeCells(`A${r}:J${r}`);
+    ws.mergeCells(`K${r}:L${r}`);
+    ws.mergeCells(`M${r}:N${r}`);
+    ws.getCell(`A${r}`).value = item.label;
+    ws.getCell(`K${r}`).value = item.original;
+    ws.getCell(`M${r}`).value = item.amount;
+    for (let c = 1; c <= 14; c++) {
+      const cell = ws.getCell(r, c);
+      applyStyle(cell, index === quoteSummaryRows.length - 1, c === 1 ? alignLeft : alignCenter, index === quoteSummaryRows.length - 1);
+      if (c >= 11) cell.numFmt = '#,##0';
+    }
+  });
 
   rowIdx++;
   ws.getCell(`B${rowIdx}`).value = 'Lưu ý: ';

@@ -238,8 +238,9 @@ function scheduleEnvelopeDraw(canvasId: string, norm: number, enabled: boolean):
 }
 
 function getEnvelopeCache(canvas: HTMLCanvasElement): EnvelopeCache | null {
-  const width = canvas.offsetWidth || canvas.width;
-  const height = canvas.offsetHeight || canvas.height;
+  const width = canvas.offsetWidth;
+  const height = canvas.offsetHeight;
+  if (width <= 0 || height <= 0) return null;
   const dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
   let cached = envelopeCache.get(canvas);
 
@@ -303,10 +304,14 @@ function drawEnvelope(canvasId: string, norm: number, enabled: boolean): void {
   const clampedNorm = clamp(norm, 0, 1);
   const rootStyle = getComputedStyle(document.documentElement);
   const laneStyle = getComputedStyle(canvas.closest('.x-discount-bank') ?? canvas);
+  const frameStyle = getComputedStyle(canvas.closest('.x-knob__envelope-frame') ?? canvas);
   const accent = laneStyle.getPropertyValue('--lane-accent').trim() || rootStyle.getPropertyValue('--active').trim() || '#ffb43a';
   const muted = rootStyle.getPropertyValue('--line-3').trim() || '#5b6069';
+  const meterBg = frameStyle.getPropertyValue('--meter-bg').trim() || '#1c1e1b';
+  const meterGrid = frameStyle.getPropertyValue('--meter-grid').trim() || 'rgba(148, 154, 144, 0.2)';
 
   ctx.clearRect(0, 0, W, H);
+  drawEnvelopeGrid(ctx, W, H, meterBg, meterGrid);
 
   const padX = 5;
   const padY = 7.5;
@@ -330,4 +335,31 @@ function drawEnvelope(canvasId: string, norm: number, enabled: boolean): void {
   ctx.stroke();
   ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
+}
+
+function drawEnvelopeGrid(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  background: string,
+  grid: string
+): void {
+  ctx.fillStyle = background;
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.save();
+  ctx.strokeStyle = grid;
+  ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.82;
+  for (let index = 1; index < 4; index += 1) {
+    const x = Math.round((width * index) / 4) + 0.5;
+    const y = Math.round((height * index) / 4) + 0.5;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, height);
+    ctx.moveTo(0, y);
+    ctx.lineTo(width, y);
+    ctx.stroke();
+  }
+  ctx.restore();
 }

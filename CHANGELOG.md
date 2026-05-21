@@ -5,6 +5,52 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.13.4] — 2026-05-21
+
+### Changed
+- **Platform Fee UI**: Shortened the visible Phí Nền tảng subtext while keeping the full description in the hover info panel.
+- **Account & Device Labels**: Standardized account fee wording as Phí Sử dụng Tài khoản XMS and renamed Box phát nhạc to Thiết bị phát (Boxset) across the app and quotation exports.
+- **Version Display**: Updated package and status bar version labels to `1.13.4`.
+
+## [1.13.3] — 2026-05-21
+
+### Changed
+- **Platform Fee Wording**: Renamed the Website usage fee to Phí Nền tảng and updated the app, PDF, and XLSX descriptions for Website or PC App XMS platform usage.
+- **Version Display**: Updated package and status bar version labels to `1.13.3`.
+
+## [1.13.1] — 2026-05-13
+
+### Changed
+- **Website Discount**: Added the same discount toggle, knob, original-price display, PDF note, and XLSX platform-row handling to the Website usage fee.
+- **Savings Visualization**: Reworked the total discount comparison into a compact vertical two-step meter, with each half of the rail representing 50% savings.
+- **New Quote Preset**: New quotes now start with Platform & Equipment toggles off, copyright toggles off, all discount toggles off, and all discount knobs at 0%.
+
+## [1.13.0] — 2026-05-12
+
+### Added
+- **Platform Pricing Options**: Added optional Website usage fees at 600.000 VND/year prorated by branch duration, plus a standalone account tier at 1.500.000 VND/year/store when both copyright fee toggles are off.
+- **Workbook Platform Section**: Added visible Platform & Equipment rows and full quote totals to XLSX exports so account, website, and box charges are reflected outside the embedded manifest.
+
+### Changed
+- **Box Rental Pricing**: Updated Box rental to 900.000 VND/year/device, prorated by duration, and enabled the existing interface discount controls for rental as well as purchase.
+- **Savings Visualization**: Replaced the circular savings ring with a compact horizontal savings comparison meter aligned with the design-system VU/fader pattern.
+- **PDF Quotation Rows**: Updated PDF quotation descriptions and totals for the new website fee, standalone account tier, discounted rental box fees, and next-cycle estimate.
+
+## [1.12.4] — 2026-05-07
+
+### Fixed
+- **Subtotal Row Spacing**: Rebalanced the discount row grid so meters, knobs, toggles, and inline subtotals distribute horizontally without leaving a large empty readout lane.
+- **Savings Ring**: Rebuilt the bottom-bar savings meter as a full circular tick ring with a centered `% saved` readout and ratio-driven active ticks.
+- **Version Display**: Updated the status bar version label to match the `1.12.4` PR.
+
+## [1.12.3] — 2026-05-07
+
+### Fixed
+- **Discount Row Spacing**: Restored the wider v1.12.0-style discount control layout so the DISC toggle no longer floats after a large empty gap.
+- **Discount Meter Masking**: Kept the step line visually cut at the meter frame instead of protruding beyond the box.
+- **Savings Ring**: Rebuilt the bottom-bar savings visualization with a full visible tick scale and active ticks driven by aggregate Grand Total savings.
+- **Version Display**: Updated the status bar version label to match the `1.12.3` PR.
+
 ## [1.12.1] — 2026-05-07
 
 ### Changed
