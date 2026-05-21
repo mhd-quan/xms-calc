@@ -305,11 +305,11 @@ export async function exportExcel({
   const platformRows = [
     payload.totals.subtotalAccountOriginal > 0
       ? {
-          title: 'Phí sử dụng tài khoản',
+          title: 'Phí Sử dụng Tài khoản XMS',
           detail:
             payload.globals.accountFeeMode === 'standalone' && !payload.globals.hasQTG && !payload.globals.hasQLQ
-              ? 'Tài khoản độc lập: 1.500.000 VND/năm/cửa hàng; chỉ áp dụng khi không tính Quyền tác giả và Quyền liên quan.'
-              : 'Tài khoản NCT: 600.000 VND/năm, prorated theo thời hạn từng chi nhánh.',
+              ? 'Tài khoản XMS độc lập: 1.500.000 VND/năm/cửa hàng; chỉ áp dụng khi không tính Quyền tác giả và Quyền liên quan.'
+              : 'Tài khoản XMS: 600.000 VND/năm, prorated theo thời hạn từng chi nhánh.',
           scope: `${storeCount} cửa hàng`,
           unit: 'Năm prorated',
           original: payload.totals.subtotalAccountOriginal,
@@ -328,12 +328,12 @@ export async function exportExcel({
       : null,
     payload.totals.subtotalBoxOriginal > 0 && payload.globals.boxMode !== 'none'
       ? {
-          title: payload.globals.boxMode === 'buy' ? 'Box phát nhạc - Mua' : 'Box phát nhạc - Thuê',
+          title: payload.globals.boxMode === 'buy' ? 'Thiết bị phát (Boxset) - Mua' : 'Thiết bị phát (Boxset) - Thuê',
           detail:
             payload.globals.boxMode === 'buy'
-              ? 'Mua thiết bị: 2.000.000 VND/thiết bị, chi phí một lần.'
-              : 'Thuê thiết bị: 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
-          scope: `${storeCount * Math.max(1, Number(payload.globals.globalBoxCount) || 1)} box`,
+              ? 'Mua Thiết bị phát (Boxset): 2.000.000 VND/thiết bị, chi phí một lần.'
+              : 'Thuê Thiết bị phát (Boxset): 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
+          scope: `${storeCount * Math.max(1, Number(payload.globals.globalBoxCount) || 1)} boxset`,
           unit: payload.globals.boxMode === 'buy' ? 'Một lần' : 'Năm prorated',
           original: payload.totals.subtotalBoxOriginal,
           amount: payload.totals.subtotalBox

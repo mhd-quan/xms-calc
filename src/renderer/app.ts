@@ -61,6 +61,7 @@ type StoreField = keyof Pick<Store, 'name' | 'area' | 'type' | 'startDate' | 'en
 
 const PLATFORM_FEE_DESCRIPTION =
   'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
+const PLATFORM_FEE_SUMMARY = 'Website hoặc PC App XMS · chi phí hàng năm';
 
 function closestFromEvent<T extends Element>(event: Event, selector: string): T | null {
   const target = event.target;
@@ -1136,7 +1137,7 @@ function renderMain(snapshot: RenderSnapshot): void {
       'data-info',
       isStandalone
         ? 'Tài khoản độc lập|1.500.000₫/năm/cửa hàng. Chỉ bật được khi Quyền tác giả và Quyền liên quan đều tắt.|—'
-        : 'Tài khoản chuẩn|600.000₫/năm, prorated theo chu kỳ.|—'
+        : 'Tài khoản XMS chuẩn|600.000₫/năm, prorated theo chu kỳ.|—'
     );
   });
   renderDiscountApply('discountAccountApply', discountEnabled.account);
@@ -1158,7 +1159,12 @@ function renderMain(snapshot: RenderSnapshot): void {
   websiteToggle.classList.toggle('is-on', hasWebsiteFee);
   websiteToggle.textContent = hasWebsiteFee ? 'BẬT' : 'TẮT';
   const websitePriceDesc = document.getElementById('websitePriceDesc');
-  if (websitePriceDesc) websitePriceDesc.textContent = PLATFORM_FEE_DESCRIPTION;
+  if (websitePriceDesc) {
+    websitePriceDesc.textContent = PLATFORM_FEE_SUMMARY;
+    websitePriceDesc
+      .closest<HTMLElement>('.x-row__info')
+      ?.setAttribute('data-info', `Phí Nền tảng|${PLATFORM_FEE_DESCRIPTION}|—`);
+  }
   const websiteRight = document.getElementById('websiteFeeRight');
   renderDiscountApply('discountWebsiteApply', discountEnabled.website);
   setKnobValue('discountWebsiteKnob', globalDiscounts.website);

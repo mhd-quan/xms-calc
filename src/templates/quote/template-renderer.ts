@@ -74,9 +74,9 @@ function addRow(rows: string[], { index, group, title, detail, scope, unit, amou
 
 function accountFeeDetail(payload: QuotePayload): string {
   if (payload.globals.accountFeeMode === 'standalone' && !payload.globals.hasQTG && !payload.globals.hasQLQ) {
-    return 'Tài khoản vận hành độc lập khi khách hàng không sử dụng Quyền tác giả và Quyền liên quan trong báo giá; đơn giá 1.500.000 VND/năm/cửa hàng.';
+    return 'Tài khoản XMS vận hành độc lập khi khách hàng không sử dụng Quyền tác giả và Quyền liên quan trong báo giá; đơn giá 1.500.000 VND/năm/cửa hàng.';
   }
-  return 'Tài khoản quản trị, phân phối và vận hành danh sách phát XMusic Station; đơn giá 600.000 VND/năm.';
+  return 'Tài khoản XMS quản trị, phân phối và vận hành danh sách phát XMusic Station; đơn giá 600.000 VND/năm.';
 }
 
 function buildPricingRows(payload: QuotePayload): string {
@@ -127,7 +127,7 @@ function buildPricingRows(payload: QuotePayload): string {
     addRow(rows, {
       index: index++,
       group: true,
-      title: 'Phí sử dụng tài khoản',
+      title: 'Phí Sử dụng Tài khoản XMS',
       detail: accountFeeDetail(payload),
       scope: `${branchCount} tài khoản / ${branchCount} chi nhánh`,
       unit: duration,
@@ -155,11 +155,11 @@ function buildPricingRows(payload: QuotePayload): string {
     addRow(rows, {
       index: index++,
       group: true,
-      title: 'Box phát nhạc',
+      title: 'Thiết bị phát (Boxset)',
       detail: isBuy
-        ? 'Thiết bị phát nhạc cấu hình sẵn cho từng địa điểm'
-        : 'Thuê thiết bị phát nhạc cấu hình sẵn cho từng địa điểm; đơn giá 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
-      scope: `${totalBoxes} box · ${branchCount} chi nhánh`,
+        ? 'Thiết bị phát (Boxset) cấu hình sẵn cho từng địa điểm'
+        : 'Thuê Thiết bị phát (Boxset) cấu hình sẵn cho từng địa điểm; đơn giá 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
+      scope: `${totalBoxes} boxset · ${branchCount} chi nhánh`,
       unit: isBuy ? 'Một lần' : duration,
       amount: payload.totals.subtotalBox,
       originalAmount: payload.totals.subtotalBoxOriginal
@@ -193,9 +193,9 @@ function buildNotes(payload: QuotePayload): string {
     .filter(([key, value]) => discountEnabled[key as keyof typeof discountEnabled] === true && Number(value) > 0)
     .map(([key, value]) => {
       const labels: Record<string, string> = {
-        account: 'Tài khoản',
+        account: 'Tài khoản XMS',
         website: 'Nền tảng',
-        box: 'Box',
+        box: 'Thiết bị phát (Boxset)',
         qtg: 'Quyền tác giả',
         qlq: 'Quyền liên quan'
       };
@@ -206,11 +206,11 @@ function buildNotes(payload: QuotePayload): string {
   }
   if (payload.globals.boxMode === 'buy') {
     notes.push(
-      'Chi phí Box theo phương án mua là chi phí thiết bị phát sinh một lần và không được cộng vào giá trị tạm tính cho chu kỳ tiếp theo.'
+      'Chi phí Thiết bị phát (Boxset) theo phương án mua là chi phí thiết bị phát sinh một lần và không được cộng vào giá trị tạm tính cho chu kỳ tiếp theo.'
     );
   }
   if (payload.globals.boxMode === 'rent') {
-    notes.push('Chi phí thuê Box được tính theo năm, prorated theo thời hạn của từng chi nhánh và được đưa vào tạm tính chu kỳ tiếp theo.');
+    notes.push('Chi phí thuê Thiết bị phát (Boxset) được tính theo năm, prorated theo thời hạn của từng chi nhánh và được đưa vào tạm tính chu kỳ tiếp theo.');
   }
   if (payload.globals.hasWebsiteFee) {
     notes.push(`Phí Nền tảng: ${PLATFORM_FEE_DESCRIPTION}.`);

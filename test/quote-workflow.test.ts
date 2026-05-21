@@ -229,7 +229,7 @@ test('excel export includes visible platform and equipment rows', async () => {
     }
   );
   const manifest = buildEmbeddedManifest(payload, {
-    appVersion: '1.13.3',
+    appVersion: '1.13.4',
     exportedAt: '2026-05-12T10:00:00.000Z'
   });
   assert.equal(Math.round(payload.totals.subtotalWebsite), 450000);
@@ -249,11 +249,12 @@ test('excel export includes visible platform and equipment rows', async () => {
   const visibleValues = JSON.stringify(worksheet.getSheetValues());
   assert.match(visibleValues, /HẠNG MỤC NỀN TẢNG & THIẾT BỊ/);
   assert.match(visibleValues, /Phí Nền tảng/);
+  assert.match(visibleValues, /Phí Sử dụng Tài khoản XMS/);
   assert.match(
     visibleValues,
     /Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm/
   );
-  assert.match(visibleValues, /Box phát nhạc - Thuê/);
+  assert.match(visibleValues, /Thiết bị phát \(Boxset\) - Thuê/);
   assert.match(visibleValues, /Tổng thanh toán sau VAT/);
 });
 

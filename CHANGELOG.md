@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.13.4] — 2026-05-21
+
+### Changed
+- **Platform Fee UI**: Shortened the visible Phí Nền tảng subtext while keeping the full description in the hover info panel.
+- **Account & Device Labels**: Standardized account fee wording as Phí Sử dụng Tài khoản XMS and renamed Box phát nhạc to Thiết bị phát (Boxset) across the app and quotation exports.
+- **Version Display**: Updated package and status bar version labels to `1.13.4`.
+
 ## [1.13.3] — 2026-05-21
 
 ### Changed
