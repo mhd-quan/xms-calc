@@ -17,6 +17,8 @@ type PricingRowInput = {
 };
 
 const templateWindow = window as QuoteTemplateWindow;
+const PLATFORM_FEE_DESCRIPTION =
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
 const formatVND = (n: number | string): string =>
   `${new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0))} VND`;
 
@@ -138,9 +140,9 @@ function buildPricingRows(payload: QuotePayload): string {
     addRow(rows, {
       index: index++,
       group: true,
-      title: 'Phí sử dụng Website',
-      detail: 'Phí sử dụng website XMusic Station; đơn giá 600.000 VND/năm, prorated theo thời hạn từng chi nhánh và có thể áp dụng chiết khấu.',
-      scope: `${branchCount} website / ${branchCount} chi nhánh`,
+      title: 'Phí Nền tảng',
+      detail: PLATFORM_FEE_DESCRIPTION,
+      scope: `${branchCount} nền tảng / ${branchCount} cửa hàng`,
       unit: duration,
       amount: payload.totals.subtotalWebsite,
       originalAmount: payload.totals.subtotalWebsiteOriginal
@@ -192,7 +194,7 @@ function buildNotes(payload: QuotePayload): string {
     .map(([key, value]) => {
       const labels: Record<string, string> = {
         account: 'Tài khoản',
-        website: 'Website',
+        website: 'Nền tảng',
         box: 'Box',
         qtg: 'Quyền tác giả',
         qlq: 'Quyền liên quan'
@@ -211,7 +213,7 @@ function buildNotes(payload: QuotePayload): string {
     notes.push('Chi phí thuê Box được tính theo năm, prorated theo thời hạn của từng chi nhánh và được đưa vào tạm tính chu kỳ tiếp theo.');
   }
   if (payload.globals.hasWebsiteFee) {
-    notes.push('Phí sử dụng Website được tính theo năm và prorated theo thời hạn của từng chi nhánh.');
+    notes.push(`Phí Nền tảng: ${PLATFORM_FEE_DESCRIPTION}.`);
   }
   return notes.map((note) => `<li>${escapeHTML(note)}</li>`).join('');
 }

@@ -7,7 +7,6 @@ import {
   BOX_BUY_PRICE,
   BOX_RENT_YEARLY,
   DEFAULT_BASE_SALARY,
-  WEBSITE_FEE_YEARLY,
   calculateCoef,
   calculateDurationMonths,
   calculateTotals
@@ -59,6 +58,9 @@ type RenderScopeKey = 'sidebar' | 'main' | 'totals';
 type RenderScope = RenderScopeKey | 'all' | RenderScope[];
 
 type StoreField = keyof Pick<Store, 'name' | 'area' | 'type' | 'startDate' | 'endDate'>;
+
+const PLATFORM_FEE_DESCRIPTION =
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
 
 function closestFromEvent<T extends Element>(event: Event, selector: string): T | null {
   const target = event.target;
@@ -1156,7 +1158,7 @@ function renderMain(snapshot: RenderSnapshot): void {
   websiteToggle.classList.toggle('is-on', hasWebsiteFee);
   websiteToggle.textContent = hasWebsiteFee ? 'BẬT' : 'TẮT';
   const websitePriceDesc = document.getElementById('websitePriceDesc');
-  if (websitePriceDesc) websitePriceDesc.textContent = `${feePerYearLabel(WEBSITE_FEE_YEARLY)} · prorated theo chu kỳ · có thể chiết khấu`;
+  if (websitePriceDesc) websitePriceDesc.textContent = PLATFORM_FEE_DESCRIPTION;
   const websiteRight = document.getElementById('websiteFeeRight');
   renderDiscountApply('discountWebsiteApply', discountEnabled.website);
   setKnobValue('discountWebsiteKnob', globalDiscounts.website);
