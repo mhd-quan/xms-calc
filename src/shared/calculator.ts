@@ -14,8 +14,103 @@ export const ACCOUNT_FEE_STANDALONE_YEARLY = 1500000;
 export const WEBSITE_FEE_YEARLY = 600000;
 export const BOX_BUY_PRICE = 2000000;
 export const BOX_RENT_YEARLY = 900000;
+export const DURATION_ROUNDING_POLICY = {
+  zeroMonthMaxDays: 7,
+  halfMonthMinDays: 8,
+  halfMonthMaxDays: 17,
+  fullMonthMinDays: 18
+} as const;
 
-export type BusinessType = keyof typeof BUSINESS_TYPES;
+export type BusinessType =
+  | 'cafe'
+  | 'restaurant'
+  | 'store'
+  | 'gym'
+  | 'entertainment'
+  | 'mall'
+  | 'supermarket';
+
+export type PricingIncrement = {
+  above: number;
+  upTo: number | null;
+  rate: number;
+};
+
+export type BusinessPricingPolicy = {
+  base: {
+    upTo: number;
+    coefficient: number;
+  };
+  increments: [PricingIncrement, PricingIncrement];
+  maxCoef: number;
+};
+
+export const BUSINESS_PRICING_POLICIES: Record<BusinessType, BusinessPricingPolicy> = {
+  cafe: {
+    base: { upTo: 15, coefficient: 0.35 },
+    increments: [
+      { above: 15, upTo: 50, rate: 0.04 },
+      { above: 50, upTo: null, rate: 0.02 }
+    ],
+    maxCoef: 8
+  },
+  restaurant: {
+    base: { upTo: 50, coefficient: 2 },
+    increments: [
+      { above: 50, upTo: 100, rate: 0.05 },
+      { above: 100, upTo: null, rate: 0.03 }
+    ],
+    maxCoef: 8
+  },
+  store: {
+    base: { upTo: 50, coefficient: 0.35 },
+    increments: [
+      { above: 50, upTo: 100, rate: 0.008 },
+      { above: 100, upTo: null, rate: 0.006 }
+    ],
+    maxCoef: 5
+  },
+  gym: {
+    base: { upTo: 50, coefficient: 0.5 },
+    increments: [
+      { above: 50, upTo: 100, rate: 0.011 },
+      { above: 100, upTo: null, rate: 0.009 }
+    ],
+    maxCoef: 10
+  },
+  entertainment: {
+    base: { upTo: 200, coefficient: 0.7 },
+    increments: [
+      { above: 200, upTo: 500, rate: 0.003 },
+      { above: 500, upTo: null, rate: 0.001 }
+    ],
+    maxCoef: 12
+  },
+  mall: {
+    base: { upTo: 200, coefficient: 1.5 },
+    increments: [
+      { above: 200, upTo: 500, rate: 0.003 },
+      { above: 500, upTo: null, rate: 0.002 }
+    ],
+    maxCoef: 50
+  },
+  supermarket: {
+    base: { upTo: 500, coefficient: 1.25 },
+    increments: [
+      { above: 500, upTo: 1000, rate: 0.003 },
+      { above: 1000, upTo: null, rate: 0.002 }
+    ],
+    maxCoef: 10
+  }
+};
+
+function isBusinessType(value: string): value is BusinessType {
+  return Object.prototype.hasOwnProperty.call(BUSINESS_PRICING_POLICIES, value);
+}
+
+export function getBusinessPricingPolicy(type: BusinessType | string): BusinessPricingPolicy {
+  return isBusinessType(type) ? BUSINESS_PRICING_POLICIES[type] : BUSINESS_PRICING_POLICIES.cafe;
+}
 
 type DiscountInput = {
   account?: number;
@@ -90,46 +185,30 @@ export function clampDiscount(value: unknown): number {
 }
 
 export function calculateCoef(type: BusinessType | string, area: number): number {
+  return calculateCoefComponents(type, area).coef;
+}
+
+export function calculateCoefComponents(type: BusinessType | string, area: number) {
   const a = Number(area) || 0;
-  let coef = 0;
-  let maxCoef = Infinity;
-  if (type === 'cafe') {
-    maxCoef = 8;
-    if (a <= 15) coef = 0.35;
-    else if (a <= 50) coef = 0.35 + (a - 15) * 0.04;
-    else coef = 0.35 + 35 * 0.04 + (a - 50) * 0.02;
-  } else if (type === 'restaurant') {
-    maxCoef = 8;
-    if (a <= 50) coef = 2.0;
-    else if (a <= 100) coef = 2.0 + (a - 50) * 0.05;
-    else coef = 2.0 + 50 * 0.05 + (a - 100) * 0.03;
-  } else if (type === 'store') {
-    maxCoef = 5;
-    if (a <= 50) coef = 0.35;
-    else if (a <= 100) coef = 0.35 + (a - 50) * 0.008;
-    else coef = 0.35 + 50 * 0.008 + (a - 100) * 0.006;
-  } else if (type === 'gym') {
-    maxCoef = 10;
-    if (a <= 50) coef = 0.5;
-    else if (a <= 100) coef = 0.5 + (a - 50) * 0.011;
-    else coef = 0.5 + 50 * 0.011 + (a - 100) * 0.009;
-  } else if (type === 'entertainment') {
-    maxCoef = 12;
-    if (a <= 200) coef = 0.7;
-    else if (a <= 500) coef = 0.7 + (a - 200) * 0.003;
-    else coef = 0.7 + 300 * 0.003 + (a - 500) * 0.001;
-  } else if (type === 'mall') {
-    maxCoef = 50;
-    if (a <= 200) coef = 1.5;
-    else if (a <= 500) coef = 1.5 + (a - 200) * 0.003;
-    else coef = 1.5 + 300 * 0.003 + (a - 500) * 0.002;
-  } else if (type === 'supermarket') {
-    maxCoef = 10;
-    if (a <= 500) coef = 1.25;
-    else if (a <= 1000) coef = 1.25 + (a - 500) * 0.003;
-    else coef = 1.25 + 500 * 0.003 + (a - 1000) * 0.002;
-  }
-  return Math.min(coef, maxCoef);
+  const policy = getBusinessPricingPolicy(type);
+  const incrementCoefs = policy.increments.map((tier) => {
+    if (a <= tier.above) return 0;
+    const effectiveTop = tier.upTo === null ? a : Math.min(a, tier.upTo);
+    return Math.max(0, effectiveTop - tier.above) * tier.rate;
+  }) as [number, number];
+  const components: [number, number, number] = [
+    policy.base.coefficient,
+    incrementCoefs[0],
+    incrementCoefs[1]
+  ];
+  const rawCoef = components.reduce((sum, component) => sum + component, 0);
+  return {
+    components,
+    rawCoef,
+    coef: Math.min(rawCoef, policy.maxCoef),
+    maxCoef: policy.maxCoef,
+    policy
+  };
 }
 
 function parseLocalDate(ymd: string): Date | null {
@@ -155,11 +234,19 @@ export function calculateDurationMonths(start: string, end: string): number {
   }
   const diffTime = d2.getTime() - tempDate.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  let fraction = 0;
-  if (diffDays <= 7) fraction = 0;
-  else if (diffDays >= 8 && diffDays <= 17) fraction = 0.5;
-  else if (diffDays >= 18) fraction = 1.0;
-  return fullMonths + fraction;
+  return fullMonths + calculateResidualMonthFraction(diffDays);
+}
+
+export function calculateResidualMonthFraction(dayCount: number): 0 | 0.5 | 1 {
+  const days = Math.max(0, Math.floor(Number(dayCount) || 0));
+  if (days <= DURATION_ROUNDING_POLICY.zeroMonthMaxDays) return 0;
+  if (
+    days >= DURATION_ROUNDING_POLICY.halfMonthMinDays &&
+    days <= DURATION_ROUNDING_POLICY.halfMonthMaxDays
+  ) {
+    return 0.5;
+  }
+  return 1;
 }
 
 function normalizeOptions(options: CalculatorOptionsInput = {}): NormalizedOptions {

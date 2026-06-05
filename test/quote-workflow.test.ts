@@ -56,6 +56,38 @@ function makeSnapshot(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function cellResult(value: ExcelJS.CellValue): unknown {
+  if (value && typeof value === 'object') {
+    if ('result' in value) return value.result;
+    if ('text' in value) return value.text;
+    if ('richText' in value && Array.isArray(value.richText)) {
+      return value.richText.map((part) => part.text).join('');
+    }
+  }
+  return value;
+}
+
+function cellText(value: ExcelJS.CellValue): string {
+  return String(cellResult(value) ?? '').trim();
+}
+
+function findRowByText(worksheet: ExcelJS.Worksheet, text: string, column: string): number {
+  for (let row = 1; row <= worksheet.rowCount; row++) {
+    if (cellText(worksheet.getCell(`${column}${row}`).value) === text) {
+      return row;
+    }
+  }
+  throw new Error(`Could not find ${text} in column ${column}`);
+}
+
+function nearestTierHeader(worksheet: ExcelJS.Worksheet, row: number): string {
+  for (let headerRow = row - 1; headerRow >= 1; headerRow--) {
+    const value = cellText(worksheet.getCell(`H${headerRow}`).value);
+    if (value.startsWith('Đến ')) return value;
+  }
+  throw new Error(`Could not find pricing header before row ${row}`);
+}
+
 test('quoteIdentityService formats base and revision numbers', () => {
   assert.equal(generateBaseQuoteCode(new Date('2026-04-23T00:00:00.000Z'), 7), 'XMS-260423-007');
   assert.equal(formatDisplayQuoteNumber('XMS-260423-007', 0), 'XMS-260423-007');
@@ -256,6 +288,87 @@ test('excel export includes visible platform and equipment rows', async () => {
   );
   assert.match(visibleValues, /Thiết bị phát \(Boxset\) - Thuê/);
   assert.match(visibleValues, /Tổng thanh toán sau VAT/);
+});
+
+test('excel export keeps mixed business pricing capped and visible totals aligned', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xms-excel-mixed-business-'));
+  const filePath = path.join(tmpDir, 'quote-mixed-business.xlsx');
+  const snapshot = makeSnapshot({
+    calcOptions: {
+      baseSalary: 2340000,
+      vatRate: 0,
+      boxMode: 'buy',
+      accountFeeMode: 'standard',
+      billingCycle: 'y',
+      globalBoxCount: 1,
+      hasAccountFee: true,
+      hasWebsiteFee: false,
+      hasQTG: true,
+      hasQLQ: true,
+      globalDiscounts: { account: 0, website: 0, box: 0, qtg: 30, qlq: 50 },
+      discountEnabled: { account: false, website: false, box: false, qtg: true, qlq: true }
+    },
+    stores: [
+      { id: 1, name: 'Indochine', type: 'restaurant', area: '1500', startDate: '2026-06-05', endDate: '2027-06-05' },
+      { id: 2, name: 'SG+Colo', type: 'restaurant', area: '580', startDate: '2026-06-05', endDate: '2027-06-05' },
+      { id: 3, name: 'LV', type: 'mall', area: '1600', startDate: '2026-06-05', endDate: '2027-06-05' },
+      { id: 4, name: 'BC', type: 'cafe', area: '660', startDate: '2026-06-05', endDate: '2027-06-05' },
+      { id: 5, name: 'Beach Hut', type: 'cafe', area: '60', startDate: '2026-06-05', endDate: '2027-06-05' },
+      { id: 6, name: 'Spa', type: 'gym', area: '1430', startDate: '2026-06-05', endDate: '2027-06-05' },
+      { id: 7, name: 'Lobby', type: 'mall', area: '480', startDate: '2026-06-05', endDate: '2027-06-05' }
+    ]
+  });
+  const payload = buildQuotePayload(
+    snapshot,
+    { companyName: 'Resort' },
+    { name: 'BD Mixed' },
+    {
+      quoteDateInput: new Date('2026-06-05T00:00:00.000Z'),
+      quoteIdentity: buildQuoteIdentity('XMS-260605-002', 0)
+    }
+  );
+  const manifest = buildEmbeddedManifest(payload, {
+    appVersion: '1.13.5',
+    exportedAt: '2026-06-05T10:00:00.000Z'
+  });
+
+  assert.equal(Math.round(payload.totals.grand), 138635120);
+
+  await exportExcel({
+    app: { getPath: () => tmpDir },
+    dialog: { showSaveDialog: async () => ({ filePath }) },
+    payload,
+    manifest
+  });
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(filePath);
+  const worksheet = workbook.getWorksheet('Báo Giá');
+  assert.ok(worksheet);
+
+  const indochineRow = findRowByText(worksheet, 'Indochine', 'C');
+  const lvRow = findRowByText(worksheet, 'LV', 'C');
+  const bcRow = findRowByText(worksheet, 'BC', 'C');
+  const spaRow = findRowByText(worksheet, 'Spa', 'C');
+  assert.equal(nearestTierHeader(worksheet, indochineRow), 'Đến 50 m2');
+  assert.equal(nearestTierHeader(worksheet, lvRow), 'Đến 200 m2');
+  assert.equal(nearestTierHeader(worksheet, bcRow), 'Đến 15 m2');
+  assert.equal(nearestTierHeader(worksheet, spaRow), 'Đến 50 m2');
+
+  const indochineAnnual = worksheet.getCell(`K${indochineRow}`).value;
+  assert.ok(indochineAnnual && typeof indochineAnnual === 'object' && 'formula' in indochineAnnual);
+  assert.match(String(indochineAnnual.formula), /MIN\(SUM\(H\d+:J\d+\),8\*\$I\$4\)/);
+  assert.equal(Math.round(Number(indochineAnnual.result)), 18720000);
+
+  const copyrightNetRow = findRowByText(
+    worksheet,
+    'Tổng giá trị phải thanh toán Phí Bản Quyền (chưa bao gồm VAT):',
+    'A'
+  );
+  assert.equal(Math.round(Number(cellResult(worksheet.getCell(`N${copyrightNetRow}`).value))), 120435120);
+
+  const grandRow = findRowByText(worksheet, 'Tổng thanh toán sau VAT:', 'A');
+  assert.equal(Math.round(Number(cellResult(worksheet.getCell(`M${grandRow}`).value))), 138635120);
 });
 
 test('draft file preserves the complete editable quote snapshot', async () => {
