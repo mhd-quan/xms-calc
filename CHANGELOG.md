@@ -5,6 +5,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.13.3] — 2026-05-21
+
+### Changed
+- **Platform Fee Wording**: Renamed the Website usage fee to Phí Nền tảng and updated the app, PDF, and XLSX descriptions for Website or PC App XMS platform usage.
+- **Version Display**: Updated package and status bar version labels to `1.13.3`.
+
 ## [1.13.1] — 2026-05-13
 
 ### Changed

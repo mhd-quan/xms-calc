@@ -1,8 +1,9 @@
 import type { RenderSnapshot } from '../app';
 import type { RevisionStatus } from '../../shared/types';
-import { cycleLabel } from './billing-cycle';
+import { cycleDisplayAmount, cycleLabel } from './billing-cycle';
+import { formatVND } from './format';
 
-const APP_VERSION = '1.13.1';
+const APP_VERSION = '1.13.3';
 
 type StatusView = {
   label: string;
@@ -15,6 +16,7 @@ export function renderStatusbar(snapshot: RenderSnapshot): void {
   setText('statusQuoteNumber', `QUOTE ${snapshot.activeDisplayQuoteNumber || '—'}`);
   setText('statusBranchSummary', branchSummary(snapshot.stores.length));
   setText('statusCycle', `CYCLE · ${cycleLabel(snapshot.billingCycle).toUpperCase()}`);
+  setText('statusBranchCost', `PER BRANCH · ${formatVND(branchCost(snapshot))} ₫`);
   setText('statusVersion', `XMS v${APP_VERSION}`);
 
   const dot = getElement('statusDot');
@@ -31,6 +33,12 @@ function branchSummary(count: number): string {
   const branchUnit = count === 1 ? 'BRANCH' : 'BRANCHES';
   const lineUnit = count === 1 ? 'LINE' : 'LINES';
   return `${count} ${branchUnit} · ${count} ${lineUnit}`;
+}
+
+function branchCost(snapshot: RenderSnapshot): number {
+  const branchCount = snapshot.stores.length;
+  if (branchCount <= 0) return 0;
+  return cycleDisplayAmount(snapshot.quote.totals.grand, snapshot.billingCycle) / branchCount;
 }
 
 function setText(id: string, value: string): void {

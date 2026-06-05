@@ -11,11 +11,9 @@ export function renderBottombar(snapshot: RenderSnapshot): void {
   const { totals } = snapshot.quote;
   const displayCycle = snapshot.billingCycle;
 
-  setMoney('totalQTG', cycleDisplayAmount(totals.subtotalQTG, displayCycle));
-  setMoney('totalQLQ', cycleDisplayAmount(totals.subtotalQLQ, displayCycle));
-  setMoney('totalAccount', cycleDisplayAmount(totals.subtotalAccount, displayCycle));
-  setMoney('totalWebsite', cycleDisplayAmount(totals.subtotalWebsite, displayCycle));
-  setMoney('totalBox', cycleDisplayAmount(totals.subtotalBox, displayCycle));
+  setMoney('totalCopyright', cycleDisplayAmount(totals.subtotalQTG + totals.subtotalQLQ, displayCycle));
+  setMoney('totalPlatform', cycleDisplayAmount(totals.subtotalAccount + totals.subtotalWebsite, displayCycle));
+  setMoney('totalDevice', cycleDisplayAmount(totals.subtotalBox, displayCycle));
 
   const grand = cycleDisplayAmount(totals.grand, displayCycle);
   const grandOriginal = cycleDisplayAmount(totals.grandOriginal, displayCycle);
