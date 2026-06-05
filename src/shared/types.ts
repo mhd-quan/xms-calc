@@ -28,6 +28,7 @@ export type ImportActionKey =
 
 export interface GlobalDiscounts {
   account: number;
+  website: number;
   box: number;
   qtg: number;
   qlq: number;
@@ -35,6 +36,7 @@ export interface GlobalDiscounts {
 
 export interface DiscountToggles {
   account: boolean;
+  website: boolean;
   box: boolean;
   qtg: boolean;
   qlq: boolean;

@@ -172,12 +172,12 @@ export class QuoteRepository {
         accountFeeMode: 'standard',
         billingCycle: 'y',
         globalBoxCount: 1,
-        hasAccountFee: true,
+        hasAccountFee: false,
         hasWebsiteFee: false,
-        hasQTG: true,
-        hasQLQ: true,
-        globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
-        discountEnabled: { account: false, box: false, qtg: false, qlq: false }
+        hasQTG: false,
+        hasQLQ: false,
+        globalDiscounts: { account: 0, website: 0, box: 0, qtg: 0, qlq: 0 },
+        discountEnabled: { account: false, website: false, box: false, qtg: false, qlq: false }
       }),
       stores: safeParseJson<Store[]>(row.stores_json, []),
       totals: safeParseJson<Partial<Totals>>(row.totals_json, {}),

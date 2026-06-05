@@ -19,6 +19,7 @@ export type BusinessType = keyof typeof BUSINESS_TYPES;
 
 type DiscountInput = {
   account?: number;
+  website?: number;
   box?: number;
   qtg?: number;
   qlq?: number;
@@ -26,6 +27,7 @@ type DiscountInput = {
 
 type DiscountToggleInput = {
   account?: boolean;
+  website?: boolean;
   box?: boolean;
   qtg?: boolean;
   qlq?: boolean;
@@ -59,12 +61,14 @@ type NormalizedOptions = {
   hasQLQ: boolean;
   globalDiscounts: {
     account: number;
+    website: number;
     box: number;
     qtg: number;
     qlq: number;
   };
   discountEnabled: {
     account: boolean;
+    website: boolean;
     box: boolean;
     qtg: boolean;
     qlq: boolean;
@@ -175,12 +179,14 @@ function normalizeOptions(options: CalculatorOptionsInput = {}): NormalizedOptio
     hasQLQ: options.hasQLQ !== false,
     globalDiscounts: {
       account: clampDiscount(discounts.account),
+      website: clampDiscount(discounts.website),
       box: clampDiscount(discounts.box),
       qtg: clampDiscount(discounts.qtg),
       qlq: clampDiscount(discounts.qlq)
     },
     discountEnabled: {
       account: discountEnabled.account === true,
+      website: discountEnabled.website === true,
       box: discountEnabled.box === true,
       qtg: discountEnabled.qtg === true,
       qlq: discountEnabled.qlq === true
@@ -214,7 +220,7 @@ export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOp
   const qtgAmount = qtgAmountOriginal * (1 - effectiveDiscount(opts, 'qtg') / 100);
   const qlqAmount = qlqAmountOriginal * (1 - effectiveDiscount(opts, 'qlq') / 100);
   const accountAmount = accountAmountOriginal * (1 - effectiveDiscount(opts, 'account') / 100);
-  const websiteAmount = websiteAmountOriginal;
+  const websiteAmount = websiteAmountOriginal * (1 - effectiveDiscount(opts, 'website') / 100);
 
   let boxAmount = 0;
   let boxAmountOriginal = 0;

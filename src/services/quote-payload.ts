@@ -97,12 +97,14 @@ function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string,
     hasQLQ: calcOptions?.hasQLQ !== false,
     globalDiscounts: {
       account: Number(discounts.account) || 0,
+      website: Number(discounts.website) || 0,
       box: Number(discounts.box) || 0,
       qtg: Number(discounts.qtg) || 0,
       qlq: Number(discounts.qlq) || 0
     },
     discountEnabled: {
       account: discountEnabled.account === true,
+      website: discountEnabled.website === true,
       box: discountEnabled.box === true,
       qtg: discountEnabled.qtg === true,
       qlq: discountEnabled.qlq === true

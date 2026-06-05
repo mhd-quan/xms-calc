@@ -121,7 +121,7 @@ function buildPricingRows(payload: QuotePayload): string {
     }
   }
 
-  if (payload.totals.subtotalAccount > 0) {
+  if (payload.totals.subtotalAccountOriginal > 0) {
     addRow(rows, {
       index: index++,
       group: true,
@@ -134,12 +134,12 @@ function buildPricingRows(payload: QuotePayload): string {
     });
   }
 
-  if (payload.totals.subtotalWebsite > 0) {
+  if (payload.totals.subtotalWebsiteOriginal > 0) {
     addRow(rows, {
       index: index++,
       group: true,
       title: 'Phí sử dụng Website',
-      detail: 'Phí sử dụng website XMusic Station; đơn giá 600.000 VND/năm và prorated theo thời hạn từng chi nhánh.',
+      detail: 'Phí sử dụng website XMusic Station; đơn giá 600.000 VND/năm, prorated theo thời hạn từng chi nhánh và có thể áp dụng chiết khấu.',
       scope: `${branchCount} website / ${branchCount} chi nhánh`,
       unit: duration,
       amount: payload.totals.subtotalWebsite,
@@ -147,7 +147,7 @@ function buildPricingRows(payload: QuotePayload): string {
     });
   }
 
-  if (payload.totals.subtotalBox > 0 && payload.globals.boxMode !== 'none') {
+  if (payload.totals.subtotalBoxOriginal > 0 && payload.globals.boxMode !== 'none') {
     const totalBoxes = branchCount * (Number(payload.globals.globalBoxCount) || 1);
     const isBuy = payload.globals.boxMode === 'buy';
     addRow(rows, {
@@ -192,6 +192,7 @@ function buildNotes(payload: QuotePayload): string {
     .map(([key, value]) => {
       const labels: Record<string, string> = {
         account: 'Tài khoản',
+        website: 'Website',
         box: 'Box',
         qtg: 'Quyền tác giả',
         qlq: 'Quyền liên quan'

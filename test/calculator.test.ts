@@ -34,8 +34,8 @@ const baseOptions: CalcOptions = {
   hasWebsiteFee: false,
   hasQTG: true,
   hasQLQ: true,
-  globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
-  discountEnabled: { account: true, box: true, qtg: true, qlq: true }
+  globalDiscounts: { account: 0, website: 0, box: 0, qtg: 0, qlq: 0 },
+  discountEnabled: { account: true, website: true, box: true, qtg: true, qlq: true }
 };
 
 const cafeStore: Store = {
@@ -129,6 +129,19 @@ test('website fee is optional and prorated by branch duration', () => {
   moneyEqual(rows[0]?.websiteAmount ?? 0, 600000);
   moneyEqual(rows[1]?.websiteAmount ?? 0, 300000);
   moneyEqual(totals.subtotalWebsite, 900000);
+});
+
+test('website fee can use the interface discount', () => {
+  const { stores: rows, totals } = calculateTotals([cafeStore], {
+    ...baseOptions,
+    hasWebsiteFee: true,
+    globalDiscounts: { ...baseOptions.globalDiscounts, website: 25 }
+  });
+
+  moneyEqual(rows[0]?.websiteAmount ?? 0, 450000);
+  moneyEqual(rows[0]?.websiteAmountOriginal ?? 0, 600000);
+  moneyEqual(totals.subtotalWebsite, 450000);
+  moneyEqual(totals.subtotalWebsiteOriginal, 600000);
 });
 
 test('standalone account fee only applies when both rights are disabled', () => {

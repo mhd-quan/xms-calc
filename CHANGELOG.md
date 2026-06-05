@@ -5,6 +5,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.13.1] — 2026-05-13
+
+### Changed
+- **Website Discount**: Added the same discount toggle, knob, original-price display, PDF note, and XLSX platform-row handling to the Website usage fee.
+- **Savings Visualization**: Reworked the total discount comparison into a compact vertical two-step meter, with each half of the rail representing 50% savings.
+- **New Quote Preset**: New quotes now start with Platform & Equipment toggles off, copyright toggles off, all discount toggles off, and all discount knobs at 0%.
+
 ## [1.13.0] — 2026-05-12
 
 ### Added

@@ -317,7 +317,7 @@ export async function exportExcel({
     payload.totals.subtotalWebsiteOriginal > 0
       ? {
           title: 'Phí sử dụng Website',
-          detail: 'Website XMS: 600.000 VND/năm, prorated theo thời hạn từng chi nhánh.',
+          detail: 'Website XMS: 600.000 VND/năm, prorated theo thời hạn từng chi nhánh và có thể áp dụng chiết khấu giao diện.',
           scope: `${storeCount} website`,
           unit: 'Năm prorated',
           original: payload.totals.subtotalWebsiteOriginal,

@@ -250,8 +250,8 @@
             <div class="csection__body">
               <div class="x-row">
                 <div class="x-row__lhs">
-                  <button type="button" class="x-toggle-pill is-on" id="accountToggle"
-                    data-info="Tài khoản NCT|Phí duy trì tài khoản phần mềm NCT. Có thêm mức độc lập khi tắt cả hai quyền bản quyền.|—">BẬT</button>
+                  <button type="button" class="x-toggle-pill" id="accountToggle"
+                    data-info="Tài khoản NCT|Phí duy trì tài khoản phần mềm NCT. Có thêm mức độc lập khi tắt cả hai quyền bản quyền.|—">TẮT</button>
                   <div class="x-row__info">
                     <div class="x-row__name">Phí tài khoản NCT</div>
                     <div class="x-row__desc" id="accountPriceDesc">600.000 ₫ / năm · prorated theo chu kỳ</div>
@@ -265,8 +265,8 @@
                 </div>
               <div class="x-row__rhs" id="accountFeeRight">
                   <div class="x-discount-bank x-discount-bank--account">
-                    <button type="button" class="x-discount-toggle is-on" id="discountAccountApply" aria-pressed="true"
-                      data-info="Chiết khấu Tài khoản|Bật/tắt chiết khấu cho phí tài khoản.|—">DISC</button>
+                    <button type="button" class="x-discount-toggle" id="discountAccountApply" aria-pressed="false"
+                      data-info="Chiết khấu Tài khoản|Bật/tắt chiết khấu cho phí tài khoản.|—">OFF</button>
                   <div class="x-knob" id="discountAccountKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
@@ -301,8 +301,22 @@
                   </div>
                 </div>
                 <div class="x-row__rhs is-disabled" id="websiteFeeRight">
-                  <div class="x-platform-amount">
+                  <div class="x-discount-bank x-discount-bank--website">
+                    <button type="button" class="x-discount-toggle" id="discountWebsiteApply" aria-pressed="false"
+                      data-info="Chiết khấu Website|Bật/tắt chiết khấu cho phí sử dụng Website.|—">OFF</button>
+                    <div class="x-knob" id="discountWebsiteKnob"
+                      data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
+                      tabindex="0"
+                      data-info="Chiết khấu · Website|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
+                      <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
+                      <div class="x-knob__readout" id="discountWebsiteVal">0%</div>
+                      <div class="x-knob__label">Discount</div>
+                    </div>
+                    <div class="x-knob__envelope-frame" aria-hidden="true">
+                      <canvas class="x-knob__envelope" id="envelopeWebsiteKnob" width="120" height="72"></canvas>
+                    </div>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
+                      <span class="x-row__inline-amount__strike tnum" id="websiteOriginalAmount" hidden>0 ₫</span>
                       <span class="x-row__inline-amount__current">
                         <span class="x-row__inline-amount__val tnum" id="websiteAmount">0</span>
                         <span class="x-row__inline-amount__unit">₫</span>
@@ -338,8 +352,8 @@
                 </div>
                 <div class="x-row__rhs">
                   <div class="x-discount-bank x-discount-bank--box" id="boxDiscountRow">
-                      <button type="button" class="x-discount-toggle is-on" id="discountBoxApply" aria-pressed="true"
-                        data-info="Chiết khấu Box|Bật/tắt chiết khấu cho thiết bị phát nhạc.|—">DISC</button>
+                      <button type="button" class="x-discount-toggle" id="discountBoxApply" aria-pressed="false"
+                        data-info="Chiết khấu Box|Bật/tắt chiết khấu cho thiết bị phát nhạc.|—">OFF</button>
                     <div class="x-knob" id="discountBoxKnob"
                       data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                       tabindex="0"
@@ -377,8 +391,8 @@
             <div class="csection__body">
               <div class="x-row">
                 <div class="x-row__lhs">
-                  <button type="button" class="x-toggle-pill is-on" id="qtgToggle"
-                    data-info="Quyền Tác giả|Phí bản quyền tác giả qua VCPMC. Tính theo diện tích × hệ số × thời gian.|—">BẬT</button>
+                  <button type="button" class="x-toggle-pill" id="qtgToggle"
+                    data-info="Quyền Tác giả|Phí bản quyền tác giả qua VCPMC. Tính theo diện tích × hệ số × thời gian.|—">TẮT</button>
                   <div class="x-row__info">
                     <div class="x-row__name">Quyền Tác giả</div>
                     <div class="x-row__desc">
@@ -390,8 +404,8 @@
                 </div>
                 <div class="x-row__rhs">
                   <div class="x-discount-bank x-discount-bank--qtg">
-                    <button type="button" class="x-discount-toggle is-on" id="discountQTGApply" aria-pressed="true"
-                      data-info="Chiết khấu QTG|Bật/tắt chiết khấu quyền tác giả VCPMC.|—">DISC</button>
+                    <button type="button" class="x-discount-toggle" id="discountQTGApply" aria-pressed="false"
+                      data-info="Chiết khấu QTG|Bật/tắt chiết khấu quyền tác giả VCPMC.|—">OFF</button>
                   <div class="x-knob" id="discountQTGKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
@@ -418,8 +432,8 @@
 
               <div class="x-row">
                 <div class="x-row__lhs">
-                  <button type="button" class="x-toggle-pill is-on" id="qlqToggle"
-                    data-info="Quyền Liên quan|Phí bản quyền liên quan qua NCT. Tính theo diện tích × hệ số × thời gian.|—">BẬT</button>
+                  <button type="button" class="x-toggle-pill" id="qlqToggle"
+                    data-info="Quyền Liên quan|Phí bản quyền liên quan qua NCT. Tính theo diện tích × hệ số × thời gian.|—">TẮT</button>
                   <div class="x-row__info">
                     <div class="x-row__name">Quyền Liên quan</div>
                     <div class="x-row__desc">
@@ -431,8 +445,8 @@
                 </div>
                 <div class="x-row__rhs">
                   <div class="x-discount-bank x-discount-bank--qlq">
-                    <button type="button" class="x-discount-toggle is-on" id="discountQLQApply" aria-pressed="true"
-                      data-info="Chiết khấu QLQ|Bật/tắt chiết khấu quyền liên quan NCT.|—">DISC</button>
+                    <button type="button" class="x-discount-toggle" id="discountQLQApply" aria-pressed="false"
+                      data-info="Chiết khấu QLQ|Bật/tắt chiết khấu quyền liên quan NCT.|—">OFF</button>
                   <div class="x-knob" id="discountQLQKnob"
                     data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                     tabindex="0"
@@ -501,7 +515,7 @@
         </div>
       </div>
 
-      <div class="bottombar__savings" data-info="Savings comparison|So sánh phần đã giảm với tổng gốc bằng thanh ngang.|—">
+      <div class="bottombar__savings" data-info="Savings comparison|So sánh phần đã giảm với tổng gốc bằng thước dọc hai nấc 50%.|—">
         <div class="bottombar__savings-meter is-zero" id="grandSavingsMeter" aria-label="Savings 0%">
           <div class="bottombar__savings-head">
             <span>Saved</span>
@@ -547,7 +561,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.13.0</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.13.1</div>
     </div>
   </div>
 

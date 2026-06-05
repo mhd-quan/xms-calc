@@ -115,13 +115,14 @@ let activeTabId: number | null = null;
 let boxMode: CalcOptions['boxMode'] = 'none';
 let accountFeeMode: CalcOptions['accountFeeMode'] = 'standard';
 let globalBoxCount: number = 1;
-let hasAccountFee: boolean = true;
+let hasAccountFee: boolean = false;
 let hasWebsiteFee: boolean = false;
-let hasQTG: boolean = true;
-let hasQLQ: boolean = true;
+let hasQTG: boolean = false;
+let hasQLQ: boolean = false;
 
 let globalDiscounts: GlobalDiscounts = {
   account: 0,
+  website: 0,
   box: 0,
   qtg: 0,
   qlq: 0
@@ -129,6 +130,7 @@ let globalDiscounts: GlobalDiscounts = {
 
 let discountEnabled: DiscountToggles = {
   account: false,
+  website: false,
   box: false,
   qtg: false,
   qlq: false
@@ -284,12 +286,12 @@ function buildInitialDraftSnapshot(): QuoteSnapshot {
       boxMode: 'none',
       accountFeeMode: 'standard',
       globalBoxCount: 1,
-      hasAccountFee: true,
+      hasAccountFee: false,
       hasWebsiteFee: false,
-      hasQTG: true,
-      hasQLQ: true,
-      globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
-      discountEnabled: { account: false, box: false, qtg: false, qlq: false }
+      hasQTG: false,
+      hasQLQ: false,
+      globalDiscounts: { account: 0, website: 0, box: 0, qtg: 0, qlq: 0 },
+      discountEnabled: { account: false, website: false, box: false, qtg: false, qlq: false }
     }),
     stores: [createStore(1)],
     totals: {}
@@ -421,18 +423,19 @@ function hydrateFromSnapshot(snapshot: QuoteSnapshot): void {
   setCustomerFields(customerProfile);
   setSettingsFields(preparedByProfile);
 
-  baseSalary = snapshot.calcOptions.baseSalary;
-  vatRate = snapshot.calcOptions.vatRate;
-  billingCycle = snapshot.calcOptions.billingCycle;
-  boxMode = snapshot.calcOptions.boxMode;
-  accountFeeMode = snapshot.calcOptions.accountFeeMode;
-  globalBoxCount = snapshot.calcOptions.globalBoxCount;
-  hasAccountFee = snapshot.calcOptions.hasAccountFee;
-  hasWebsiteFee = snapshot.calcOptions.hasWebsiteFee;
-  hasQTG = snapshot.calcOptions.hasQTG;
-  hasQLQ = snapshot.calcOptions.hasQLQ;
-  globalDiscounts = { ...snapshot.calcOptions.globalDiscounts };
-  discountEnabled = { ...snapshot.calcOptions.discountEnabled };
+  const calcOptions = normalizeCalcOptions(snapshot.calcOptions);
+  baseSalary = calcOptions.baseSalary;
+  vatRate = calcOptions.vatRate;
+  billingCycle = calcOptions.billingCycle;
+  boxMode = calcOptions.boxMode;
+  accountFeeMode = calcOptions.accountFeeMode;
+  globalBoxCount = calcOptions.globalBoxCount;
+  hasAccountFee = calcOptions.hasAccountFee;
+  hasWebsiteFee = calcOptions.hasWebsiteFee;
+  hasQTG = calcOptions.hasQTG;
+  hasQLQ = calcOptions.hasQLQ;
+  globalDiscounts = { ...calcOptions.globalDiscounts };
+  discountEnabled = { ...calcOptions.discountEnabled };
 
   stores = snapshot.stores.length ? normalizeStores(snapshot.stores) : [createStore(1)];
   activeTabId = stores[0]?.id || null;
@@ -1153,17 +1156,21 @@ function renderMain(snapshot: RenderSnapshot): void {
   websiteToggle.classList.toggle('is-on', hasWebsiteFee);
   websiteToggle.textContent = hasWebsiteFee ? 'BẬT' : 'TẮT';
   const websitePriceDesc = document.getElementById('websitePriceDesc');
-  if (websitePriceDesc) websitePriceDesc.textContent = `${feePerYearLabel(WEBSITE_FEE_YEARLY)} · prorated theo chu kỳ`;
+  if (websitePriceDesc) websitePriceDesc.textContent = `${feePerYearLabel(WEBSITE_FEE_YEARLY)} · prorated theo chu kỳ · có thể chiết khấu`;
   const websiteRight = document.getElementById('websiteFeeRight');
+  renderDiscountApply('discountWebsiteApply', discountEnabled.website);
+  setKnobValue('discountWebsiteKnob', globalDiscounts.website);
   const websiteAmount = websiteRight?.querySelector<HTMLElement>('.x-row__inline-amount');
   if (hasWebsiteFee) {
     websiteRight?.classList.remove('is-disabled');
     websiteAmount?.classList.remove('is-disabled');
     animateNumber('websiteAmount', cycleDisplayAmount(breakdown?.websiteAmount || 0, billingCycle));
+    renderStrikePrice('websiteOriginalAmount', breakdown?.websiteAmountOriginal || 0, breakdown?.websiteAmount || 0);
   } else {
     websiteRight?.classList.add('is-disabled');
     websiteAmount?.classList.add('is-disabled');
     animateNumber('websiteAmount', 0);
+    renderStrikePrice('websiteOriginalAmount', 0, 0);
   }
 
   document.querySelectorAll('#boxModeSeg .x-seg__btn').forEach((btn) => {
@@ -1580,12 +1587,14 @@ function bindEvents() {
 
   const discountFieldById: Record<string, keyof GlobalDiscounts> = {
     discountAccountKnob: 'account',
+    discountWebsiteKnob: 'website',
     discountBoxKnob: 'box',
     discountQTGKnob: 'qtg',
     discountQLQKnob: 'qlq'
   };
   const discountApplyById: Record<string, keyof DiscountToggles> = {
     discountAccountApply: 'account',
+    discountWebsiteApply: 'website',
     discountBoxApply: 'box',
     discountQTGApply: 'qtg',
     discountQLQApply: 'qlq'
