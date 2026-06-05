@@ -7,6 +7,8 @@ import { safeFilePart, validateQuotePayload } from './quote-exporter';
 
 export const EXCEL_MANIFEST_SHEET = '_xms_manifest';
 export const EXCEL_MANIFEST_CELL = 'A1';
+const PLATFORM_FEE_DESCRIPTION =
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
 
 type AppLike = {
   getPath(name: 'documents'): string;
@@ -316,9 +318,9 @@ export async function exportExcel({
       : null,
     payload.totals.subtotalWebsiteOriginal > 0
       ? {
-          title: 'Phí sử dụng Website',
-          detail: 'Website XMS: 600.000 VND/năm, prorated theo thời hạn từng chi nhánh và có thể áp dụng chiết khấu giao diện.',
-          scope: `${storeCount} website`,
+          title: 'Phí Nền tảng',
+          detail: PLATFORM_FEE_DESCRIPTION,
+          scope: `${storeCount} cửa hàng`,
           unit: 'Năm prorated',
           original: payload.totals.subtotalWebsiteOriginal,
           amount: payload.totals.subtotalWebsite
