@@ -302,9 +302,12 @@ test('excel export includes visible platform and equipment rows', async () => {
   assert.match(visibleValues, /Thiết bị phát \(Boxset\) - Thuê/);
   assert.match(visibleValues, /Tổng thanh toán sau VAT/);
 
-  assert.equal(solidFillColor(worksheet.getCell('A1')), 'FF20242C');
+  assert.equal(solidFillColor(worksheet.getCell('A1')), 'FF111827');
   assert.ok((worksheet.getRow(1).height ?? 0) >= 34);
   assert.ok((worksheet.getColumn(14).width ?? 0) >= 25);
+  const firstStoreRow = findRowByText(worksheet, 'Chi nhánh 1', 'C');
+  assert.equal(solidFillColor(worksheet.getCell(`C${firstStoreRow}`)), 'FFFFFFFF');
+  assert.equal(solidFillColor(worksheet.getCell(`K${firstStoreRow}`)), 'FFFFFFFF');
 
   const accountRow = findRowByText(worksheet, 'Phí Sử dụng Tài khoản XMS', 'A');
   assert.match(cellFormula(worksheet.getCell(`K${accountRow}`).value), /1500000\*1\*1/);
@@ -384,6 +387,8 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
   assert.ok(indochineAnnual && typeof indochineAnnual === 'object' && 'formula' in indochineAnnual);
   assert.match(String(indochineAnnual.formula), /MIN\(SUM\(H\d+:J\d+\),8\*\$I\$4\)/);
   assert.equal(Math.round(Number(indochineAnnual.result)), 18720000);
+  assert.equal(solidFillColor(worksheet.getCell(`C${indochineRow}`)), 'FFFFFFFF');
+  assert.equal(solidFillColor(worksheet.getCell(`K${indochineRow}`)), 'FFFFFFFF');
 
   const copyrightNetRow = findRowByText(
     worksheet,
@@ -398,7 +403,7 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
   const grandRow = findRowByText(worksheet, 'Tổng thanh toán sau VAT:', 'A');
   assert.equal(Math.round(Number(cellResult(worksheet.getCell(`M${grandRow}`).value))), 138635120);
   assert.match(cellFormula(worksheet.getCell(`M${grandRow}`).value), /^M\d+\+M\d+$/);
-  assert.equal(solidFillColor(worksheet.getCell(`M${grandRow}`)), 'FFFFBD59');
+  assert.equal(solidFillColor(worksheet.getCell(`M${grandRow}`)), 'FFFFE8B5');
 });
 
 test('draft file preserves the complete editable quote snapshot', async () => {

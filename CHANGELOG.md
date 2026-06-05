@@ -11,7 +11,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **Workbook Mixed Business Pricing**: Fixed XLSX exports for quotes with multiple business types by applying the same capped coefficient policy used by the app, including per-type tier headers and visible totals aligned with the embedded manifest.
 - **Duration Rounding Policy**: Codified residual day rounding as 1-7 days = 0 month, 8-17 days = 0.5 month, and 18+ days = 1 month for shared calculator and export prorating behavior.
 - **Workbook Formula Audit**: Converted visible platform totals, quote subtotals, VAT, and grand totals to formulas with cached results so workbook crosschecks trace through the pricing sections.
-- **Workbook Presentation**: Added stronger title/header/section/summary fills, row heights, column widths, money alignment, gridline-free worksheet view, and print-friendly landscape setup.
+- **Workbook Presentation**: Added a restrained neutral workbook palette with clean body rows, focused total highlights, row heights, column widths, money alignment, gridline-free worksheet view, and print-friendly landscape setup.
 - **Version Display**: Updated package and status bar version labels to `1.14.0`.
 
 ## [1.13.4] — 2026-05-21

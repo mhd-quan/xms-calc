@@ -22,26 +22,23 @@ const PLATFORM_FEE_DESCRIPTION =
 const FONT_NAME = 'Aptos Display';
 const MONEY_FORMAT = '#,##0';
 const COLORS = {
-  ink: 'FF23272F',
-  muted: 'FF667085',
+  ink: 'FF1F2937',
+  muted: 'FF6B7280',
   white: 'FFFFFFFF',
   paper: 'FFFFFFFF',
-  sheet: 'FFF7F9FC',
-  rowAlt: 'FFF1F5F9',
-  line: 'FFB9C2CF',
-  lineStrong: 'FF687385',
-  titleFill: 'FF20242C',
-  titleAccent: 'FFFFBD59',
-  headerFill: 'FF2E3440',
-  headerSoft: 'FFE8EEF7',
-  tierFill: 'FFFFF2CC',
-  sectionFill: 'FFDFE7F3',
-  platformFill: 'FFE6F4EA',
-  discountFill: 'FFFFE5CC',
-  netFill: 'FFDFF3E6',
-  summaryFill: 'FFEAF1FF',
-  grandFill: 'FFFFBD59',
-  note: 'FFC4604C'
+  line: 'FFD9DEE7',
+  lineStrong: 'FF8B95A5',
+  titleFill: 'FF111827',
+  titleAccent: 'FFFFFFFF',
+  headerFill: 'FF374151',
+  headerSoft: 'FFF3F4F6',
+  tierFill: 'FFF8FAFC',
+  sectionFill: 'FFE5E7EB',
+  discountFill: 'FFFFF7E6',
+  netFill: 'FFEFF6F1',
+  summaryFill: 'FFF6F7F9',
+  grandFill: 'FFFFE8B5',
+  note: 'FFB45309'
 } as const;
 
 type AppLike = {
@@ -403,7 +400,7 @@ export async function exportExcel({
       const cell = ws.getCell(r, c);
       applyStyle(cell, {
         align: c === 3 || c === 4 ? alignLeft : c >= 8 ? alignRight : alignCenter,
-        fill: c >= 11 ? COLORS.sheet : idx % 2 === 0 ? COLORS.paper : COLORS.rowAlt
+        fill: COLORS.paper
       });
       if (c >= 8) cell.numFmt = MONEY_FORMAT;
     }
@@ -562,7 +559,7 @@ export async function exportExcel({
       applyStyle(ws.getCell(sectionRow, c), {
         bold: true,
         align: alignLeft,
-        fill: COLORS.platformFill,
+        fill: COLORS.sectionFill,
         border: borderStrong
       });
     }
@@ -607,7 +604,7 @@ export async function exportExcel({
         const cell = ws.getCell(r, c);
         applyStyle(cell, {
           align: c === 1 || c === 4 ? alignLeft : c >= 11 ? alignRight : alignCenter,
-          fill: c >= 11 ? COLORS.sheet : COLORS.paper
+          fill: COLORS.paper
         });
         if (c >= 11) cell.numFmt = MONEY_FORMAT;
       }
