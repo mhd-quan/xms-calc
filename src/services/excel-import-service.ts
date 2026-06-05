@@ -132,9 +132,11 @@ export async function extractManifestFromExcelFile(
     calcOptions: normalizeCalcOptions({
       baseSalary,
       hasAccountFee: false, // Export Excel không có phí duy trì
+      hasWebsiteFee: false,
       hasQTG: true,
       hasQLQ: true,
       boxMode: 'none', // Không có phí box
+      accountFeeMode: 'standard',
       globalDiscounts: {
         account: 0,
         box: 0,
