@@ -241,7 +241,7 @@
           <!-- SECTION 02 — PLATFORM -->
           <section class="csection" id="section02">
             <div class="csection__head" data-section="02"
-              data-info="Section 02 · Nền tảng & Thiết bị|Phí tài khoản, nền tảng và box phát nhạc.|—">
+              data-info="Section 02 · Nền tảng & Thiết bị|Phí tài khoản XMS, nền tảng và Thiết bị phát (Boxset).|—">
               <span class="csection__idx">02</span>
               <span class="csection__title">Nền tảng & Thiết bị</span>
               <span class="eyebrow">Platform</span>
@@ -251,9 +251,9 @@
               <div class="x-row">
                 <div class="x-row__lhs">
                   <button type="button" class="x-toggle-pill" id="accountToggle"
-                    data-info="Tài khoản NCT|Phí duy trì tài khoản phần mềm NCT. Có thêm mức độc lập khi tắt cả hai quyền bản quyền.|—">TẮT</button>
+                    data-info="Phí Sử dụng Tài khoản XMS|Phí duy trì tài khoản XMS. Có thêm mức độc lập khi tắt cả hai quyền bản quyền.|—">TẮT</button>
                   <div class="x-row__info">
-                    <div class="x-row__name">Phí tài khoản NCT</div>
+                    <div class="x-row__name">Phí Sử dụng Tài khoản XMS</div>
                     <div class="x-row__desc" id="accountPriceDesc">600.000 ₫ / năm · prorated theo chu kỳ</div>
                     <div class="x-platform-mode">
                       <div class="x-seg x-seg--compact" id="accountFeeModeSeg" data-info="Mức phí tài khoản|Chuẩn: 600.000₫/năm. Độc lập: 1.500.000₫/năm/cửa hàng khi tắt QTG và QLQ.|—">
@@ -263,18 +263,18 @@
                     </div>
                   </div>
                 </div>
-              <div class="x-row__rhs" id="accountFeeRight">
+                <div class="x-row__rhs" id="accountFeeRight">
                   <div class="x-discount-bank x-discount-bank--account">
                     <button type="button" class="x-discount-toggle" id="discountAccountApply" aria-pressed="false"
-                      data-info="Chiết khấu Tài khoản|Bật/tắt chiết khấu cho phí tài khoản.|—">OFF</button>
-                  <div class="x-knob" id="discountAccountKnob"
-                    data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
-                    tabindex="0"
-                    data-info="Chiết khấu · Account|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
-                    <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
-                    <div class="x-knob__readout" id="discountAccountVal">0%</div>
-                    <div class="x-knob__label">Discount</div>
-                  </div>
+                      data-info="Chiết khấu Tài khoản XMS|Bật/tắt chiết khấu cho Phí Sử dụng Tài khoản XMS.|—">OFF</button>
+                    <div class="x-knob" id="discountAccountKnob"
+                      data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
+                      tabindex="0"
+                      data-info="Chiết khấu · Tài khoản XMS|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
+                      <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
+                      <div class="x-knob__readout" id="discountAccountVal">0%</div>
+                      <div class="x-knob__label">Discount</div>
+                    </div>
                     <div class="x-knob__envelope-frame" aria-hidden="true">
                       <canvas class="x-knob__envelope" id="envelopeAccountKnob" width="120" height="72"></canvas>
                     </div>
@@ -295,9 +295,9 @@
                 <div class="x-row__lhs">
                   <button type="button" class="x-toggle-pill" id="websiteToggle"
                     data-info="Phí Nền tảng|Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm|—">TẮT</button>
-                  <div class="x-row__info">
+                  <div class="x-row__info" data-info="Phí Nền tảng|Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm|—">
                     <div class="x-row__name">Phí Nền tảng</div>
-                    <div class="x-row__desc" id="websitePriceDesc">Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm</div>
+                    <div class="x-row__desc" id="websitePriceDesc">Website hoặc PC App XMS · chi phí hàng năm</div>
                   </div>
                 </div>
                 <div class="x-row__rhs is-disabled" id="websiteFeeRight">
@@ -331,10 +331,10 @@
               <div class="x-row x-row--box">
                 <div class="x-row__lhs">
                   <div class="x-row__info">
-                    <div class="x-row__name">Box phát nhạc</div>
+                    <div class="x-row__name">Thiết bị phát (Boxset)</div>
                     <div class="x-row__desc" id="boxPriceDesc">Chọn hình thức trang bị cho mỗi chi nhánh</div>
                     <div style="margin-top: var(--s-4);">
-                      <div class="x-seg" id="boxModeSeg" data-info="Hình thức box|Chọn: Không trang bị, Mua (2tr/box một lần), hoặc Thuê (900k/box/năm prorated).|—">
+                      <div class="x-seg" id="boxModeSeg" data-info="Hình thức Thiết bị phát (Boxset)|Chọn: Không trang bị, Mua (2tr/thiết bị một lần), hoặc Thuê (900k/thiết bị/năm prorated).|—">
                         <button type="button" class="x-seg__btn is-active" data-mode="none">Không</button>
                         <button type="button" class="x-seg__btn" data-mode="buy">Mua</button>
                         <button type="button" class="x-seg__btn" data-mode="rent">Thuê</button>
@@ -352,19 +352,19 @@
                 </div>
                 <div class="x-row__rhs">
                   <div class="x-discount-bank x-discount-bank--box" id="boxDiscountRow">
-                      <button type="button" class="x-discount-toggle" id="discountBoxApply" aria-pressed="false"
-                        data-info="Chiết khấu Box|Bật/tắt chiết khấu cho thiết bị phát nhạc.|—">OFF</button>
+                    <button type="button" class="x-discount-toggle" id="discountBoxApply" aria-pressed="false"
+                      data-info="Chiết khấu Boxset|Bật/tắt chiết khấu cho Thiết bị phát (Boxset).|—">OFF</button>
                     <div class="x-knob" id="discountBoxKnob"
                       data-min="0" data-max="100" data-default="0" data-format="int" data-unit="%"
                       tabindex="0"
-                      data-info="Chiết khấu · Box|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
+                      data-info="Chiết khấu · Boxset|Kéo chuột lên/xuống để chỉnh %. Shift = ±1%. Scroll = ±5%. Double-click = reset.|—">
                       <div class="x-knob__dial"><div class="x-knob__indicator"></div></div>
                       <div class="x-knob__readout" id="discountBoxVal">0%</div>
                       <div class="x-knob__label">Discount</div>
                     </div>
-                      <div class="x-knob__envelope-frame" aria-hidden="true">
-                        <canvas class="x-knob__envelope" id="envelopeBoxKnob" width="120" height="72"></canvas>
-                      </div>
+                    <div class="x-knob__envelope-frame" aria-hidden="true">
+                      <canvas class="x-knob__envelope" id="envelopeBoxKnob" width="120" height="72"></canvas>
+                    </div>
                     <div class="x-row__inline-amount x-row__inline-amount--control">
                       <span class="x-row__inline-amount__strike tnum" id="boxOriginalAmount" hidden>0 ₫</span>
                       <span class="x-row__inline-amount__current">
@@ -497,11 +497,11 @@
           <div class="bottombar__breakdown__label">Chi phí Bản quyền</div>
           <div class="bottombar__breakdown__val tnum" id="totalCopyright">0 ₫</div>
         </div>
-        <div class="bottombar__breakdown__cell" data-info="Chi phí nền tảng|Tổng phí tài khoản NCT và website của toàn bộ chi nhánh.|—">
+        <div class="bottombar__breakdown__cell" data-info="Chi phí nền tảng|Tổng Phí Sử dụng Tài khoản XMS và Phí Nền tảng của toàn bộ chi nhánh.|—">
           <div class="bottombar__breakdown__label">Chi phí nền tảng</div>
           <div class="bottombar__breakdown__val tnum" id="totalPlatform">0 ₫</div>
         </div>
-        <div class="bottombar__breakdown__cell" data-info="Chi phí thiết bị|Tổng chi phí box phát nhạc theo hình thức đã chọn.|—">
+        <div class="bottombar__breakdown__cell" data-info="Chi phí thiết bị|Tổng chi phí Thiết bị phát (Boxset) theo hình thức đã chọn.|—">
           <div class="bottombar__breakdown__label">Chi phí thiết bị</div>
           <div class="bottombar__breakdown__val tnum" id="totalDevice">0 ₫</div>
         </div>
@@ -554,7 +554,7 @@
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
       <div class="x-statusbar__cell x-statusbar__cell--metric tnum" id="statusBranchCost">PER BRANCH · 0 ₫</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.13.3</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.13.5</div>
     </div>
   </div>
 

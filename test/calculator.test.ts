@@ -3,7 +3,9 @@ import test from 'node:test';
 
 import {
   calculateCoef,
+  calculateCoefComponents,
   calculateDurationMonths,
+  calculateResidualMonthFraction,
   calculateStoreBreakdown,
   calculateTotals
 } from '../src/shared/calculator';
@@ -52,11 +54,30 @@ test('calculates current cafe coefficient and 12-month duration', () => {
   assert.equal(calculateDurationMonths('2026-01-01', '2026-12-31'), 12);
 });
 
+test('business coefficients respect their policy caps', () => {
+  assert.equal(calculateCoef('restaurant', 1500), 8);
+  assert.equal(calculateCoef('cafe', 660), 8);
+  assert.equal(calculateCoef('gym', 1430), 10);
+
+  const uncappedRestaurant = calculateCoefComponents('restaurant', 1500);
+  assert.equal(uncappedRestaurant.rawCoef, 46.5);
+  assert.equal(uncappedRestaurant.maxCoef, 8);
+});
+
 test('duration handles invalid ranges and fractional month rules', () => {
   assert.equal(calculateDurationMonths('2026-02-01', '2026-01-31'), 0);
   assert.equal(calculateDurationMonths('2026-01-01', '2026-01-07'), 0);
   assert.equal(calculateDurationMonths('2026-01-01', '2026-01-08'), 0.5);
+  assert.equal(calculateDurationMonths('2026-01-01', '2026-01-17'), 0.5);
   assert.equal(calculateDurationMonths('2026-01-01', '2026-01-18'), 1);
+});
+
+test('residual duration rounds by the documented day buckets', () => {
+  assert.equal(calculateResidualMonthFraction(1), 0);
+  assert.equal(calculateResidualMonthFraction(7), 0);
+  assert.equal(calculateResidualMonthFraction(8), 0.5);
+  assert.equal(calculateResidualMonthFraction(17), 0.5);
+  assert.equal(calculateResidualMonthFraction(18), 1);
 });
 
 test('store breakdown respects QTG and QLQ toggles', () => {

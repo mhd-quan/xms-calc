@@ -5,6 +5,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.13.5] — 2026-06-05
+
+### Fixed
+- **Workbook Mixed Business Pricing**: Fixed XLSX exports for quotes with multiple business types by applying the same capped coefficient policy used by the app, including per-type tier headers and visible totals aligned with the embedded manifest.
+- **Duration Rounding Policy**: Codified residual day rounding as 1-7 days = 0 month, 8-17 days = 0.5 month, and 18+ days = 1 month for shared calculator and export prorating behavior.
+- **Version Display**: Updated package and status bar version labels to `1.13.5`.
+
+## [1.13.4] — 2026-05-21
+
+### Changed
+- **Platform Fee UI**: Shortened the visible Phí Nền tảng subtext while keeping the full description in the hover info panel.
+- **Account & Device Labels**: Standardized account fee wording as Phí Sử dụng Tài khoản XMS and renamed Box phát nhạc to Thiết bị phát (Boxset) across the app and quotation exports.
+- **Version Display**: Updated package and status bar version labels to `1.13.4`.
+
 ## [1.13.3] — 2026-05-21
 
 ### Changed
