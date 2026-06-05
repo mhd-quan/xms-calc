@@ -4,6 +4,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { EmbeddedManifest, QuotePayload } from '../shared/types';
 import {
+  ACCOUNT_FEE_STANDALONE_YEARLY,
+  ACCOUNT_FEE_YEARLY,
+  BOX_BUY_PRICE,
+  BOX_RENT_YEARLY,
+  WEBSITE_FEE_YEARLY,
   calculateCoefComponents,
   getBusinessPricingPolicy,
   type PricingIncrement
@@ -14,6 +19,30 @@ export const EXCEL_MANIFEST_SHEET = '_xms_manifest';
 export const EXCEL_MANIFEST_CELL = 'A1';
 const PLATFORM_FEE_DESCRIPTION =
   'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
+const FONT_NAME = 'Aptos Display';
+const MONEY_FORMAT = '#,##0';
+const COLORS = {
+  ink: 'FF23272F',
+  muted: 'FF667085',
+  white: 'FFFFFFFF',
+  paper: 'FFFFFFFF',
+  sheet: 'FFF7F9FC',
+  rowAlt: 'FFF1F5F9',
+  line: 'FFB9C2CF',
+  lineStrong: 'FF687385',
+  titleFill: 'FF20242C',
+  titleAccent: 'FFFFBD59',
+  headerFill: 'FF2E3440',
+  headerSoft: 'FFE8EEF7',
+  tierFill: 'FFFFF2CC',
+  sectionFill: 'FFDFE7F3',
+  platformFill: 'FFE6F4EA',
+  discountFill: 'FFFFE5CC',
+  netFill: 'FFDFF3E6',
+  summaryFill: 'FFEAF1FF',
+  grandFill: 'FFFFBD59',
+  note: 'FFC4604C'
+} as const;
 
 type AppLike = {
   getPath(name: 'documents'): string;
@@ -91,6 +120,27 @@ function durationFactor(duration: number): string {
   return formulaNumber(duration / 12);
 }
 
+function sumFormula(parts: string[]): string {
+  if (parts.length === 0) return '0';
+  return `SUM(${parts.join(',')})`;
+}
+
+function accountFeeYearly(payload: QuotePayload): number {
+  return payload.globals.accountFeeMode === 'standalone' && !payload.globals.hasQTG && !payload.globals.hasQLQ
+    ? ACCOUNT_FEE_STANDALONE_YEARLY
+    : ACCOUNT_FEE_YEARLY;
+}
+
+function proratedStoreFormula(yearlyFee: number, stores: ComputedStore[], multiplier = 1): string {
+  return sumFormula(
+    stores.map((store) => `${formulaNumber(yearlyFee)}*${durationFactor(store.duration)}*${formulaNumber(multiplier)}`)
+  );
+}
+
+function platformDiscount(payload: QuotePayload, key: keyof QuotePayload['globals']['globalDiscounts']): number {
+  return payload.globals.discountEnabled[key] ? payload.globals.globalDiscounts[key] : 0;
+}
+
 export async function exportExcel({
   app,
   dialog,
@@ -129,47 +179,97 @@ export async function exportExcel({
   if (!filePath) return null;
 
   const wb = new ExcelJS.Workbook();
+  wb.creator = 'XMS Calculator';
+  wb.created = new Date();
   const ws = wb.addWorksheet('Báo Giá');
+  ws.properties.defaultRowHeight = 24;
+  ws.properties.defaultColWidth = 12;
+  ws.views = [{ state: 'frozen', ySplit: 1, showGridLines: false }];
+  ws.pageSetup = {
+    orientation: 'landscape',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    margins: {
+      left: 0.25,
+      right: 0.25,
+      top: 0.45,
+      bottom: 0.45,
+      header: 0.15,
+      footer: 0.15
+    }
+  };
 
   ws.columns = [
-    { width: 5.83 },  // A
-    { width: 18.66 }, // B
-    { width: 26.16 }, // C
-    { width: 49.16 }, // D
-    { width: 9.16 },  // E
-    { width: 10.16 }, // F
-    { width: 10.125 },// G
-    { width: 16.33 }, // H
-    { width: 17.16 }, // I
-    { width: 15.66 }, // J
-    { width: 18.16 }, // K
-    { width: 19.16 }, // L
-    { width: 19.16 }, // M
-    { width: 21.5 }   // N
+    { width: 6 },    // A
+    { width: 24 },   // B
+    { width: 22 },   // C
+    { width: 28 },   // D
+    { width: 14 },   // E
+    { width: 15 },   // F
+    { width: 12 },   // G
+    { width: 18 },   // H
+    { width: 22 },   // I
+    { width: 20 },   // J
+    { width: 22 },   // K
+    { width: 21 },   // L
+    { width: 21 },   // M
+    { width: 25 }    // N
   ];
 
   const borderThin: Partial<ExcelJS.Borders> = {
-    top: { style: 'thin' }, left: { style: 'thin' },
-    bottom: { style: 'thin' }, right: { style: 'thin' }
+    top: { style: 'thin', color: { argb: COLORS.line } },
+    left: { style: 'thin', color: { argb: COLORS.line } },
+    bottom: { style: 'thin', color: { argb: COLORS.line } },
+    right: { style: 'thin', color: { argb: COLORS.line } }
+  };
+  const borderStrong: Partial<ExcelJS.Borders> = {
+    top: { style: 'medium', color: { argb: COLORS.lineStrong } },
+    left: { style: 'thin', color: { argb: COLORS.line } },
+    bottom: { style: 'medium', color: { argb: COLORS.lineStrong } },
+    right: { style: 'thin', color: { argb: COLORS.line } }
   };
   const alignCenter: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'center', wrapText: true };
   const alignLeft: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'left', wrapText: true };
-  const FONT_NAME = 'Aptos Display';
+  const alignRight: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'right', wrapText: true };
 
-  const applyStyle = (cell: ExcelJS.Cell, bold = false, align = alignCenter, fill = false) => {
-    cell.font = { name: FONT_NAME, size: 10, bold };
+  const fillCell = (cell: ExcelJS.Cell, color: string) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
+  };
+
+  const applyStyle = (
+    cell: ExcelJS.Cell,
+    {
+      bold = false,
+      align = alignCenter,
+      fill = COLORS.paper,
+      fontColor = COLORS.ink,
+      size = 10,
+      border = borderThin
+    }: {
+      bold?: boolean;
+      align?: Partial<ExcelJS.Alignment>;
+      fill?: string;
+      fontColor?: string;
+      size?: number;
+      border?: Partial<ExcelJS.Borders>;
+    } = {}
+  ) => {
+    cell.font = { name: FONT_NAME, size, bold, color: { argb: fontColor } };
     cell.alignment = align;
-    cell.border = borderThin;
-    if (fill) {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9E9E9' } };
-    }
+    cell.border = border;
+    fillCell(cell, fill);
   };
 
   ws.mergeCells('A1:N1');
   const a1 = ws.getCell('A1');
   a1.value = 'BẢNG BÁO GIÁ DỊCH VỤ BẢN QUYỀN & GIẢI PHÁP PHÁT NHẠC';
-  a1.font = { name: FONT_NAME, bold: true, size: 16 };
+  a1.font = { name: FONT_NAME, bold: true, size: 16, color: { argb: COLORS.titleAccent } };
   a1.alignment = alignCenter;
+  fillCell(a1, COLORS.titleFill);
+  a1.border = borderStrong;
+  ws.getRow(1).height = 34;
+  ws.getRow(2).height = 8;
 
   const writePricingHeader = (startRow: number, type: string): number => {
     const hlbl = getHeaderLabels(type);
@@ -215,15 +315,29 @@ export async function exportExcel({
     ws.mergeCells(`N${row3}:N${row7}`);
     ws.getCell(`N${row3}`).value = 'TỔNG CHI PHÍ GIẢI PHÁP PHÁT NHẠC ĐẦY ĐỦ BẢN QUYỀN';
 
+    ws.getRow(row3).height = 34;
+    ws.getRow(row4).height = 24;
+    ws.getRow(row5).height = 24;
+    ws.getRow(row6).height = 42;
+    ws.getRow(row7).height = 30;
+
     for (let r = row3; r <= row7; r++) {
+      const fill =
+        r === row3
+          ? COLORS.headerFill
+          : r === row6 || r === row7
+            ? COLORS.tierFill
+            : COLORS.headerSoft;
+      const fontColor = r === row3 ? COLORS.white : COLORS.ink;
       for (let c = 1; c <= 14; c++) {
         const cell = ws.getCell(r, c);
-        if (!cell.isMerged || cell.address === cell.master.address) {
-          applyStyle(cell, true, alignCenter, true);
-        } else {
-          cell.border = borderThin;
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9E9E9' } };
-        }
+        applyStyle(cell, {
+          bold: true,
+          align: alignCenter,
+          fill,
+          fontColor,
+          border: r === row3 ? borderStrong : borderThin
+        });
       }
     }
 
@@ -283,11 +397,15 @@ export async function exportExcel({
       store.qlqAmountOriginal
     );
     ws.getCell(`N${r}`).value = formulaValue(`L${r}+M${r}`, store.qtgAmountOriginal + store.qlqAmountOriginal);
+    ws.getRow(r).height = 28;
 
     for (let c = 1; c <= 14; c++) {
       const cell = ws.getCell(r, c);
-      applyStyle(cell, false, c === 3 || c === 4 ? alignLeft : alignCenter);
-      if (c >= 8) cell.numFmt = '#,##0';
+      applyStyle(cell, {
+        align: c === 3 || c === 4 ? alignLeft : c >= 8 ? alignRight : alignCenter,
+        fill: c >= 11 ? COLORS.sheet : idx % 2 === 0 ? COLORS.paper : COLORS.rowAlt
+      });
+      if (c >= 8) cell.numFmt = MONEY_FORMAT;
     }
   });
 
@@ -305,9 +423,15 @@ export async function exportExcel({
 
   for (let c = 1; c <= 14; c++) {
     const cell = ws.getCell(sumRow, c);
-    applyStyle(cell, true, alignCenter);
-    if (c >= 8) cell.numFmt = '#,##0';
+    applyStyle(cell, {
+      bold: true,
+      align: c >= 8 ? alignRight : alignCenter,
+      fill: COLORS.sectionFill,
+      border: borderStrong
+    });
+    if (c >= 8) cell.numFmt = MONEY_FORMAT;
   }
+  ws.getRow(sumRow).height = 28;
 
   const qtgDiscount = payload.globals.discountEnabled.qtg ? payload.globals.globalDiscounts.qtg : 0;
   const qlqDiscount = payload.globals.discountEnabled.qlq ? payload.globals.globalDiscounts.qlq : 0;
@@ -323,9 +447,13 @@ export async function exportExcel({
 
   for (let c = 1; c <= 14; c++) {
     const cell = ws.getCell(discRow, c);
-    applyStyle(cell, false, c === 1 ? alignLeft : alignCenter);
-    if (c >= 12) cell.numFmt = '#,##0';
+    applyStyle(cell, {
+      align: c === 1 ? alignLeft : c >= 12 ? alignRight : alignCenter,
+      fill: COLORS.discountFill
+    });
+    if (c >= 12) cell.numFmt = MONEY_FORMAT;
   }
+  ws.getRow(discRow).height = 26;
 
   const netRow = rowIdx++;
   const copyrightNet = payload.totals.subtotalQTG + payload.totals.subtotalQLQ;
@@ -337,9 +465,15 @@ export async function exportExcel({
 
   for (let c = 1; c <= 14; c++) {
     const cell = ws.getCell(netRow, c);
-    applyStyle(cell, true, c === 1 ? alignLeft : alignCenter, true);
-    if (c >= 12) cell.numFmt = '#,##0';
+    applyStyle(cell, {
+      bold: true,
+      align: c === 1 ? alignLeft : c >= 12 ? alignRight : alignCenter,
+      fill: COLORS.netFill,
+      border: borderStrong
+    });
+    if (c >= 12) cell.numFmt = MONEY_FORMAT;
   }
+  ws.getRow(netRow).height = 30;
 
   const avgRow = rowIdx++;
   ws.getCell(`A${avgRow}`).value = 'Mức Phí Bản Quyền trung bình trên từng cửa hàng (chưa bao gồm VAT):';
@@ -350,11 +484,16 @@ export async function exportExcel({
 
   for (let c = 1; c <= 14; c++) {
     const cell = ws.getCell(avgRow, c);
-    applyStyle(cell, false, c === 1 ? alignLeft : alignCenter);
-    if (c >= 12) cell.numFmt = '#,##0';
+    applyStyle(cell, {
+      align: c === 1 ? alignLeft : c >= 12 ? alignRight : alignCenter,
+      fill: COLORS.summaryFill
+    });
+    if (c >= 12) cell.numFmt = MONEY_FORMAT;
   }
+  ws.getRow(avgRow).height = 26;
 
   rowIdx++;
+  const boxCount = Math.max(1, Number(payload.globals.globalBoxCount) || 1);
   const platformRows = [
     payload.totals.subtotalAccountOriginal > 0
       ? {
@@ -365,6 +504,8 @@ export async function exportExcel({
               : 'Tài khoản XMS: 600.000 VND/năm, prorated theo thời hạn từng chi nhánh.',
           scope: `${storeCount} cửa hàng`,
           unit: 'Năm prorated',
+          originalFormula: proratedStoreFormula(accountFeeYearly(payload), payload.computedStores),
+          amountFormula: (row: number) => `K${row}*(1-${formulaNumber(platformDiscount(payload, 'account'))}%)`,
           original: payload.totals.subtotalAccountOriginal,
           amount: payload.totals.subtotalAccount
         }
@@ -375,6 +516,8 @@ export async function exportExcel({
           detail: PLATFORM_FEE_DESCRIPTION,
           scope: `${storeCount} cửa hàng`,
           unit: 'Năm prorated',
+          originalFormula: proratedStoreFormula(WEBSITE_FEE_YEARLY, payload.computedStores),
+          amountFormula: (row: number) => `K${row}*(1-${formulaNumber(platformDiscount(payload, 'website'))}%)`,
           original: payload.totals.subtotalWebsiteOriginal,
           amount: payload.totals.subtotalWebsite
         }
@@ -388,6 +531,11 @@ export async function exportExcel({
               : 'Thuê Thiết bị phát (Boxset): 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
           scope: `${storeCount * Math.max(1, Number(payload.globals.globalBoxCount) || 1)} boxset`,
           unit: payload.globals.boxMode === 'buy' ? 'Một lần' : 'Năm prorated',
+          originalFormula:
+            payload.globals.boxMode === 'buy'
+              ? `${formulaNumber(BOX_BUY_PRICE)}*${formulaNumber(boxCount)}*${formulaNumber(storeCount)}`
+              : proratedStoreFormula(BOX_RENT_YEARLY, payload.computedStores, boxCount),
+          amountFormula: (row: number) => `K${row}*(1-${formulaNumber(platformDiscount(payload, 'box'))}%)`,
           original: payload.totals.subtotalBoxOriginal,
           amount: payload.totals.subtotalBox
         }
@@ -397,15 +545,27 @@ export async function exportExcel({
     detail: string;
     scope: string;
     unit: string;
+    originalFormula: string;
+    amountFormula: (row: number) => string;
     original: number;
     amount: number;
   } => row !== null);
 
+  let platformTotalRow: number | null = null;
+  const platformDataRows: number[] = [];
   if (platformRows.length > 0) {
     const sectionRow = rowIdx++;
     ws.mergeCells(`A${sectionRow}:N${sectionRow}`);
     ws.getCell(`A${sectionRow}`).value = 'HẠNG MỤC NỀN TẢNG & THIẾT BỊ';
-    for (let c = 1; c <= 14; c++) applyStyle(ws.getCell(sectionRow, c), true, alignLeft, true);
+    ws.getRow(sectionRow).height = 28;
+    for (let c = 1; c <= 14; c++) {
+      applyStyle(ws.getCell(sectionRow, c), {
+        bold: true,
+        align: alignLeft,
+        fill: COLORS.platformFill,
+        border: borderStrong
+      });
+    }
 
     const platformHeadRow = rowIdx++;
     ws.mergeCells(`A${platformHeadRow}:C${platformHeadRow}`);
@@ -419,10 +579,18 @@ export async function exportExcel({
     ws.getCell(`J${platformHeadRow}`).value = 'Đơn vị tính';
     ws.getCell(`K${platformHeadRow}`).value = 'Giá gốc';
     ws.getCell(`M${platformHeadRow}`).value = 'Thành tiền';
-    for (let c = 1; c <= 14; c++) applyStyle(ws.getCell(platformHeadRow, c), true, alignCenter, true);
+    ws.getRow(platformHeadRow).height = 26;
+    for (let c = 1; c <= 14; c++) {
+      applyStyle(ws.getCell(platformHeadRow, c), {
+        bold: true,
+        align: alignCenter,
+        fill: COLORS.headerSoft
+      });
+    }
 
     platformRows.forEach((item) => {
       const r = rowIdx++;
+      platformDataRows.push(r);
       ws.mergeCells(`A${r}:C${r}`);
       ws.mergeCells(`D${r}:G${r}`);
       ws.mergeCells(`H${r}:I${r}`);
@@ -432,45 +600,74 @@ export async function exportExcel({
       ws.getCell(`D${r}`).value = item.detail;
       ws.getCell(`H${r}`).value = item.scope;
       ws.getCell(`J${r}`).value = item.unit;
-      ws.getCell(`K${r}`).value = item.original;
-      ws.getCell(`M${r}`).value = item.amount;
+      ws.getCell(`K${r}`).value = formulaValue(item.originalFormula, item.original);
+      ws.getCell(`M${r}`).value = formulaValue(item.amountFormula(r), item.amount);
+      ws.getRow(r).height = 44;
       for (let c = 1; c <= 14; c++) {
         const cell = ws.getCell(r, c);
-        applyStyle(cell, false, c === 1 || c === 4 ? alignLeft : alignCenter);
-        if (c >= 11) cell.numFmt = '#,##0';
+        applyStyle(cell, {
+          align: c === 1 || c === 4 ? alignLeft : c >= 11 ? alignRight : alignCenter,
+          fill: c >= 11 ? COLORS.sheet : COLORS.paper
+        });
+        if (c >= 11) cell.numFmt = MONEY_FORMAT;
       }
     });
 
-    const platformTotalRow = rowIdx++;
+    platformTotalRow = rowIdx++;
     ws.mergeCells(`A${platformTotalRow}:J${platformTotalRow}`);
     ws.mergeCells(`K${platformTotalRow}:L${platformTotalRow}`);
     ws.mergeCells(`M${platformTotalRow}:N${platformTotalRow}`);
     ws.getCell(`A${platformTotalRow}`).value = 'Tổng hạng mục Nền tảng & Thiết bị:';
-    ws.getCell(`K${platformTotalRow}`).value = payload.totals.subtotalAccountOriginal + payload.totals.subtotalWebsiteOriginal + payload.totals.subtotalBoxOriginal;
-    ws.getCell(`M${platformTotalRow}`).value = payload.totals.subtotalAccount + payload.totals.subtotalWebsite + payload.totals.subtotalBox;
+    ws.getCell(`K${platformTotalRow}`).value = formulaValue(
+      sumCells('K', platformDataRows),
+      payload.totals.subtotalAccountOriginal + payload.totals.subtotalWebsiteOriginal + payload.totals.subtotalBoxOriginal
+    );
+    ws.getCell(`M${platformTotalRow}`).value = formulaValue(
+      sumCells('M', platformDataRows),
+      payload.totals.subtotalAccount + payload.totals.subtotalWebsite + payload.totals.subtotalBox
+    );
+    ws.getRow(platformTotalRow).height = 30;
     for (let c = 1; c <= 14; c++) {
       const cell = ws.getCell(platformTotalRow, c);
-      applyStyle(cell, true, c === 1 ? alignLeft : alignCenter, true);
-      if (c >= 11) cell.numFmt = '#,##0';
+      applyStyle(cell, {
+        bold: true,
+        align: c === 1 ? alignLeft : c >= 11 ? alignRight : alignCenter,
+        fill: COLORS.netFill,
+        border: borderStrong
+      });
+      if (c >= 11) cell.numFmt = MONEY_FORMAT;
     }
   }
 
   rowIdx++;
+  const platformOriginalRef = platformTotalRow ? `K${platformTotalRow}` : '0';
+  const platformAmountRef = platformTotalRow ? `M${platformTotalRow}` : '0';
+  const subtotalSummaryRow = rowIdx;
+  const vatSummaryRow = rowIdx + 1;
   const quoteSummaryRows = [
     {
       label: 'Tổng giá trị báo giá trước VAT:',
+      originalFormula: `N${sumRow}+${platformOriginalRef}`,
+      amountFormula: `N${netRow}+${platformAmountRef}`,
       original: payload.totals.subtotalOriginal,
-      amount: payload.totals.subtotal
+      amount: payload.totals.subtotal,
+      fill: COLORS.summaryFill
     },
     {
       label: `VAT (${Math.round(payload.totals.vatRate * 100)}%):`,
+      originalFormula: `K${subtotalSummaryRow}*${formulaNumber(payload.totals.vatRate)}`,
+      amountFormula: `M${subtotalSummaryRow}*${formulaNumber(payload.totals.vatRate)}`,
       original: payload.totals.vatOriginal,
-      amount: payload.totals.vat
+      amount: payload.totals.vat,
+      fill: COLORS.summaryFill
     },
     {
       label: 'Tổng thanh toán sau VAT:',
+      originalFormula: `K${subtotalSummaryRow}+K${vatSummaryRow}`,
+      amountFormula: `M${subtotalSummaryRow}+M${vatSummaryRow}`,
       original: payload.totals.grandOriginal,
-      amount: payload.totals.grand
+      amount: payload.totals.grand,
+      fill: COLORS.grandFill
     }
   ];
 
@@ -480,28 +677,39 @@ export async function exportExcel({
     ws.mergeCells(`K${r}:L${r}`);
     ws.mergeCells(`M${r}:N${r}`);
     ws.getCell(`A${r}`).value = item.label;
-    ws.getCell(`K${r}`).value = item.original;
-    ws.getCell(`M${r}`).value = item.amount;
+    ws.getCell(`K${r}`).value = formulaValue(item.originalFormula, item.original);
+    ws.getCell(`M${r}`).value = formulaValue(item.amountFormula, item.amount);
+    ws.getRow(r).height = index === quoteSummaryRows.length - 1 ? 34 : 28;
     for (let c = 1; c <= 14; c++) {
       const cell = ws.getCell(r, c);
-      applyStyle(cell, index === quoteSummaryRows.length - 1, c === 1 ? alignLeft : alignCenter, index === quoteSummaryRows.length - 1);
-      if (c >= 11) cell.numFmt = '#,##0';
+      applyStyle(cell, {
+        bold: index === quoteSummaryRows.length - 1,
+        align: c === 1 ? alignLeft : c >= 11 ? alignRight : alignCenter,
+        fill: item.fill,
+        border: index === quoteSummaryRows.length - 1 ? borderStrong : borderThin,
+        fontColor: COLORS.ink,
+        size: index === quoteSummaryRows.length - 1 ? 11 : 10
+      });
+      if (c >= 11) cell.numFmt = MONEY_FORMAT;
     }
   });
 
   rowIdx++;
   ws.getCell(`B${rowIdx}`).value = 'Lưu ý: ';
   ws.getCell(`B${rowIdx}`).font = { name: FONT_NAME, size: 10, bold: true };
+  ws.getRow(rowIdx).height = 22;
   
   rowIdx++;
   const note1 = ws.getCell(`B${rowIdx}`);
   note1.value = '- Báo giá có thời hạn trong vòng 30 ngày kể từ ngày gửi báo giá.';
-  note1.font = { name: FONT_NAME, size: 10, color: { argb: 'FFC4604C' } };
+  note1.font = { name: FONT_NAME, size: 10, color: { argb: COLORS.note } };
+  ws.getRow(rowIdx).height = 22;
 
   rowIdx++;
   const note2 = ws.getCell(`B${rowIdx}`);
   note2.value = '- Mức thuế suất được áp dụng tuân thủ theo quy định của pháp luật tại thời điểm phát sinh Phí dịch vụ.';
-  note2.font = { name: FONT_NAME, size: 10, color: { argb: 'FFC4604C' } };
+  note2.font = { name: FONT_NAME, size: 10, color: { argb: COLORS.note } };
+  ws.getRow(rowIdx).height = 22;
 
   embedManifestInWorkbook(wb, manifest);
 

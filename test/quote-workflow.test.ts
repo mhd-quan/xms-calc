@@ -71,6 +71,19 @@ function cellText(value: ExcelJS.CellValue): string {
   return String(cellResult(value) ?? '').trim();
 }
 
+function cellFormula(value: ExcelJS.CellValue): string {
+  assert.ok(value && typeof value === 'object' && 'formula' in value);
+  return String(value.formula);
+}
+
+function solidFillColor(cell: ExcelJS.Cell): string {
+  const fill = cell.fill;
+  if (fill && fill.type === 'pattern' && fill.pattern === 'solid') {
+    return fill.fgColor?.argb ?? '';
+  }
+  return '';
+}
+
 function findRowByText(worksheet: ExcelJS.Worksheet, text: string, column: string): number {
   for (let row = 1; row <= worksheet.rowCount; row++) {
     if (cellText(worksheet.getCell(`${column}${row}`).value) === text) {
@@ -288,6 +301,18 @@ test('excel export includes visible platform and equipment rows', async () => {
   );
   assert.match(visibleValues, /Thiết bị phát \(Boxset\) - Thuê/);
   assert.match(visibleValues, /Tổng thanh toán sau VAT/);
+
+  assert.equal(solidFillColor(worksheet.getCell('A1')), 'FF20242C');
+  assert.ok((worksheet.getRow(1).height ?? 0) >= 34);
+  assert.ok((worksheet.getColumn(14).width ?? 0) >= 25);
+
+  const accountRow = findRowByText(worksheet, 'Phí Sử dụng Tài khoản XMS', 'A');
+  assert.match(cellFormula(worksheet.getCell(`K${accountRow}`).value), /1500000\*1\*1/);
+  assert.match(cellFormula(worksheet.getCell(`M${accountRow}`).value), new RegExp(`K${accountRow}\\*\\(1-10%\\)`));
+
+  const platformTotalRow = findRowByText(worksheet, 'Tổng hạng mục Nền tảng & Thiết bị:', 'A');
+  assert.match(cellFormula(worksheet.getCell(`K${platformTotalRow}`).value), /^SUM\(K\d+(,K\d+)*\)$/);
+  assert.match(cellFormula(worksheet.getCell(`M${platformTotalRow}`).value), /^SUM\(M\d+(,M\d+)*\)$/);
 });
 
 test('excel export keeps mixed business pricing capped and visible totals aligned', async () => {
@@ -328,7 +353,7 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
     }
   );
   const manifest = buildEmbeddedManifest(payload, {
-    appVersion: '1.13.5',
+    appVersion: '1.14.0',
     exportedAt: '2026-06-05T10:00:00.000Z'
   });
 
@@ -367,8 +392,13 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
   );
   assert.equal(Math.round(Number(cellResult(worksheet.getCell(`N${copyrightNetRow}`).value))), 120435120);
 
+  const subtotalRow = findRowByText(worksheet, 'Tổng giá trị báo giá trước VAT:', 'A');
+  assert.match(cellFormula(worksheet.getCell(`M${subtotalRow}`).value), /^N\d+\+M\d+$/);
+
   const grandRow = findRowByText(worksheet, 'Tổng thanh toán sau VAT:', 'A');
   assert.equal(Math.round(Number(cellResult(worksheet.getCell(`M${grandRow}`).value))), 138635120);
+  assert.match(cellFormula(worksheet.getCell(`M${grandRow}`).value), /^M\d+\+M\d+$/);
+  assert.equal(solidFillColor(worksheet.getCell(`M${grandRow}`)), 'FFFFBD59');
 });
 
 test('draft file preserves the complete editable quote snapshot', async () => {
