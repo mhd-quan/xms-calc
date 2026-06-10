@@ -7,6 +7,8 @@ import {
   BOX_BUY_PRICE,
   BOX_RENT_YEARLY,
   DEFAULT_BASE_SALARY,
+  PC_APP_PLATFORM_FEE_ONCE,
+  WEBSITE_PLATFORM_FEE_ONCE,
   calculateCoef,
   calculateDurationMonths,
   calculateTotals
@@ -60,8 +62,7 @@ type RenderScope = RenderScopeKey | 'all' | RenderScope[];
 type StoreField = keyof Pick<Store, 'name' | 'area' | 'type' | 'startDate' | 'endDate'>;
 
 const PLATFORM_FEE_DESCRIPTION =
-  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
-const PLATFORM_FEE_SUMMARY = 'Website hoặc PC App XMS · chi phí hàng năm';
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, chi phí một lần theo số Cửa hàng áp dụng.';
 
 function closestFromEvent<T extends Element>(event: Event, selector: string): T | null {
   const target = event.target;
@@ -117,7 +118,9 @@ let activeTabId: number | null = null;
 
 let boxMode: CalcOptions['boxMode'] = 'none';
 let accountFeeMode: CalcOptions['accountFeeMode'] = 'standard';
+let platformFeeMode: CalcOptions['platformFeeMode'] = 'website';
 let globalBoxCount: number = 1;
+let globalPlatformStoreCount: number = 1;
 let hasAccountFee: boolean = false;
 let hasWebsiteFee: boolean = false;
 let hasQTG: boolean = false;
@@ -252,6 +255,22 @@ function feePerYearLabel(value: number): string {
   return `${formatVND(value)} ₫ / năm`;
 }
 
+function feeOnceLabel(value: number): string {
+  return `${formatVND(value)} ₫ / lần`;
+}
+
+function platformFeeUnitPrice(): number {
+  return platformFeeMode === 'pc_app' ? PC_APP_PLATFORM_FEE_ONCE : WEBSITE_PLATFORM_FEE_ONCE;
+}
+
+function platformFeeLabel(): string {
+  return platformFeeMode === 'pc_app' ? 'PC App XMS' : 'Website';
+}
+
+function platformFeeSummary(): string {
+  return `${platformFeeLabel()} · ${feeOnceLabel(platformFeeUnitPrice())} · ${globalPlatformStoreCount} cửa hàng`;
+}
+
 function getCalcOptions(): CalcOptions {
   normalizeAccountFeeMode();
   return {
@@ -260,7 +279,9 @@ function getCalcOptions(): CalcOptions {
     billingCycle,
     boxMode,
     accountFeeMode,
+    platformFeeMode,
     globalBoxCount,
+    globalPlatformStoreCount,
     hasAccountFee,
     hasWebsiteFee,
     hasQTG,
@@ -288,7 +309,9 @@ function buildInitialDraftSnapshot(): QuoteSnapshot {
       billingCycle: 'y',
       boxMode: 'none',
       accountFeeMode: 'standard',
+      platformFeeMode: 'website',
       globalBoxCount: 1,
+      globalPlatformStoreCount: 1,
       hasAccountFee: false,
       hasWebsiteFee: false,
       hasQTG: false,
@@ -432,7 +455,9 @@ function hydrateFromSnapshot(snapshot: QuoteSnapshot): void {
   billingCycle = calcOptions.billingCycle;
   boxMode = calcOptions.boxMode;
   accountFeeMode = calcOptions.accountFeeMode;
+  platformFeeMode = calcOptions.platformFeeMode;
   globalBoxCount = calcOptions.globalBoxCount;
+  globalPlatformStoreCount = calcOptions.globalPlatformStoreCount;
   hasAccountFee = calcOptions.hasAccountFee;
   hasWebsiteFee = calcOptions.hasWebsiteFee;
   hasQTG = calcOptions.hasQTG;
@@ -1072,14 +1097,14 @@ function animateNumber(elementId: string, newValue: number): void {
   });
 }
 
-function renderStrikePrice(elementId: string, originalValue: number, currentValue: number): void {
+function renderStrikePrice(elementId: string, originalValue: number, currentValue: number, useCycle = true): void {
   const el = optionalElement(elementId);
   if (!el) return;
 
   const shouldShow = originalValue > currentValue + STRIKE_PRICE_EPSILON;
   el.toggleAttribute('hidden', !shouldShow);
   if (shouldShow) {
-    el.textContent = `${formatVND(cycleDisplayAmount(originalValue, billingCycle))} ₫`;
+    el.textContent = `${formatVND(useCycle ? cycleDisplayAmount(originalValue, billingCycle) : originalValue)} ₫`;
   }
 }
 
@@ -1160,11 +1185,27 @@ function renderMain(snapshot: RenderSnapshot): void {
   websiteToggle.textContent = hasWebsiteFee ? 'BẬT' : 'TẮT';
   const websitePriceDesc = document.getElementById('websitePriceDesc');
   if (websitePriceDesc) {
-    websitePriceDesc.textContent = PLATFORM_FEE_SUMMARY;
+    websitePriceDesc.textContent = hasWebsiteFee ? platformFeeSummary() : 'Chọn Website hoặc PC App XMS · chi phí một lần';
     websitePriceDesc
       .closest<HTMLElement>('.x-row__info')
       ?.setAttribute('data-info', `Phí Nền tảng|${PLATFORM_FEE_DESCRIPTION}|—`);
   }
+  const platformModeSeg = document.getElementById('platformFeeModeSeg');
+  platformModeSeg?.classList.toggle('is-disabled', !hasWebsiteFee);
+  platformModeSeg?.querySelectorAll<HTMLButtonElement>('.x-seg__btn').forEach((button) => {
+    const mode = button.dataset.platformMode;
+    button.disabled = !hasWebsiteFee;
+    button.classList.toggle('is-active', mode === platformFeeMode);
+    button.setAttribute(
+      'data-info',
+      mode === 'pc_app'
+        ? `PC App XMS|${feeOnceLabel(PC_APP_PLATFORM_FEE_ONCE)} / cửa hàng áp dụng, chi phí một lần.|—`
+        : `Website|${feeOnceLabel(WEBSITE_PLATFORM_FEE_ONCE)} / cửa hàng áp dụng, chi phí một lần.|—`
+    );
+  });
+  document.getElementById('platformStoreQuantityRow')?.toggleAttribute('hidden', !hasWebsiteFee);
+  const platformStoreInput = document.getElementById('platformStoreCount');
+  if (document.activeElement !== platformStoreInput) platformStoreInput.value = String(globalPlatformStoreCount);
   const websiteRight = document.getElementById('websiteFeeRight');
   renderDiscountApply('discountWebsiteApply', discountEnabled.website);
   setKnobValue('discountWebsiteKnob', globalDiscounts.website);
@@ -1172,8 +1213,13 @@ function renderMain(snapshot: RenderSnapshot): void {
   if (hasWebsiteFee) {
     websiteRight?.classList.remove('is-disabled');
     websiteAmount?.classList.remove('is-disabled');
-    animateNumber('websiteAmount', cycleDisplayAmount(breakdown?.websiteAmount || 0, billingCycle));
-    renderStrikePrice('websiteOriginalAmount', breakdown?.websiteAmountOriginal || 0, breakdown?.websiteAmount || 0);
+    animateNumber('websiteAmount', snapshot.quote.totals.subtotalWebsite);
+    renderStrikePrice(
+      'websiteOriginalAmount',
+      snapshot.quote.totals.subtotalWebsiteOriginal,
+      snapshot.quote.totals.subtotalWebsite,
+      false
+    );
   } else {
     websiteRight?.classList.add('is-disabled');
     websiteAmount?.classList.add('is-disabled');
@@ -1571,6 +1617,16 @@ function bindEvents() {
     }
   });
 
+  document.getElementById('platformFeeModeSeg').addEventListener('click', (event) => {
+    const btn = closestFromEvent<HTMLButtonElement>(event, '.x-seg__btn');
+    if (!btn || btn.disabled) return;
+    const nextPlatformMode = btn.dataset.platformMode;
+    if (nextPlatformMode === 'website' || nextPlatformMode === 'pc_app') {
+      platformFeeMode = nextPlatformMode;
+      commitQuoteMutation();
+    }
+  });
+
   document.getElementById('boxModeSeg').addEventListener('click', (event) => {
     const btn = closestFromEvent(event, '.x-seg__btn');
     if (!btn) return;
@@ -1579,6 +1635,18 @@ function bindEvents() {
       boxMode = nextBoxMode;
     }
     commitQuoteMutation();
+  });
+
+  attachCounter({
+    input: document.getElementById('platformStoreCount') as HTMLInputElement,
+    minus: document.getElementById('platformStoreMinus'),
+    plus: document.getElementById('platformStorePlus'),
+    min: 1,
+    max: 1000,
+    onChange: (value) => {
+      globalPlatformStoreCount = value;
+      commitQuoteMutation();
+    }
   });
 
   attachCounter({
@@ -1642,6 +1710,7 @@ function bindEvents() {
   });
 
   setupScrubbableInput('areaInput', 1, 1, 10000);
+  setupScrubbableInput('platformStoreCount', 1, 1, 1000);
   setupScrubbableInput('boxCount', 1, 1, 1000);
 
   // --- New Menu Dropdown ---

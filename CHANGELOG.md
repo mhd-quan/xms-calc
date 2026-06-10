@@ -5,6 +5,23 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.14.1] — 2026-06-10
+
+### Changed
+- **Platform Fee Pricing**: Reworked Phí Nền tảng into a one-time Website/PC App selection with Website at 600.000 VND and PC App at 800.000 VND per selected store.
+- **Platform Store Count**: Added a global Cửa hàng áp dụng counter so newly opened stores can be charged without applying the platform fee to every branch entry.
+- **Quotation Exports**: Updated PDF and XLSX quotation rows, descriptions, scopes, units, formulas, and next-cycle notes for the one-time platform fee model.
+- **Version Display**: Updated package and status bar version labels to `1.14.1`.
+
+## [1.14.0] — 2026-06-05
+
+### Fixed
+- **Workbook Mixed Business Pricing**: Fixed XLSX exports for quotes with multiple business types by applying the same capped coefficient policy used by the app, including per-type tier headers and visible totals aligned with the embedded manifest.
+- **Duration Rounding Policy**: Codified residual day rounding as 1-7 days = 0 month, 8-17 days = 0.5 month, and 18+ days = 1 month for shared calculator and export prorating behavior.
+- **Workbook Formula Audit**: Converted visible platform totals, quote subtotals, VAT, and grand totals to formulas with cached results so workbook crosschecks trace through the pricing sections.
+- **Workbook Presentation**: Added a restrained neutral workbook palette with clean body rows, focused total highlights, row heights, column widths, money alignment, gridline-free worksheet view, and print-friendly landscape setup.
+- **Version Display**: Updated package and status bar version labels to `1.14.0`.
+
 ## [1.13.4] — 2026-05-21
 
 ### Changed

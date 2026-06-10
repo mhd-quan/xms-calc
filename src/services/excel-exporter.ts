@@ -3,12 +3,44 @@ import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import type { EmbeddedManifest, QuotePayload } from '../shared/types';
+import {
+  ACCOUNT_FEE_STANDALONE_YEARLY,
+  ACCOUNT_FEE_YEARLY,
+  BOX_BUY_PRICE,
+  BOX_RENT_YEARLY,
+  PC_APP_PLATFORM_FEE_ONCE,
+  WEBSITE_PLATFORM_FEE_ONCE,
+  calculateCoefComponents,
+  getBusinessPricingPolicy,
+  type PricingIncrement
+} from '../shared/calculator';
 import { safeFilePart, validateQuotePayload } from './quote-exporter';
 
 export const EXCEL_MANIFEST_SHEET = '_xms_manifest';
 export const EXCEL_MANIFEST_CELL = 'A1';
 const PLATFORM_FEE_DESCRIPTION =
-  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, chi phí một lần theo số Cửa hàng áp dụng.';
+const FONT_NAME = 'Aptos Display';
+const MONEY_FORMAT = '#,##0';
+const COLORS = {
+  ink: 'FF1F2937',
+  muted: 'FF6B7280',
+  white: 'FFFFFFFF',
+  paper: 'FFFFFFFF',
+  line: 'FFD9DEE7',
+  lineStrong: 'FF8B95A5',
+  titleFill: 'FF111827',
+  titleAccent: 'FFFFFFFF',
+  headerFill: 'FF374151',
+  headerSoft: 'FFF3F4F6',
+  tierFill: 'FFF8FAFC',
+  sectionFill: 'FFE5E7EB',
+  discountFill: 'FFFFF7E6',
+  netFill: 'FFEFF6F1',
+  summaryFill: 'FFF6F7F9',
+  grandFill: 'FFFFE8B5',
+  note: 'FFB45309'
+} as const;
 
 type AppLike = {
   getPath(name: 'documents'): string;
@@ -27,64 +59,100 @@ function embedManifestInWorkbook(workbook: ExcelJS.Workbook, manifest: EmbeddedM
   manifestSheet.getCell(EXCEL_MANIFEST_CELL).value = JSON.stringify(manifest);
 }
 
-function getFormula(type: string, rowIndex: number, baseCell: string) {
-  const g = `G${rowIndex}`;
-  let h = '', i = '', j = '';
-  
-  if (type === 'cafe') {
-    h = `0.35*${baseCell}`;
-    i = `IF(${g}<=15,0,IF(AND(15<${g},${g}<=50),(${g}-15)*0.04*${baseCell},(50-15)*0.04*${baseCell}))`;
-    j = `IF(${g}<=50,0,(${g}-50)*0.02*${baseCell})`;
-  } else if (type === 'restaurant') {
-    h = `2.0*${baseCell}`;
-    i = `IF(${g}<=50,0,IF(AND(50<${g},${g}<=100),(${g}-50)*0.05*${baseCell},(100-50)*0.05*${baseCell}))`;
-    j = `IF(${g}<=100,0,(${g}-100)*0.03*${baseCell})`;
-  } else if (type === 'store') {
-    h = `0.35*${baseCell}`;
-    i = `IF(${g}<=50,0,IF(AND(50<${g},${g}<=100),(${g}-50)*0.008*${baseCell},(100-50)*0.008*${baseCell}))`;
-    j = `IF(${g}<=100,0,(${g}-100)*0.006*${baseCell})`;
-  } else if (type === 'gym') {
-    h = `0.5*${baseCell}`;
-    i = `IF(${g}<=50,0,IF(AND(50<${g},${g}<=100),(${g}-50)*0.011*${baseCell},(100-50)*0.011*${baseCell}))`;
-    j = `IF(${g}<=100,0,(${g}-100)*0.009*${baseCell})`;
-  } else if (type === 'entertainment') {
-    h = `0.7*${baseCell}`;
-    i = `IF(${g}<=200,0,IF(AND(200<${g},${g}<=500),(${g}-200)*0.003*${baseCell},(500-200)*0.003*${baseCell}))`;
-    j = `IF(${g}<=500,0,(${g}-500)*0.001*${baseCell})`;
-  } else if (type === 'mall') {
-    h = `1.5*${baseCell}`;
-    i = `IF(${g}<=200,0,IF(AND(200<${g},${g}<=500),(${g}-200)*0.003*${baseCell},(500-200)*0.003*${baseCell}))`;
-    j = `IF(${g}<=500,0,(${g}-500)*0.002*${baseCell})`;
-  } else if (type === 'supermarket') {
-    h = `1.25*${baseCell}`;
-    i = `IF(${g}<=500,0,IF(AND(500<${g},${g}<=1000),(${g}-500)*0.003*${baseCell},(1000-500)*0.003*${baseCell}))`;
-    j = `IF(${g}<=1000,0,(${g}-1000)*0.002*${baseCell})`;
-  } else {
-    h = `0.35*${baseCell}`;
-    i = `IF(${g}<=15,0,IF(AND(15<${g},${g}<=50),(${g}-15)*0.04*${baseCell},(50-15)*0.04*${baseCell}))`;
-    j = `IF(${g}<=50,0,(${g}-50)*0.02*${baseCell})`;
+function formulaNumber(value: number): string {
+  return String(Number(value));
+}
+
+function formatCurrencyText(value: number): string {
+  return `${new Intl.NumberFormat('vi-VN').format(Math.round(Number(value) || 0))} VND`;
+}
+
+function incrementFormula(g: string, tier: PricingIncrement, baseCell: string): string {
+  const above = formulaNumber(tier.above);
+  const rate = formulaNumber(tier.rate);
+  if (tier.upTo === null) {
+    return `IF(${g}<=${above},0,(${g}-${above})*${rate}*${baseCell})`;
   }
-  return { h, i, j };
+
+  const upTo = formulaNumber(tier.upTo);
+  return `IF(${g}<=${above},0,IF(AND(${above}<${g},${g}<=${upTo}),(${g}-${above})*${rate}*${baseCell},(${upTo}-${above})*${rate}*${baseCell}))`;
+}
+
+function getFormula(type: string, rowIndex: number, baseCell: string) {
+  const policy = getBusinessPricingPolicy(type);
+  const g = `G${rowIndex}`;
+  const h = `${formulaNumber(policy.base.coefficient)}*${baseCell}`;
+  const i = incrementFormula(g, policy.increments[0], baseCell);
+  const j = incrementFormula(g, policy.increments[1], baseCell);
+  const k = `MIN(SUM(H${rowIndex}:J${rowIndex}),${formulaNumber(policy.maxCoef)}*${baseCell})`;
+  return { h, i, j, k };
 }
 
 function getHeaderLabels(type: string) {
-  if (type === 'cafe') {
-    return { h6: 'Đến 15 m2', i6: 'Từ trên 15 m2 đến 50 m2: Cứ mỗi m2 tăng thêm', j6: 'Trên 50 m2: Cứ mỗi m2 tăng thêm', h7: '0,35/15 m2', i7: '0.04/m2', j7: '0.02/m2' };
-  } else if (type === 'restaurant') {
-    return { h6: 'Đến 50 m2', i6: 'Từ trên 50 m2 đến 100 m2: Cứ mỗi m2 tăng thêm', j6: 'Trên 100 m2: Cứ mỗi m2 tăng thêm', h7: '2.0/50 m2', i7: '0.05/m2', j7: '0.03/m2' };
-  } else if (type === 'store') {
-    return { h6: 'Đến 50 m2', i6: 'Từ trên 50 m2 đến 100 m2: Cứ mỗi m2 tăng thêm', j6: 'Trên 100 m2: Cứ mỗi m2 tăng thêm', h7: '0.35/50 m2', i7: '0.008/m2', j7: '0.006/m2' };
-  } else if (type === 'gym') {
-    return { h6: 'Đến 50 m2', i6: 'Từ trên 50 m2 đến 100 m2: Cứ mỗi m2 tăng thêm', j6: 'Trên 100 m2: Cứ mỗi m2 tăng thêm', h7: '0.5/50 m2', i7: '0.011/m2', j7: '0.009/m2' };
-  } else if (type === 'entertainment') {
-    return { h6: 'Đến 200 m2', i6: 'Từ trên 200 m2 đến 500 m2: Cứ mỗi m2 tăng thêm', j6: 'Trên 500 m2: Cứ mỗi m2 tăng thêm', h7: '0.7/200 m2', i7: '0.003/m2', j7: '0.001/m2' };
-  } else if (type === 'mall') {
-    return { h6: 'Đến 200 m2', i6: 'Từ trên 200 m2 đến 500 m2: Cứ mỗi m2 tăng thêm', j6: 'Trên 500 m2: Cứ mỗi m2 tăng thêm', h7: '1.5/200 m2', i7: '0.003/m2', j7: '0.002/m2' };
-  } else if (type === 'supermarket') {
-    return { h6: 'Đến 500 m2', i6: 'Từ trên 500 m2 đến 1000 m2: Cứ mỗi m2 tăng thêm', j6: 'Trên 1000 m2: Cứ mỗi m2 tăng thêm', h7: '1.25/500 m2', i7: '0.003/m2', j7: '0.002/m2' };
-  } else {
-    return { h6: 'Đến 15 m2', i6: 'Từ trên 15 m2 đến 50 m2: Cứ mỗi m2 tăng thêm', j6: 'Trên 50 m2: Cứ mỗi m2 tăng thêm', h7: '0,35/15 m2', i7: '0.04/m2', j7: '0.02/m2' };
-  }
+  const policy = getBusinessPricingPolicy(type);
+  const [firstIncrement, secondIncrement] = policy.increments;
+  return {
+    h6: `Đến ${policy.base.upTo} m2`,
+    i6:
+      firstIncrement.upTo === null
+        ? `Trên ${firstIncrement.above} m2: Cứ mỗi m2 tăng thêm`
+        : `Từ trên ${firstIncrement.above} m2 đến ${firstIncrement.upTo} m2: Cứ mỗi m2 tăng thêm`,
+    j6:
+      secondIncrement.upTo === null
+        ? `Trên ${secondIncrement.above} m2: Cứ mỗi m2 tăng thêm`
+        : `Từ trên ${secondIncrement.above} m2 đến ${secondIncrement.upTo} m2: Cứ mỗi m2 tăng thêm`,
+    h7: `${formulaNumber(policy.base.coefficient)}/${policy.base.upTo} m2`,
+    i7: `${formulaNumber(firstIncrement.rate)}/m2`,
+    j7: `${formulaNumber(secondIncrement.rate)}/m2`
+  };
+}
+
+type ComputedStore = QuotePayload['computedStores'][number];
+
+function formulaValue(formula: string, result: number): ExcelJS.CellValue {
+  return { formula, result };
+}
+
+function sumCells(column: string, rows: number[]): string {
+  if (rows.length === 0) return '0';
+  return `SUM(${rows.map((row) => `${column}${row}`).join(',')})`;
+}
+
+function durationFactor(duration: number): string {
+  return formulaNumber(duration / 12);
+}
+
+function sumFormula(parts: string[]): string {
+  if (parts.length === 0) return '0';
+  return `SUM(${parts.join(',')})`;
+}
+
+function accountFeeYearly(payload: QuotePayload): number {
+  return payload.globals.accountFeeMode === 'standalone' && !payload.globals.hasQTG && !payload.globals.hasQLQ
+    ? ACCOUNT_FEE_STANDALONE_YEARLY
+    : ACCOUNT_FEE_YEARLY;
+}
+
+function platformFeeLabel(payload: QuotePayload): string {
+  return payload.globals.platformFeeMode === 'pc_app' ? 'PC App XMS' : 'Website';
+}
+
+function platformFeeUnitPrice(payload: QuotePayload): number {
+  return payload.globals.platformFeeMode === 'pc_app' ? PC_APP_PLATFORM_FEE_ONCE : WEBSITE_PLATFORM_FEE_ONCE;
+}
+
+function platformStoreCount(payload: QuotePayload): number {
+  return Math.max(1, Number(payload.globals.globalPlatformStoreCount) || 1);
+}
+
+function proratedStoreFormula(yearlyFee: number, stores: ComputedStore[], multiplier = 1): string {
+  return sumFormula(
+    stores.map((store) => `${formulaNumber(yearlyFee)}*${durationFactor(store.duration)}*${formulaNumber(multiplier)}`)
+  );
+}
+
+function platformDiscount(payload: QuotePayload, key: keyof QuotePayload['globals']['globalDiscounts']): number {
+  return payload.globals.discountEnabled[key] ? payload.globals.globalDiscounts[key] : 0;
 }
 
 export async function exportExcel({
@@ -125,183 +193,321 @@ export async function exportExcel({
   if (!filePath) return null;
 
   const wb = new ExcelJS.Workbook();
+  wb.creator = 'XMS Calculator';
+  wb.created = new Date();
   const ws = wb.addWorksheet('Báo Giá');
+  ws.properties.defaultRowHeight = 24;
+  ws.properties.defaultColWidth = 12;
+  ws.views = [{ state: 'frozen', ySplit: 1, showGridLines: false }];
+  ws.pageSetup = {
+    orientation: 'landscape',
+    fitToPage: true,
+    fitToWidth: 1,
+    fitToHeight: 0,
+    margins: {
+      left: 0.25,
+      right: 0.25,
+      top: 0.45,
+      bottom: 0.45,
+      header: 0.15,
+      footer: 0.15
+    }
+  };
 
   ws.columns = [
-    { width: 5.83 },  // A
-    { width: 18.66 }, // B
-    { width: 26.16 }, // C
-    { width: 49.16 }, // D
-    { width: 9.16 },  // E
-    { width: 10.16 }, // F
-    { width: 10.125 },// G
-    { width: 16.33 }, // H
-    { width: 17.16 }, // I
-    { width: 15.66 }, // J
-    { width: 18.16 }, // K
-    { width: 19.16 }, // L
-    { width: 19.16 }, // M
-    { width: 21.5 }   // N
+    { width: 6 },    // A
+    { width: 24 },   // B
+    { width: 22 },   // C
+    { width: 28 },   // D
+    { width: 14 },   // E
+    { width: 15 },   // F
+    { width: 12 },   // G
+    { width: 18 },   // H
+    { width: 22 },   // I
+    { width: 20 },   // J
+    { width: 22 },   // K
+    { width: 21 },   // L
+    { width: 21 },   // M
+    { width: 25 }    // N
   ];
 
   const borderThin: Partial<ExcelJS.Borders> = {
-    top: { style: 'thin' }, left: { style: 'thin' },
-    bottom: { style: 'thin' }, right: { style: 'thin' }
+    top: { style: 'thin', color: { argb: COLORS.line } },
+    left: { style: 'thin', color: { argb: COLORS.line } },
+    bottom: { style: 'thin', color: { argb: COLORS.line } },
+    right: { style: 'thin', color: { argb: COLORS.line } }
+  };
+  const borderStrong: Partial<ExcelJS.Borders> = {
+    top: { style: 'medium', color: { argb: COLORS.lineStrong } },
+    left: { style: 'thin', color: { argb: COLORS.line } },
+    bottom: { style: 'medium', color: { argb: COLORS.lineStrong } },
+    right: { style: 'thin', color: { argb: COLORS.line } }
   };
   const alignCenter: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'center', wrapText: true };
   const alignLeft: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'left', wrapText: true };
-  const FONT_NAME = 'Aptos Display';
+  const alignRight: Partial<ExcelJS.Alignment> = { vertical: 'middle', horizontal: 'right', wrapText: true };
 
-  const applyStyle = (cell: ExcelJS.Cell, bold = false, align = alignCenter, fill = false) => {
-    cell.font = { name: FONT_NAME, size: 10, bold };
+  const fillCell = (cell: ExcelJS.Cell, color: string) => {
+    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: color } };
+  };
+
+  const applyStyle = (
+    cell: ExcelJS.Cell,
+    {
+      bold = false,
+      align = alignCenter,
+      fill = COLORS.paper,
+      fontColor = COLORS.ink,
+      size = 10,
+      border = borderThin
+    }: {
+      bold?: boolean;
+      align?: Partial<ExcelJS.Alignment>;
+      fill?: string;
+      fontColor?: string;
+      size?: number;
+      border?: Partial<ExcelJS.Borders>;
+    } = {}
+  ) => {
+    cell.font = { name: FONT_NAME, size, bold, color: { argb: fontColor } };
     cell.alignment = align;
-    cell.border = borderThin;
-    if (fill) {
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9E9E9' } };
-    }
+    cell.border = border;
+    fillCell(cell, fill);
   };
 
   ws.mergeCells('A1:N1');
   const a1 = ws.getCell('A1');
   a1.value = 'BẢNG BÁO GIÁ DỊCH VỤ BẢN QUYỀN & GIẢI PHÁP PHÁT NHẠC';
-  a1.font = { name: FONT_NAME, bold: true, size: 16 };
+  a1.font = { name: FONT_NAME, bold: true, size: 16, color: { argb: COLORS.titleAccent } };
   a1.alignment = alignCenter;
+  fillCell(a1, COLORS.titleFill);
+  a1.border = borderStrong;
+  ws.getRow(1).height = 34;
+  ws.getRow(2).height = 8;
 
-  const mainType = payload.computedStores[0]?.type || 'cafe';
-  const hlbl = getHeaderLabels(mainType);
+  const writePricingHeader = (startRow: number, type: string): number => {
+    const hlbl = getHeaderLabels(type);
+    const row3 = startRow;
+    const row4 = startRow + 1;
+    const row5 = startRow + 2;
+    const row6 = startRow + 3;
+    const row7 = startRow + 4;
 
-  ws.mergeCells('A3:A7'); ws.getCell('A3').value = 'STT';
-  ws.mergeCells('B3:B7'); ws.getCell('B3').value = 'TÊN THƯƠNG HIỆU';
-  ws.mergeCells('C3:C7'); ws.getCell('C3').value = 'CỬA HÀNG';
-  ws.mergeCells('D3:D7'); ws.getCell('D3').value = 'ĐỊA CHỈ';
-  ws.mergeCells('E3:E7'); ws.getCell('E3').value = 'PHÂN LOẠI ĐÔ THỊ';
-  ws.mergeCells('F3:F7'); ws.getCell('F3').value = '% ÁP DỤNG KHUNG GIÁ THEO PHÂN LOẠI ĐÔ THỊ';
-  ws.mergeCells('G3:G7'); ws.getCell('G3').value = 'DIỆN TÍCH SỬ DỤNG NHẠC\n(M2)';
-  
-  ws.mergeCells('H3:M3'); ws.getCell('H3').value = 'PHƯƠNG THỨC TÍNH THEO NGHỊ ĐỊNH 17 - PHỤ LỤC 02\nSố tiền bản quyền (tính theo năm) = Mức lương cơ sở x Hệ số điều chỉnh';
-  ws.getCell('H4').value = 'Mức lương cơ sở:';
-  ws.getCell('I4').value = payload.globals.baseSalary;
-  ws.getCell('J4').value = 'VNĐ';
-  ws.mergeCells('K4:K7'); ws.getCell('K4').value = 'PHÍ BẢN QUYỀN CHO MỖI QUYỀN/1 ĐỊA ĐIỂM';
-  ws.mergeCells('L4:M5'); ws.getCell('L4').value = 'PHÍ BẢN QUYỀN/ NĂM\n(chưa VAT)';
+    ws.mergeCells(`A${row3}:A${row7}`); ws.getCell(`A${row3}`).value = 'STT';
+    ws.mergeCells(`B${row3}:B${row7}`); ws.getCell(`B${row3}`).value = 'TÊN THƯƠNG HIỆU';
+    ws.mergeCells(`C${row3}:C${row7}`); ws.getCell(`C${row3}`).value = 'CỬA HÀNG';
+    ws.mergeCells(`D${row3}:D${row7}`); ws.getCell(`D${row3}`).value = 'ĐỊA CHỈ';
+    ws.mergeCells(`E${row3}:E${row7}`); ws.getCell(`E${row3}`).value = 'PHÂN LOẠI ĐÔ THỊ';
+    ws.mergeCells(`F${row3}:F${row7}`); ws.getCell(`F${row3}`).value = '% ÁP DỤNG KHUNG GIÁ THEO PHÂN LOẠI ĐÔ THỊ';
+    ws.mergeCells(`G${row3}:G${row7}`); ws.getCell(`G${row3}`).value = 'DIỆN TÍCH SỬ DỤNG NHẠC\n(M2)';
 
-  ws.mergeCells('H5:J5'); ws.getCell('H5').value = 'Hệ số điều chỉnh theo định mức diện tích';
-  
-  ws.getCell('H6').value = hlbl.h6;
-  ws.getCell('I6').value = hlbl.i6;
-  ws.getCell('J6').value = hlbl.j6;
-  
-  ws.mergeCells('L6:L7'); ws.getCell('L6').value = 'QUYỀN TÁC GIẢ (VCPMC)';
-  ws.mergeCells('M6:M7'); ws.getCell('M6').value = 'QUYỀN LIÊN QUAN\n(NCT)';
+    ws.mergeCells(`H${row3}:M${row3}`);
+    ws.getCell(`H${row3}`).value =
+      'PHƯƠNG THỨC TÍNH THEO NGHỊ ĐỊNH 17 - PHỤ LỤC 02\nSố tiền bản quyền (tính theo năm) = Mức lương cơ sở x Hệ số điều chỉnh';
+    ws.getCell(`H${row4}`).value = 'Mức lương cơ sở:';
+    ws.getCell(`I${row4}`).value = payload.globals.baseSalary;
+    ws.getCell(`J${row4}`).value = 'VNĐ';
+    ws.mergeCells(`K${row4}:K${row7}`);
+    ws.getCell(`K${row4}`).value = 'PHÍ BẢN QUYỀN/NĂM CHO MỖI QUYỀN/1 ĐỊA ĐIỂM\n(đã áp trần hệ số)';
+    ws.mergeCells(`L${row4}:M${row5}`);
+    ws.getCell(`L${row4}`).value = 'PHÍ BẢN QUYỀN THEO THỜI HẠN\n(chưa VAT)';
 
-  ws.getCell('H7').value = hlbl.h7;
-  ws.getCell('I7').value = hlbl.i7;
-  ws.getCell('J7').value = hlbl.j7;
+    ws.mergeCells(`H${row5}:J${row5}`);
+    ws.getCell(`H${row5}`).value = 'Hệ số điều chỉnh theo định mức diện tích';
 
-  ws.mergeCells('N3:N7'); ws.getCell('N3').value = 'TỔNG CHI PHÍ GIẢI PHÁP PHÁT NHẠC ĐẦY ĐỦ BẢN QUYỀN';
+    ws.getCell(`H${row6}`).value = hlbl.h6;
+    ws.getCell(`I${row6}`).value = hlbl.i6;
+    ws.getCell(`J${row6}`).value = hlbl.j6;
 
-  for (let r = 3; r <= 7; r++) {
-    for (let c = 1; c <= 14; c++) {
-      const cell = ws.getCell(r, c);
-      // Ensure all header cells are styled correctly
-      if (!cell.isMerged || cell.address === cell.master.address) {
-        applyStyle(cell, true, alignCenter, true);
-      } else {
-        cell.border = borderThin;
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9E9E9' } };
+    ws.mergeCells(`L${row6}:L${row7}`); ws.getCell(`L${row6}`).value = 'QUYỀN TÁC GIẢ (VCPMC)';
+    ws.mergeCells(`M${row6}:M${row7}`); ws.getCell(`M${row6}`).value = 'QUYỀN LIÊN QUAN\n(NCT)';
+
+    ws.getCell(`H${row7}`).value = hlbl.h7;
+    ws.getCell(`I${row7}`).value = hlbl.i7;
+    ws.getCell(`J${row7}`).value = hlbl.j7;
+
+    ws.mergeCells(`N${row3}:N${row7}`);
+    ws.getCell(`N${row3}`).value = 'TỔNG CHI PHÍ GIẢI PHÁP PHÁT NHẠC ĐẦY ĐỦ BẢN QUYỀN';
+
+    ws.getRow(row3).height = 34;
+    ws.getRow(row4).height = 24;
+    ws.getRow(row5).height = 24;
+    ws.getRow(row6).height = 42;
+    ws.getRow(row7).height = 30;
+
+    for (let r = row3; r <= row7; r++) {
+      const fill =
+        r === row3
+          ? COLORS.headerFill
+          : r === row6 || r === row7
+            ? COLORS.tierFill
+            : COLORS.headerSoft;
+      const fontColor = r === row3 ? COLORS.white : COLORS.ink;
+      for (let c = 1; c <= 14; c++) {
+        const cell = ws.getCell(r, c);
+        applyStyle(cell, {
+          bold: true,
+          align: alignCenter,
+          fill,
+          fontColor,
+          border: r === row3 ? borderStrong : borderThin
+        });
       }
     }
+
+    return startRow + 5;
+  };
+
+  let rowIdx = 3;
+  const storeCount = Math.max(1, payload.computedStores.length);
+  const dataRows: number[] = [];
+  const componentTotals: [number, number, number] = [0, 0, 0];
+  let annualRightTotal = 0;
+  let lastType: string | null = null;
+
+  if (payload.computedStores.length === 0) {
+    rowIdx = writePricingHeader(rowIdx, 'cafe');
   }
 
-  let rowIdx = 8;
-  const storeCount = Math.max(1, payload.computedStores.length);
+  payload.computedStores.forEach((store: ComputedStore, idx) => {
+    if (lastType !== store.type) {
+      if (dataRows.length > 0) rowIdx++;
+      rowIdx = writePricingHeader(rowIdx, store.type || 'cafe');
+      lastType = store.type;
+    }
 
-  payload.computedStores.forEach((store, idx) => {
     const r = rowIdx++;
     const f = getFormula(store.type, r, '$I$4');
+    const area = Number(store.area) || 0;
+    const breakdown = calculateCoefComponents(store.type, area);
+    const componentAmounts = breakdown.components.map((component) => component * payload.globals.baseSalary) as [
+      number,
+      number,
+      number
+    ];
+    componentTotals[0] += componentAmounts[0];
+    componentTotals[1] += componentAmounts[1];
+    componentTotals[2] += componentAmounts[2];
+    annualRightTotal += store.yearly;
+    dataRows.push(r);
 
-    ws.getCell(`A${r}`).value = { formula: `ROW()-7`, result: idx + 1 };
+    ws.getCell(`A${r}`).value = idx + 1;
     ws.getCell(`B${r}`).value = store.typeLabel || 'Cửa hàng';
     ws.getCell(`C${r}`).value = store.name;
     ws.getCell(`D${r}`).value = store.name; 
     ws.getCell(`E${r}`).value = 'Loại Đặc biệt'; 
     ws.getCell(`F${r}`).value = 1;
-    ws.getCell(`G${r}`).value = store.area || 0;
-    ws.getCell(`H${r}`).value = { formula: f.h, result: 0 };
-    ws.getCell(`I${r}`).value = { formula: f.i, result: 0 };
-    ws.getCell(`J${r}`).value = { formula: f.j, result: 0 };
-    ws.getCell(`K${r}`).value = { formula: `SUM(H${r}:J${r})`, result: 0 };
-    ws.getCell(`L${r}`).value = { formula: `K${r}`, result: 0 };
-    ws.getCell(`M${r}`).value = { formula: `K${r}`, result: 0 };
-    ws.getCell(`N${r}`).value = { formula: `L${r}+M${r}`, result: 0 };
+    ws.getCell(`G${r}`).value = area;
+    ws.getCell(`H${r}`).value = formulaValue(f.h, componentAmounts[0]);
+    ws.getCell(`I${r}`).value = formulaValue(f.i, componentAmounts[1]);
+    ws.getCell(`J${r}`).value = formulaValue(f.j, componentAmounts[2]);
+    ws.getCell(`K${r}`).value = formulaValue(f.k, store.yearly);
+    ws.getCell(`L${r}`).value = formulaValue(
+      payload.globals.hasQTG ? `K${r}*${durationFactor(store.duration)}` : '0',
+      store.qtgAmountOriginal
+    );
+    ws.getCell(`M${r}`).value = formulaValue(
+      payload.globals.hasQLQ ? `K${r}*${durationFactor(store.duration)}` : '0',
+      store.qlqAmountOriginal
+    );
+    ws.getCell(`N${r}`).value = formulaValue(`L${r}+M${r}`, store.qtgAmountOriginal + store.qlqAmountOriginal);
+    ws.getRow(r).height = 28;
 
     for (let c = 1; c <= 14; c++) {
       const cell = ws.getCell(r, c);
-      applyStyle(cell, false, c === 3 || c === 4 ? alignLeft : alignCenter);
-      if (c >= 8) cell.numFmt = '#,##0';
+      applyStyle(cell, {
+        align: c === 3 || c === 4 ? alignLeft : c >= 8 ? alignRight : alignCenter,
+        fill: COLORS.paper
+      });
+      if (c >= 8) cell.numFmt = MONEY_FORMAT;
     }
   });
 
   const sumRow = rowIdx++;
+  const copyrightOriginal = payload.totals.subtotalQTGOriginal + payload.totals.subtotalQLQOriginal;
   ws.getCell(`A${sumRow}`).value = 'Tổng cộng';
   ws.mergeCells(`A${sumRow}:G${sumRow}`);
-  ws.getCell(`H${sumRow}`).value = { formula: `SUM(H8:H${sumRow-1})` };
-  ws.getCell(`I${sumRow}`).value = { formula: `SUM(I8:I${sumRow-1})` };
-  ws.getCell(`J${sumRow}`).value = { formula: `SUM(J8:J${sumRow-1})` };
-  ws.getCell(`K${sumRow}`).value = { formula: `SUM(K8:K${sumRow-1})` };
-  ws.getCell(`L${sumRow}`).value = { formula: `SUM(L8:L${sumRow-1})` };
-  ws.getCell(`M${sumRow}`).value = { formula: `SUM(M8:M${sumRow-1})` };
-  ws.getCell(`N${sumRow}`).value = { formula: `SUM(N8:N${sumRow-1})` };
+  ws.getCell(`H${sumRow}`).value = formulaValue(sumCells('H', dataRows), componentTotals[0]);
+  ws.getCell(`I${sumRow}`).value = formulaValue(sumCells('I', dataRows), componentTotals[1]);
+  ws.getCell(`J${sumRow}`).value = formulaValue(sumCells('J', dataRows), componentTotals[2]);
+  ws.getCell(`K${sumRow}`).value = formulaValue(sumCells('K', dataRows), annualRightTotal);
+  ws.getCell(`L${sumRow}`).value = formulaValue(sumCells('L', dataRows), payload.totals.subtotalQTGOriginal);
+  ws.getCell(`M${sumRow}`).value = formulaValue(sumCells('M', dataRows), payload.totals.subtotalQLQOriginal);
+  ws.getCell(`N${sumRow}`).value = formulaValue(sumCells('N', dataRows), copyrightOriginal);
 
   for (let c = 1; c <= 14; c++) {
     const cell = ws.getCell(sumRow, c);
-    applyStyle(cell, true, alignCenter);
-    if (c >= 8) cell.numFmt = '#,##0';
+    applyStyle(cell, {
+      bold: true,
+      align: c >= 8 ? alignRight : alignCenter,
+      fill: COLORS.sectionFill,
+      border: borderStrong
+    });
+    if (c >= 8) cell.numFmt = MONEY_FORMAT;
   }
+  ws.getRow(sumRow).height = 28;
 
   const qtgDiscount = payload.globals.discountEnabled.qtg ? payload.globals.globalDiscounts.qtg : 0;
   const qlqDiscount = payload.globals.discountEnabled.qlq ? payload.globals.globalDiscounts.qlq : 0;
+  const qtgDiscountAmount = payload.totals.subtotalQTGOriginal * (qtgDiscount / 100);
+  const qlqDiscountAmount = payload.totals.subtotalQLQOriginal * (qlqDiscount / 100);
 
   const discRow = rowIdx++;
   ws.getCell(`A${discRow}`).value = `Mức hỗ trợ Phí Bản Quyền: QTG ${qtgDiscount}% & QLQ ${qlqDiscount}%`;
   ws.mergeCells(`A${discRow}:K${discRow}`);
-  ws.getCell(`L${discRow}`).value = { formula: `L${sumRow}*${qtgDiscount}%` };
-  ws.getCell(`M${discRow}`).value = { formula: `M${sumRow}*${qlqDiscount}%` };
-  ws.getCell(`N${discRow}`).value = { formula: `L${discRow}+M${discRow}` };
+  ws.getCell(`L${discRow}`).value = formulaValue(`L${sumRow}*${qtgDiscount}%`, qtgDiscountAmount);
+  ws.getCell(`M${discRow}`).value = formulaValue(`M${sumRow}*${qlqDiscount}%`, qlqDiscountAmount);
+  ws.getCell(`N${discRow}`).value = formulaValue(`L${discRow}+M${discRow}`, qtgDiscountAmount + qlqDiscountAmount);
 
   for (let c = 1; c <= 14; c++) {
     const cell = ws.getCell(discRow, c);
-    applyStyle(cell, false, c === 1 ? alignLeft : alignCenter);
-    if (c >= 12) cell.numFmt = '#,##0';
+    applyStyle(cell, {
+      align: c === 1 ? alignLeft : c >= 12 ? alignRight : alignCenter,
+      fill: COLORS.discountFill
+    });
+    if (c >= 12) cell.numFmt = MONEY_FORMAT;
   }
+  ws.getRow(discRow).height = 26;
 
   const netRow = rowIdx++;
+  const copyrightNet = payload.totals.subtotalQTG + payload.totals.subtotalQLQ;
   ws.getCell(`A${netRow}`).value = 'Tổng giá trị phải thanh toán Phí Bản Quyền (chưa bao gồm VAT):';
   ws.mergeCells(`A${netRow}:K${netRow}`);
-  ws.getCell(`L${netRow}`).value = { formula: `L${sumRow}-L${discRow}` };
-  ws.getCell(`M${netRow}`).value = { formula: `M${sumRow}-M${discRow}` };
-  ws.getCell(`N${netRow}`).value = { formula: `N${sumRow}-N${discRow}` };
+  ws.getCell(`L${netRow}`).value = formulaValue(`L${sumRow}-L${discRow}`, payload.totals.subtotalQTG);
+  ws.getCell(`M${netRow}`).value = formulaValue(`M${sumRow}-M${discRow}`, payload.totals.subtotalQLQ);
+  ws.getCell(`N${netRow}`).value = formulaValue(`N${sumRow}-N${discRow}`, copyrightNet);
 
   for (let c = 1; c <= 14; c++) {
     const cell = ws.getCell(netRow, c);
-    applyStyle(cell, true, c === 1 ? alignLeft : alignCenter, true);
-    if (c >= 12) cell.numFmt = '#,##0';
+    applyStyle(cell, {
+      bold: true,
+      align: c === 1 ? alignLeft : c >= 12 ? alignRight : alignCenter,
+      fill: COLORS.netFill,
+      border: borderStrong
+    });
+    if (c >= 12) cell.numFmt = MONEY_FORMAT;
   }
+  ws.getRow(netRow).height = 30;
 
   const avgRow = rowIdx++;
   ws.getCell(`A${avgRow}`).value = 'Mức Phí Bản Quyền trung bình trên từng cửa hàng (chưa bao gồm VAT):';
   ws.mergeCells(`A${avgRow}:K${avgRow}`);
-  ws.getCell(`L${avgRow}`).value = { formula: `L${netRow}/${storeCount}` };
-  ws.getCell(`M${avgRow}`).value = { formula: `M${netRow}/${storeCount}` };
-  ws.getCell(`N${avgRow}`).value = { formula: `N${netRow}/${storeCount}` };
+  ws.getCell(`L${avgRow}`).value = formulaValue(`L${netRow}/${storeCount}`, payload.totals.subtotalQTG / storeCount);
+  ws.getCell(`M${avgRow}`).value = formulaValue(`M${netRow}/${storeCount}`, payload.totals.subtotalQLQ / storeCount);
+  ws.getCell(`N${avgRow}`).value = formulaValue(`N${netRow}/${storeCount}`, copyrightNet / storeCount);
 
   for (let c = 1; c <= 14; c++) {
     const cell = ws.getCell(avgRow, c);
-    applyStyle(cell, false, c === 1 ? alignLeft : alignCenter);
-    if (c >= 12) cell.numFmt = '#,##0';
+    applyStyle(cell, {
+      align: c === 1 ? alignLeft : c >= 12 ? alignRight : alignCenter,
+      fill: COLORS.summaryFill
+    });
+    if (c >= 12) cell.numFmt = MONEY_FORMAT;
   }
+  ws.getRow(avgRow).height = 26;
 
   rowIdx++;
+  const boxCount = Math.max(1, Number(payload.globals.globalBoxCount) || 1);
   const platformRows = [
     payload.totals.subtotalAccountOriginal > 0
       ? {
@@ -312,6 +518,8 @@ export async function exportExcel({
               : 'Tài khoản XMS: 600.000 VND/năm, prorated theo thời hạn từng chi nhánh.',
           scope: `${storeCount} cửa hàng`,
           unit: 'Năm prorated',
+          originalFormula: proratedStoreFormula(accountFeeYearly(payload), payload.computedStores),
+          amountFormula: (row: number) => `K${row}*(1-${formulaNumber(platformDiscount(payload, 'account'))}%)`,
           original: payload.totals.subtotalAccountOriginal,
           amount: payload.totals.subtotalAccount
         }
@@ -319,9 +527,11 @@ export async function exportExcel({
     payload.totals.subtotalWebsiteOriginal > 0
       ? {
           title: 'Phí Nền tảng',
-          detail: PLATFORM_FEE_DESCRIPTION,
-          scope: `${storeCount} cửa hàng`,
-          unit: 'Năm prorated',
+          detail: `${PLATFORM_FEE_DESCRIPTION} ${platformFeeLabel(payload)}: ${formatCurrencyText(platformFeeUnitPrice(payload))}/cửa hàng áp dụng, chi phí một lần.`,
+          scope: `${platformStoreCount(payload)} cửa hàng áp dụng`,
+          unit: 'Một lần',
+          originalFormula: `${formulaNumber(platformFeeUnitPrice(payload))}*${formulaNumber(platformStoreCount(payload))}`,
+          amountFormula: (row: number) => `K${row}*(1-${formulaNumber(platformDiscount(payload, 'website'))}%)`,
           original: payload.totals.subtotalWebsiteOriginal,
           amount: payload.totals.subtotalWebsite
         }
@@ -335,6 +545,11 @@ export async function exportExcel({
               : 'Thuê Thiết bị phát (Boxset): 900.000 VND/năm/thiết bị, prorated theo thời hạn và có thể áp dụng chiết khấu giao diện.',
           scope: `${storeCount * Math.max(1, Number(payload.globals.globalBoxCount) || 1)} boxset`,
           unit: payload.globals.boxMode === 'buy' ? 'Một lần' : 'Năm prorated',
+          originalFormula:
+            payload.globals.boxMode === 'buy'
+              ? `${formulaNumber(BOX_BUY_PRICE)}*${formulaNumber(boxCount)}*${formulaNumber(storeCount)}`
+              : proratedStoreFormula(BOX_RENT_YEARLY, payload.computedStores, boxCount),
+          amountFormula: (row: number) => `K${row}*(1-${formulaNumber(platformDiscount(payload, 'box'))}%)`,
           original: payload.totals.subtotalBoxOriginal,
           amount: payload.totals.subtotalBox
         }
@@ -344,15 +559,27 @@ export async function exportExcel({
     detail: string;
     scope: string;
     unit: string;
+    originalFormula: string;
+    amountFormula: (row: number) => string;
     original: number;
     amount: number;
   } => row !== null);
 
+  let platformTotalRow: number | null = null;
+  const platformDataRows: number[] = [];
   if (platformRows.length > 0) {
     const sectionRow = rowIdx++;
     ws.mergeCells(`A${sectionRow}:N${sectionRow}`);
     ws.getCell(`A${sectionRow}`).value = 'HẠNG MỤC NỀN TẢNG & THIẾT BỊ';
-    for (let c = 1; c <= 14; c++) applyStyle(ws.getCell(sectionRow, c), true, alignLeft, true);
+    ws.getRow(sectionRow).height = 28;
+    for (let c = 1; c <= 14; c++) {
+      applyStyle(ws.getCell(sectionRow, c), {
+        bold: true,
+        align: alignLeft,
+        fill: COLORS.sectionFill,
+        border: borderStrong
+      });
+    }
 
     const platformHeadRow = rowIdx++;
     ws.mergeCells(`A${platformHeadRow}:C${platformHeadRow}`);
@@ -366,10 +593,18 @@ export async function exportExcel({
     ws.getCell(`J${platformHeadRow}`).value = 'Đơn vị tính';
     ws.getCell(`K${platformHeadRow}`).value = 'Giá gốc';
     ws.getCell(`M${platformHeadRow}`).value = 'Thành tiền';
-    for (let c = 1; c <= 14; c++) applyStyle(ws.getCell(platformHeadRow, c), true, alignCenter, true);
+    ws.getRow(platformHeadRow).height = 26;
+    for (let c = 1; c <= 14; c++) {
+      applyStyle(ws.getCell(platformHeadRow, c), {
+        bold: true,
+        align: alignCenter,
+        fill: COLORS.headerSoft
+      });
+    }
 
     platformRows.forEach((item) => {
       const r = rowIdx++;
+      platformDataRows.push(r);
       ws.mergeCells(`A${r}:C${r}`);
       ws.mergeCells(`D${r}:G${r}`);
       ws.mergeCells(`H${r}:I${r}`);
@@ -379,45 +614,74 @@ export async function exportExcel({
       ws.getCell(`D${r}`).value = item.detail;
       ws.getCell(`H${r}`).value = item.scope;
       ws.getCell(`J${r}`).value = item.unit;
-      ws.getCell(`K${r}`).value = item.original;
-      ws.getCell(`M${r}`).value = item.amount;
+      ws.getCell(`K${r}`).value = formulaValue(item.originalFormula, item.original);
+      ws.getCell(`M${r}`).value = formulaValue(item.amountFormula(r), item.amount);
+      ws.getRow(r).height = 44;
       for (let c = 1; c <= 14; c++) {
         const cell = ws.getCell(r, c);
-        applyStyle(cell, false, c === 1 || c === 4 ? alignLeft : alignCenter);
-        if (c >= 11) cell.numFmt = '#,##0';
+        applyStyle(cell, {
+          align: c === 1 || c === 4 ? alignLeft : c >= 11 ? alignRight : alignCenter,
+          fill: COLORS.paper
+        });
+        if (c >= 11) cell.numFmt = MONEY_FORMAT;
       }
     });
 
-    const platformTotalRow = rowIdx++;
+    platformTotalRow = rowIdx++;
     ws.mergeCells(`A${platformTotalRow}:J${platformTotalRow}`);
     ws.mergeCells(`K${platformTotalRow}:L${platformTotalRow}`);
     ws.mergeCells(`M${platformTotalRow}:N${platformTotalRow}`);
     ws.getCell(`A${platformTotalRow}`).value = 'Tổng hạng mục Nền tảng & Thiết bị:';
-    ws.getCell(`K${platformTotalRow}`).value = payload.totals.subtotalAccountOriginal + payload.totals.subtotalWebsiteOriginal + payload.totals.subtotalBoxOriginal;
-    ws.getCell(`M${platformTotalRow}`).value = payload.totals.subtotalAccount + payload.totals.subtotalWebsite + payload.totals.subtotalBox;
+    ws.getCell(`K${platformTotalRow}`).value = formulaValue(
+      sumCells('K', platformDataRows),
+      payload.totals.subtotalAccountOriginal + payload.totals.subtotalWebsiteOriginal + payload.totals.subtotalBoxOriginal
+    );
+    ws.getCell(`M${platformTotalRow}`).value = formulaValue(
+      sumCells('M', platformDataRows),
+      payload.totals.subtotalAccount + payload.totals.subtotalWebsite + payload.totals.subtotalBox
+    );
+    ws.getRow(platformTotalRow).height = 30;
     for (let c = 1; c <= 14; c++) {
       const cell = ws.getCell(platformTotalRow, c);
-      applyStyle(cell, true, c === 1 ? alignLeft : alignCenter, true);
-      if (c >= 11) cell.numFmt = '#,##0';
+      applyStyle(cell, {
+        bold: true,
+        align: c === 1 ? alignLeft : c >= 11 ? alignRight : alignCenter,
+        fill: COLORS.netFill,
+        border: borderStrong
+      });
+      if (c >= 11) cell.numFmt = MONEY_FORMAT;
     }
   }
 
   rowIdx++;
+  const platformOriginalRef = platformTotalRow ? `K${platformTotalRow}` : '0';
+  const platformAmountRef = platformTotalRow ? `M${platformTotalRow}` : '0';
+  const subtotalSummaryRow = rowIdx;
+  const vatSummaryRow = rowIdx + 1;
   const quoteSummaryRows = [
     {
       label: 'Tổng giá trị báo giá trước VAT:',
+      originalFormula: `N${sumRow}+${platformOriginalRef}`,
+      amountFormula: `N${netRow}+${platformAmountRef}`,
       original: payload.totals.subtotalOriginal,
-      amount: payload.totals.subtotal
+      amount: payload.totals.subtotal,
+      fill: COLORS.summaryFill
     },
     {
       label: `VAT (${Math.round(payload.totals.vatRate * 100)}%):`,
+      originalFormula: `K${subtotalSummaryRow}*${formulaNumber(payload.totals.vatRate)}`,
+      amountFormula: `M${subtotalSummaryRow}*${formulaNumber(payload.totals.vatRate)}`,
       original: payload.totals.vatOriginal,
-      amount: payload.totals.vat
+      amount: payload.totals.vat,
+      fill: COLORS.summaryFill
     },
     {
       label: 'Tổng thanh toán sau VAT:',
+      originalFormula: `K${subtotalSummaryRow}+K${vatSummaryRow}`,
+      amountFormula: `M${subtotalSummaryRow}+M${vatSummaryRow}`,
       original: payload.totals.grandOriginal,
-      amount: payload.totals.grand
+      amount: payload.totals.grand,
+      fill: COLORS.grandFill
     }
   ];
 
@@ -427,28 +691,39 @@ export async function exportExcel({
     ws.mergeCells(`K${r}:L${r}`);
     ws.mergeCells(`M${r}:N${r}`);
     ws.getCell(`A${r}`).value = item.label;
-    ws.getCell(`K${r}`).value = item.original;
-    ws.getCell(`M${r}`).value = item.amount;
+    ws.getCell(`K${r}`).value = formulaValue(item.originalFormula, item.original);
+    ws.getCell(`M${r}`).value = formulaValue(item.amountFormula, item.amount);
+    ws.getRow(r).height = index === quoteSummaryRows.length - 1 ? 34 : 28;
     for (let c = 1; c <= 14; c++) {
       const cell = ws.getCell(r, c);
-      applyStyle(cell, index === quoteSummaryRows.length - 1, c === 1 ? alignLeft : alignCenter, index === quoteSummaryRows.length - 1);
-      if (c >= 11) cell.numFmt = '#,##0';
+      applyStyle(cell, {
+        bold: index === quoteSummaryRows.length - 1,
+        align: c === 1 ? alignLeft : c >= 11 ? alignRight : alignCenter,
+        fill: item.fill,
+        border: index === quoteSummaryRows.length - 1 ? borderStrong : borderThin,
+        fontColor: COLORS.ink,
+        size: index === quoteSummaryRows.length - 1 ? 11 : 10
+      });
+      if (c >= 11) cell.numFmt = MONEY_FORMAT;
     }
   });
 
   rowIdx++;
   ws.getCell(`B${rowIdx}`).value = 'Lưu ý: ';
   ws.getCell(`B${rowIdx}`).font = { name: FONT_NAME, size: 10, bold: true };
+  ws.getRow(rowIdx).height = 22;
   
   rowIdx++;
   const note1 = ws.getCell(`B${rowIdx}`);
   note1.value = '- Báo giá có thời hạn trong vòng 30 ngày kể từ ngày gửi báo giá.';
-  note1.font = { name: FONT_NAME, size: 10, color: { argb: 'FFC4604C' } };
+  note1.font = { name: FONT_NAME, size: 10, color: { argb: COLORS.note } };
+  ws.getRow(rowIdx).height = 22;
 
   rowIdx++;
   const note2 = ws.getCell(`B${rowIdx}`);
   note2.value = '- Mức thuế suất được áp dụng tuân thủ theo quy định của pháp luật tại thời điểm phát sinh Phí dịch vụ.';
-  note2.font = { name: FONT_NAME, size: 10, color: { argb: 'FFC4604C' } };
+  note2.font = { name: FONT_NAME, size: 10, color: { argb: COLORS.note } };
+  ws.getRow(rowIdx).height = 22;
 
   embedManifestInWorkbook(wb, manifest);
 

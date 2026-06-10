@@ -3,7 +3,7 @@ import type { RevisionStatus } from '../../shared/types';
 import { cycleDisplayAmount, cycleLabel } from './billing-cycle';
 import { formatVND } from './format';
 
-const APP_VERSION = '1.13.4';
+const APP_VERSION = '1.14.1';
 
 type StatusView = {
   label: string;
@@ -38,7 +38,10 @@ function branchSummary(count: number): string {
 function branchCost(snapshot: RenderSnapshot): number {
   const branchCount = snapshot.stores.length;
   if (branchCount <= 0) return 0;
-  return cycleDisplayAmount(snapshot.quote.totals.grand, snapshot.billingCycle) / branchCount;
+  const { totals } = snapshot.quote;
+  const recurringSubtotal = Math.max(0, totals.subtotal - totals.subtotalWebsite);
+  const displayGrand = (cycleDisplayAmount(recurringSubtotal, snapshot.billingCycle) + totals.subtotalWebsite) * (1 + totals.vatRate);
+  return displayGrand / branchCount;
 }
 
 function setText(id: string, value: string): void {

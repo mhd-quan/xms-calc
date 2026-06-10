@@ -774,14 +774,16 @@
 
 .x-row__info { flex: 1; }
 
-#boxQuantityRow {
+#boxQuantityRow,
+#platformStoreQuantityRow {
   justify-content: flex-start;
   gap: 18px;
   width: fit-content;
   margin-top: var(--s-4);
 }
 
-#boxQuantityRow .label {
+#boxQuantityRow .label,
+#platformStoreQuantityRow .label {
   flex: 0 0 auto;
 }
 
