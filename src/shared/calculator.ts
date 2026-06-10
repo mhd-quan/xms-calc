@@ -11,7 +11,8 @@ export const BUSINESS_TYPES: Record<string, { label: string; short: string }> = 
 export const DEFAULT_BASE_SALARY = 2340000;
 export const ACCOUNT_FEE_YEARLY = 600000;
 export const ACCOUNT_FEE_STANDALONE_YEARLY = 1500000;
-export const WEBSITE_FEE_YEARLY = 600000;
+export const WEBSITE_PLATFORM_FEE_ONCE = 600000;
+export const PC_APP_PLATFORM_FEE_ONCE = 800000;
 export const BOX_BUY_PRICE = 2000000;
 export const BOX_RENT_YEARLY = 900000;
 export const DURATION_ROUNDING_POLICY = {
@@ -133,8 +134,10 @@ export type CalculatorOptionsInput = {
   vatRate?: number;
   boxMode?: 'none' | 'buy' | 'rent';
   accountFeeMode?: 'standard' | 'standalone';
+  platformFeeMode?: 'website' | 'pc_app';
   billingCycle?: 'm' | 'q' | 'y';
   globalBoxCount?: number;
+  globalPlatformStoreCount?: number;
   hasAccountFee?: boolean;
   hasWebsiteFee?: boolean;
   hasQTG?: boolean;
@@ -148,8 +151,10 @@ type NormalizedOptions = {
   vatRate: number;
   boxMode: 'none' | 'buy' | 'rent';
   accountFeeMode: 'standard' | 'standalone';
+  platformFeeMode: 'website' | 'pc_app';
   billingCycle: 'm' | 'q' | 'y';
   globalBoxCount: number;
+  globalPlatformStoreCount: number;
   hasAccountFee: boolean;
   hasWebsiteFee: boolean;
   hasQTG: boolean;
@@ -258,8 +263,10 @@ function normalizeOptions(options: CalculatorOptionsInput = {}): NormalizedOptio
     vatRate: Number(options.vatRate) || 0,
     boxMode: options.boxMode || 'none',
     accountFeeMode: options.accountFeeMode === 'standalone' ? 'standalone' : 'standard',
+    platformFeeMode: options.platformFeeMode === 'pc_app' ? 'pc_app' : 'website',
     billingCycle,
     globalBoxCount: Math.max(1, Number(options.globalBoxCount) || 1),
+    globalPlatformStoreCount: Math.max(1, Number(options.globalPlatformStoreCount) || 1),
     hasAccountFee: options.hasAccountFee !== false,
     hasWebsiteFee: options.hasWebsiteFee === true,
     hasQTG: options.hasQTG !== false,
@@ -291,6 +298,10 @@ function accountFeeYearly(opts: NormalizedOptions): number {
     : ACCOUNT_FEE_YEARLY;
 }
 
+function platformFeeOnce(opts: NormalizedOptions): number {
+  return opts.platformFeeMode === 'pc_app' ? PC_APP_PLATFORM_FEE_ONCE : WEBSITE_PLATFORM_FEE_ONCE;
+}
+
 export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOptionsInput = {}) {
   const opts = normalizeOptions(options);
   const area = Number(store.area) || 0;
@@ -302,12 +313,12 @@ export function calculateStoreBreakdown(store: StoreInput, options: CalculatorOp
   const qtgAmountOriginal = opts.hasQTG ? periodBase : 0;
   const qlqAmountOriginal = opts.hasQLQ ? periodBase : 0;
   const accountAmountOriginal = opts.hasAccountFee ? (accountFeeYearly(opts) / 12) * duration : 0;
-  const websiteAmountOriginal = opts.hasWebsiteFee ? (WEBSITE_FEE_YEARLY / 12) * duration : 0;
+  const websiteAmountOriginal = 0;
 
   const qtgAmount = qtgAmountOriginal * (1 - effectiveDiscount(opts, 'qtg') / 100);
   const qlqAmount = qlqAmountOriginal * (1 - effectiveDiscount(opts, 'qlq') / 100);
   const accountAmount = accountAmountOriginal * (1 - effectiveDiscount(opts, 'account') / 100);
-  const websiteAmount = websiteAmountOriginal * (1 - effectiveDiscount(opts, 'website') / 100);
+  const websiteAmount = 0;
 
   let boxAmount = 0;
   let boxAmountOriginal = 0;
@@ -400,6 +411,10 @@ export function calculateTotals(stores: StoreInput[], options: CalculatorOptions
       grandOriginal: 0
     }
   );
+  totals.subtotalWebsiteOriginal = opts.hasWebsiteFee
+    ? platformFeeOnce(opts) * opts.globalPlatformStoreCount
+    : 0;
+  totals.subtotalWebsite = totals.subtotalWebsiteOriginal * (1 - effectiveDiscount(opts, 'website') / 100);
   totals.subtotal =
     totals.subtotalQTG + totals.subtotalQLQ + totals.subtotalAccount + totals.subtotalWebsite + totals.subtotalBox;
   totals.subtotalOriginal =

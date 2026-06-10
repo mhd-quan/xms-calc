@@ -34,8 +34,10 @@ function makeSnapshot(overrides: Record<string, unknown> = {}) {
       vatRate: 0.1,
       boxMode: 'none',
       accountFeeMode: 'standard',
+      platformFeeMode: 'website',
       billingCycle: 'y',
       globalBoxCount: 1,
+      globalPlatformStoreCount: 1,
       hasAccountFee: true,
       hasWebsiteFee: false,
       hasQTG: true,
@@ -254,8 +256,10 @@ test('excel export includes visible platform and equipment rows', async () => {
       vatRate: 0.08,
       boxMode: 'rent',
       accountFeeMode: 'standalone',
+      platformFeeMode: 'pc_app',
       billingCycle: 'y',
       globalBoxCount: 2,
+      globalPlatformStoreCount: 2,
       hasAccountFee: true,
       hasWebsiteFee: true,
       hasQTG: false,
@@ -277,8 +281,8 @@ test('excel export includes visible platform and equipment rows', async () => {
     appVersion: '1.13.4',
     exportedAt: '2026-05-12T10:00:00.000Z'
   });
-  assert.equal(Math.round(payload.totals.subtotalWebsite), 450000);
-  assert.equal(Math.round(payload.totals.subtotalWebsiteOriginal), 600000);
+  assert.equal(Math.round(payload.totals.subtotalWebsite), 1200000);
+  assert.equal(Math.round(payload.totals.subtotalWebsiteOriginal), 1600000);
 
   await exportExcel({
     app: { getPath: () => tmpDir },
@@ -297,7 +301,7 @@ test('excel export includes visible platform and equipment rows', async () => {
   assert.match(visibleValues, /Phí Sử dụng Tài khoản XMS/);
   assert.match(
     visibleValues,
-    /Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm/
+    /PC App XMS: 800\.000 VND\/cửa hàng áp dụng, chi phí một lần/
   );
   assert.match(visibleValues, /Thiết bị phát \(Boxset\) - Thuê/);
   assert.match(visibleValues, /Tổng thanh toán sau VAT/);
@@ -313,6 +317,10 @@ test('excel export includes visible platform and equipment rows', async () => {
   assert.match(cellFormula(worksheet.getCell(`K${accountRow}`).value), /1500000\*1\*1/);
   assert.match(cellFormula(worksheet.getCell(`M${accountRow}`).value), new RegExp(`K${accountRow}\\*\\(1-10%\\)`));
 
+  const platformRow = findRowByText(worksheet, 'Phí Nền tảng', 'A');
+  assert.match(cellFormula(worksheet.getCell(`K${platformRow}`).value), /800000\*2/);
+  assert.match(cellFormula(worksheet.getCell(`M${platformRow}`).value), new RegExp(`K${platformRow}\\*\\(1-25%\\)`));
+
   const platformTotalRow = findRowByText(worksheet, 'Tổng hạng mục Nền tảng & Thiết bị:', 'A');
   assert.match(cellFormula(worksheet.getCell(`K${platformTotalRow}`).value), /^SUM\(K\d+(,K\d+)*\)$/);
   assert.match(cellFormula(worksheet.getCell(`M${platformTotalRow}`).value), /^SUM\(M\d+(,M\d+)*\)$/);
@@ -327,8 +335,10 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
       vatRate: 0,
       boxMode: 'buy',
       accountFeeMode: 'standard',
+      platformFeeMode: 'website',
       billingCycle: 'y',
       globalBoxCount: 1,
+      globalPlatformStoreCount: 1,
       hasAccountFee: true,
       hasWebsiteFee: false,
       hasQTG: true,
@@ -356,7 +366,7 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
     }
   );
   const manifest = buildEmbeddedManifest(payload, {
-    appVersion: '1.14.0',
+    appVersion: '1.14.1',
     exportedAt: '2026-06-05T10:00:00.000Z'
   });
 

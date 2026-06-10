@@ -10,6 +10,7 @@ import type {
   AccountFeeMode,
   CustomerProfile,
   EmbeddedManifest,
+  PlatformFeeMode,
   PreparedByProfile,
   QuoteIdentity,
   QuotePayload,
@@ -44,6 +45,10 @@ function isBoxMode(value: unknown): value is BoxMode {
 
 function isAccountFeeMode(value: unknown): value is AccountFeeMode {
   return value === 'standard' || value === 'standalone';
+}
+
+function isPlatformFeeMode(value: unknown): value is PlatformFeeMode {
+  return value === 'website' || value === 'pc_app';
 }
 
 function isBillingCycle(value: unknown): value is CalcOptions['billingCycle'] {
@@ -89,8 +94,10 @@ function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string,
   return {
     boxMode: isBoxMode(calcOptions?.boxMode) ? calcOptions.boxMode : 'none',
     accountFeeMode: isAccountFeeMode(calcOptions?.accountFeeMode) ? calcOptions.accountFeeMode : 'standard',
+    platformFeeMode: isPlatformFeeMode(calcOptions?.platformFeeMode) ? calcOptions.platformFeeMode : 'website',
     billingCycle: isBillingCycle(calcOptions?.billingCycle) ? calcOptions.billingCycle : 'y',
     globalBoxCount: Math.max(1, Number(calcOptions?.globalBoxCount) || 1),
+    globalPlatformStoreCount: Math.max(1, Number(calcOptions?.globalPlatformStoreCount) || 1),
     hasAccountFee: calcOptions?.hasAccountFee !== false,
     hasWebsiteFee: calcOptions?.hasWebsiteFee === true,
     hasQTG: calcOptions?.hasQTG !== false,

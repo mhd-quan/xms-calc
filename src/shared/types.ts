@@ -10,6 +10,7 @@ export type BusinessType =
 export type BoxMode = 'none' | 'buy' | 'rent';
 export type BillingCycle = 'm' | 'q' | 'y';
 export type AccountFeeMode = 'standard' | 'standalone';
+export type PlatformFeeMode = 'website' | 'pc_app';
 
 export type RevisionStatus = 'draft' | 'imported' | 'exported';
 
@@ -47,8 +48,10 @@ export interface CalcOptions {
   vatRate: number;
   boxMode: BoxMode;
   accountFeeMode: AccountFeeMode;
+  platformFeeMode: PlatformFeeMode;
   billingCycle: BillingCycle;
   globalBoxCount: number;
+  globalPlatformStoreCount: number;
   hasAccountFee: boolean;
   hasWebsiteFee: boolean;
   hasQTG: boolean;

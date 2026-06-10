@@ -5,6 +5,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.14.1] — 2026-06-10
+
+### Changed
+- **Platform Fee Pricing**: Reworked Phí Nền tảng into a one-time Website/PC App selection with Website at 600.000 VND and PC App at 800.000 VND per selected store.
+- **Platform Store Count**: Added a global Cửa hàng áp dụng counter so newly opened stores can be charged without applying the platform fee to every branch entry.
+- **Quotation Exports**: Updated PDF and XLSX quotation rows, descriptions, scopes, units, formulas, and next-cycle notes for the one-time platform fee model.
+- **Version Display**: Updated package and status bar version labels to `1.14.1`.
+
 ## [1.14.0] — 2026-06-05
 
 ### Fixed

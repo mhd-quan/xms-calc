@@ -137,6 +137,8 @@ export async function extractManifestFromExcelFile(
       hasQLQ: true,
       boxMode: 'none', // Không có phí box
       accountFeeMode: 'standard',
+      platformFeeMode: 'website',
+      globalPlatformStoreCount: 1,
       globalDiscounts: {
         account: 0,
         website: 0,

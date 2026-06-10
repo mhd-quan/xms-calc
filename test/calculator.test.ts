@@ -30,8 +30,10 @@ const baseOptions: CalcOptions = {
   vatRate: 0.1,
   boxMode: 'none',
   accountFeeMode: 'standard',
+  platformFeeMode: 'website',
   billingCycle: 'y',
   globalBoxCount: 1,
+  globalPlatformStoreCount: 1,
   hasAccountFee: true,
   hasWebsiteFee: false,
   hasQTG: true,
@@ -137,32 +139,35 @@ test('box rent can use the interface discount', () => {
   moneyEqual(totals.subtotalBoxOriginal, 1800000);
 });
 
-test('website fee is optional and prorated by branch duration', () => {
+test('platform fee is optional and charged once by selected store count', () => {
   const stores = [
     cafeStore,
     { ...cafeStore, name: 'Chi nhánh 2', endDate: '2026-06-30' }
   ];
   const { stores: rows, totals } = calculateTotals(stores, {
     ...baseOptions,
-    hasWebsiteFee: true
+    hasWebsiteFee: true,
+    globalPlatformStoreCount: 2
   });
 
-  moneyEqual(rows[0]?.websiteAmount ?? 0, 600000);
-  moneyEqual(rows[1]?.websiteAmount ?? 0, 300000);
-  moneyEqual(totals.subtotalWebsite, 900000);
+  rows.forEach((row) => moneyEqual(row.websiteAmount, 0));
+  moneyEqual(totals.subtotalWebsite, 1200000);
+  moneyEqual(totals.subtotalWebsiteOriginal, 1200000);
 });
 
-test('website fee can use the interface discount', () => {
+test('PC App platform fee can use the interface discount', () => {
   const { stores: rows, totals } = calculateTotals([cafeStore], {
     ...baseOptions,
     hasWebsiteFee: true,
+    platformFeeMode: 'pc_app',
+    globalPlatformStoreCount: 3,
     globalDiscounts: { ...baseOptions.globalDiscounts, website: 25 }
   });
 
-  moneyEqual(rows[0]?.websiteAmount ?? 0, 450000);
-  moneyEqual(rows[0]?.websiteAmountOriginal ?? 0, 600000);
-  moneyEqual(totals.subtotalWebsite, 450000);
-  moneyEqual(totals.subtotalWebsiteOriginal, 600000);
+  moneyEqual(rows[0]?.websiteAmount ?? 0, 0);
+  moneyEqual(rows[0]?.websiteAmountOriginal ?? 0, 0);
+  moneyEqual(totals.subtotalWebsite, 1800000);
+  moneyEqual(totals.subtotalWebsiteOriginal, 2400000);
 });
 
 test('standalone account fee only applies when both rights are disabled', () => {

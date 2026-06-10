@@ -8,7 +8,8 @@ import {
   ACCOUNT_FEE_YEARLY,
   BOX_BUY_PRICE,
   BOX_RENT_YEARLY,
-  WEBSITE_FEE_YEARLY,
+  PC_APP_PLATFORM_FEE_ONCE,
+  WEBSITE_PLATFORM_FEE_ONCE,
   calculateCoefComponents,
   getBusinessPricingPolicy,
   type PricingIncrement
@@ -18,7 +19,7 @@ import { safeFilePart, validateQuotePayload } from './quote-exporter';
 export const EXCEL_MANIFEST_SHEET = '_xms_manifest';
 export const EXCEL_MANIFEST_CELL = 'A1';
 const PLATFORM_FEE_DESCRIPTION =
-  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, chi phí một lần theo số Cửa hàng áp dụng.';
 const FONT_NAME = 'Aptos Display';
 const MONEY_FORMAT = '#,##0';
 const COLORS = {
@@ -60,6 +61,10 @@ function embedManifestInWorkbook(workbook: ExcelJS.Workbook, manifest: EmbeddedM
 
 function formulaNumber(value: number): string {
   return String(Number(value));
+}
+
+function formatCurrencyText(value: number): string {
+  return `${new Intl.NumberFormat('vi-VN').format(Math.round(Number(value) || 0))} VND`;
 }
 
 function incrementFormula(g: string, tier: PricingIncrement, baseCell: string): string {
@@ -126,6 +131,18 @@ function accountFeeYearly(payload: QuotePayload): number {
   return payload.globals.accountFeeMode === 'standalone' && !payload.globals.hasQTG && !payload.globals.hasQLQ
     ? ACCOUNT_FEE_STANDALONE_YEARLY
     : ACCOUNT_FEE_YEARLY;
+}
+
+function platformFeeLabel(payload: QuotePayload): string {
+  return payload.globals.platformFeeMode === 'pc_app' ? 'PC App XMS' : 'Website';
+}
+
+function platformFeeUnitPrice(payload: QuotePayload): number {
+  return payload.globals.platformFeeMode === 'pc_app' ? PC_APP_PLATFORM_FEE_ONCE : WEBSITE_PLATFORM_FEE_ONCE;
+}
+
+function platformStoreCount(payload: QuotePayload): number {
+  return Math.max(1, Number(payload.globals.globalPlatformStoreCount) || 1);
 }
 
 function proratedStoreFormula(yearlyFee: number, stores: ComputedStore[], multiplier = 1): string {
@@ -510,10 +527,10 @@ export async function exportExcel({
     payload.totals.subtotalWebsiteOriginal > 0
       ? {
           title: 'Phí Nền tảng',
-          detail: PLATFORM_FEE_DESCRIPTION,
-          scope: `${storeCount} cửa hàng`,
-          unit: 'Năm prorated',
-          originalFormula: proratedStoreFormula(WEBSITE_FEE_YEARLY, payload.computedStores),
+          detail: `${PLATFORM_FEE_DESCRIPTION} ${platformFeeLabel(payload)}: ${formatCurrencyText(platformFeeUnitPrice(payload))}/cửa hàng áp dụng, chi phí một lần.`,
+          scope: `${platformStoreCount(payload)} cửa hàng áp dụng`,
+          unit: 'Một lần',
+          originalFormula: `${formulaNumber(platformFeeUnitPrice(payload))}*${formulaNumber(platformStoreCount(payload))}`,
           amountFormula: (row: number) => `K${row}*(1-${formulaNumber(platformDiscount(payload, 'website'))}%)`,
           original: payload.totals.subtotalWebsiteOriginal,
           amount: payload.totals.subtotalWebsite
