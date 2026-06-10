@@ -12,11 +12,11 @@ export function renderBottombar(snapshot: RenderSnapshot): void {
   const displayCycle = snapshot.billingCycle;
 
   setMoney('totalCopyright', cycleDisplayAmount(totals.subtotalQTG + totals.subtotalQLQ, displayCycle));
-  setMoney('totalPlatform', cycleDisplayAmount(totals.subtotalAccount + totals.subtotalWebsite, displayCycle));
+  setMoney('totalPlatform', cycleDisplayAmount(totals.subtotalAccount, displayCycle) + totals.subtotalWebsite);
   setMoney('totalDevice', cycleDisplayAmount(totals.subtotalBox, displayCycle));
 
-  const grand = cycleDisplayAmount(totals.grand, displayCycle);
-  const grandOriginal = cycleDisplayAmount(totals.grandOriginal, displayCycle);
+  const grand = displayGrand(snapshot, false);
+  const grandOriginal = displayGrand(snapshot, true);
   const grandSavingsRatio = savingsRatio(grandOriginal, grand);
   setStrikeMoney('grandTotalOriginal', grandOriginal, grand);
   setText('grandTotal', formatVND(grand));
@@ -29,7 +29,16 @@ export function renderBottombar(snapshot: RenderSnapshot): void {
   });
 
   const grandVu = getElement('grandVu');
-  if (grandVu) setVu(grandVu, cycleDisplayAmount(totals.grand, displayCycle) / GRAND_TOTAL_CEILING);
+  if (grandVu) setVu(grandVu, grand / GRAND_TOTAL_CEILING);
+}
+
+function displayGrand(snapshot: RenderSnapshot, original: boolean): number {
+  const { totals } = snapshot.quote;
+  const platformSubtotal = original ? totals.subtotalWebsiteOriginal : totals.subtotalWebsite;
+  const quoteSubtotal = original ? totals.subtotalOriginal : totals.subtotal;
+  const recurringSubtotal = Math.max(0, quoteSubtotal - platformSubtotal);
+  const displaySubtotal = cycleDisplayAmount(recurringSubtotal, snapshot.billingCycle) + platformSubtotal;
+  return displaySubtotal * (1 + totals.vatRate);
 }
 
 function setMoney(id: string, value: number): void {

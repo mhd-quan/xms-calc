@@ -37,7 +37,8 @@ function setSectionTotals(snapshot: RenderSnapshot): void {
   setText(
     'platformSectionTotal',
     formatVND(
-      cycleDisplayAmount(breakdown.accountAmount + breakdown.websiteAmount + breakdown.boxAmount, snapshot.billingCycle)
+      cycleDisplayAmount(breakdown.accountAmount + breakdown.boxAmount, snapshot.billingCycle) +
+        snapshot.quote.totals.subtotalWebsite
     )
   );
   setText('copyrightSectionTotal', formatVND(cycleDisplayAmount(breakdown.qtgAmount + breakdown.qlqAmount, snapshot.billingCycle)));

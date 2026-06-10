@@ -17,8 +17,10 @@ type PricingRowInput = {
 };
 
 const templateWindow = window as QuoteTemplateWindow;
+const WEBSITE_PLATFORM_FEE_ONCE = 600000;
+const PC_APP_PLATFORM_FEE_ONCE = 800000;
 const PLATFORM_FEE_DESCRIPTION =
-  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, prorated theo thời gian sử dụng thực tế của Cửa hàng, chi phí hàng năm';
+  'Website hoặc PC App XMS tùy theo nhu cầu hạ tầng của khách hàng, chi phí một lần theo số Cửa hàng áp dụng.';
 const formatVND = (n: number | string): string =>
   `${new Intl.NumberFormat('vi-VN').format(Math.round(Number(n) || 0))} VND`;
 
@@ -77,6 +79,22 @@ function accountFeeDetail(payload: QuotePayload): string {
     return 'Tài khoản XMS vận hành độc lập khi khách hàng không sử dụng Quyền tác giả và Quyền liên quan trong báo giá; đơn giá 1.500.000 VND/năm/cửa hàng.';
   }
   return 'Tài khoản XMS quản trị, phân phối và vận hành danh sách phát XMusic Station; đơn giá 600.000 VND/năm.';
+}
+
+function platformFeeLabel(payload: QuotePayload): string {
+  return payload.globals.platformFeeMode === 'pc_app' ? 'PC App XMS' : 'Website';
+}
+
+function platformFeeUnitPrice(payload: QuotePayload): number {
+  return payload.globals.platformFeeMode === 'pc_app' ? PC_APP_PLATFORM_FEE_ONCE : WEBSITE_PLATFORM_FEE_ONCE;
+}
+
+function platformStoreCount(payload: QuotePayload): number {
+  return Math.max(1, Number(payload.globals.globalPlatformStoreCount) || 1);
+}
+
+function platformFeeDetail(payload: QuotePayload): string {
+  return `${platformFeeLabel(payload)}: đơn giá ${formatVND(platformFeeUnitPrice(payload))}/cửa hàng áp dụng, chi phí một lần.`;
 }
 
 function buildPricingRows(payload: QuotePayload): string {
@@ -141,9 +159,9 @@ function buildPricingRows(payload: QuotePayload): string {
       index: index++,
       group: true,
       title: 'Phí Nền tảng',
-      detail: PLATFORM_FEE_DESCRIPTION,
-      scope: `${branchCount} nền tảng / ${branchCount} cửa hàng`,
-      unit: duration,
+      detail: platformFeeDetail(payload),
+      scope: `${platformStoreCount(payload)} cửa hàng áp dụng`,
+      unit: 'Một lần',
       amount: payload.totals.subtotalWebsite,
       originalAmount: payload.totals.subtotalWebsiteOriginal
     });
@@ -213,7 +231,7 @@ function buildNotes(payload: QuotePayload): string {
     notes.push('Chi phí thuê Thiết bị phát (Boxset) được tính theo năm, prorated theo thời hạn của từng chi nhánh và được đưa vào tạm tính chu kỳ tiếp theo.');
   }
   if (payload.globals.hasWebsiteFee) {
-    notes.push(`Phí Nền tảng: ${PLATFORM_FEE_DESCRIPTION}.`);
+    notes.push(`Phí Nền tảng: ${PLATFORM_FEE_DESCRIPTION} ${platformFeeDetail(payload)}`);
   }
   return notes.map((note) => `<li>${escapeHTML(note)}</li>`).join('');
 }
@@ -229,7 +247,6 @@ templateWindow.renderQuote = function renderQuote(payload: QuotePayload): true {
     payload.totals.subtotalQTG +
     payload.totals.subtotalQLQ +
     payload.totals.subtotalAccount +
-    payload.totals.subtotalWebsite +
     (payload.globals.boxMode === 'rent' ? payload.totals.subtotalBox : 0);
   const revisionBadge = byId('revisionBadge');
 
