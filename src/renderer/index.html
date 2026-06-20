@@ -241,7 +241,7 @@
           <!-- SECTION 02 — PLATFORM -->
           <section class="csection" id="section02">
             <div class="csection__head" data-section="02"
-              data-info="Section 02 · Nền tảng & Thiết bị|Phí tài khoản + box phát nhạc.|—">
+              data-info="Section 02 · Nền tảng & Thiết bị|Phí tài khoản, website và box phát nhạc.|—">
               <span class="csection__idx">02</span>
               <span class="csection__title">Nền tảng & Thiết bị</span>
               <span class="eyebrow">Platform</span>
@@ -251,10 +251,16 @@
               <div class="x-row">
                 <div class="x-row__lhs">
                   <button type="button" class="x-toggle-pill is-on" id="accountToggle"
-                    data-info="Tài khoản NCT|Phí duy trì tài khoản phần mềm NCT: 600.000₫/năm, prorated theo ngày bắt đầu – kết thúc.|—">BẬT</button>
+                    data-info="Tài khoản NCT|Phí duy trì tài khoản phần mềm NCT. Có thêm mức độc lập khi tắt cả hai quyền bản quyền.|—">BẬT</button>
                   <div class="x-row__info">
                     <div class="x-row__name">Phí tài khoản NCT</div>
-                    <div class="x-row__desc">600.000 ₫ / năm · prorated theo chu kỳ</div>
+                    <div class="x-row__desc" id="accountPriceDesc">600.000 ₫ / năm · prorated theo chu kỳ</div>
+                    <div class="x-platform-mode">
+                      <div class="x-seg x-seg--compact" id="accountFeeModeSeg" data-info="Mức phí tài khoản|Chuẩn: 600.000₫/năm. Độc lập: 1.500.000₫/năm/cửa hàng khi tắt QTG và QLQ.|—">
+                        <button type="button" class="x-seg__btn is-active" data-account-mode="standard">Chuẩn</button>
+                        <button type="button" class="x-seg__btn" data-account-mode="standalone" disabled>Độc lập</button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               <div class="x-row__rhs" id="accountFeeRight">
@@ -285,13 +291,36 @@
 
               <div class="x-divider" style="margin: var(--s-4) 0;"></div>
 
+              <div class="x-row x-row--simple">
+                <div class="x-row__lhs">
+                  <button type="button" class="x-toggle-pill" id="websiteToggle"
+                    data-info="Phí sử dụng Website|600.000₫/năm, prorated theo chu kỳ của từng chi nhánh.|—">TẮT</button>
+                  <div class="x-row__info">
+                    <div class="x-row__name">Phí sử dụng Website</div>
+                    <div class="x-row__desc" id="websitePriceDesc">600.000 ₫ / năm · prorated theo chu kỳ</div>
+                  </div>
+                </div>
+                <div class="x-row__rhs is-disabled" id="websiteFeeRight">
+                  <div class="x-platform-amount">
+                    <div class="x-row__inline-amount x-row__inline-amount--control">
+                      <span class="x-row__inline-amount__current">
+                        <span class="x-row__inline-amount__val tnum" id="websiteAmount">0</span>
+                        <span class="x-row__inline-amount__unit">₫</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="x-divider" style="margin: var(--s-4) 0;"></div>
+
               <div class="x-row x-row--box">
                 <div class="x-row__lhs">
                   <div class="x-row__info">
                     <div class="x-row__name">Box phát nhạc</div>
                     <div class="x-row__desc" id="boxPriceDesc">Chọn hình thức trang bị cho mỗi chi nhánh</div>
                     <div style="margin-top: var(--s-4);">
-                      <div class="x-seg" id="boxModeSeg" data-info="Hình thức box|Chọn: Không trang bị, Mua (2tr/box, một lần), hoặc Thuê (1tr/box/năm).|—">
+                      <div class="x-seg" id="boxModeSeg" data-info="Hình thức box|Chọn: Không trang bị, Mua (2tr/box một lần), hoặc Thuê (900k/box/năm prorated).|—">
                         <button type="button" class="x-seg__btn is-active" data-mode="none">Không</button>
                         <button type="button" class="x-seg__btn" data-mode="buy">Mua</button>
                         <button type="button" class="x-seg__btn" data-mode="rent">Thuê</button>
@@ -462,14 +491,27 @@
           <div class="bottombar__breakdown__label">Tài khoản</div>
           <div class="bottombar__breakdown__val tnum" id="totalAccount">0 ₫</div>
         </div>
+        <div class="bottombar__breakdown__cell" data-info="Website|Tổng phí sử dụng Website prorated theo chu kỳ.|—">
+          <div class="bottombar__breakdown__label">Website</div>
+          <div class="bottombar__breakdown__val tnum" id="totalWebsite">0 ₫</div>
+        </div>
         <div class="bottombar__breakdown__cell" data-info="Box phát nhạc|Tổng chi phí thiết bị theo hình thức đã chọn.|—">
           <div class="bottombar__breakdown__label">Box</div>
           <div class="bottombar__breakdown__val tnum" id="totalBox">0 ₫</div>
         </div>
       </div>
 
-      <div class="bottombar__savings" data-info="Savings meter|Visualize mức tiết kiệm tổng trước và sau giảm giá.|—">
-        <canvas class="bottombar__savings-ring" id="grandSavingsRing" width="64" height="64" aria-hidden="true"></canvas>
+      <div class="bottombar__savings" data-info="Savings comparison|So sánh phần đã giảm với tổng gốc bằng thanh ngang.|—">
+        <div class="bottombar__savings-meter is-zero" id="grandSavingsMeter" aria-label="Savings 0%">
+          <div class="bottombar__savings-head">
+            <span>Saved</span>
+            <strong class="tnum" id="grandSavingsValue">0%</strong>
+          </div>
+          <div class="bottombar__savings-amount tnum" id="grandSavingsAmount">0 ₫</div>
+          <div class="bottombar__savings-rail" aria-hidden="true">
+            <div class="bottombar__savings-fill"></div>
+          </div>
+        </div>
       </div>
 
       <div class="bottombar__total" data-info="Grand total|Tổng thanh toán sau VAT của toàn bộ báo giá.|—">
@@ -505,7 +547,7 @@
       <div class="x-statusbar__cell tnum" id="statusQuoteNumber">XMS-000000-000</div>
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.12.3</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.13.0</div>
     </div>
   </div>
 

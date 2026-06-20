@@ -5,6 +5,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.13.0] — 2026-05-12
+
+### Added
+- **Platform Pricing Options**: Added optional Website usage fees at 600.000 VND/year prorated by branch duration, plus a standalone account tier at 1.500.000 VND/year/store when both copyright fee toggles are off.
+- **Workbook Platform Section**: Added visible Platform & Equipment rows and full quote totals to XLSX exports so account, website, and box charges are reflected outside the embedded manifest.
+
+### Changed
+- **Box Rental Pricing**: Updated Box rental to 900.000 VND/year/device, prorated by duration, and enabled the existing interface discount controls for rental as well as purchase.
+- **Savings Visualization**: Replaced the circular savings ring with a compact horizontal savings comparison meter aligned with the design-system VU/fader pattern.
+- **PDF Quotation Rows**: Updated PDF quotation descriptions and totals for the new website fee, standalone account tier, discounted rental box fees, and next-cycle estimate.
+
+## [1.12.4] — 2026-05-07
+
+### Fixed
+- **Subtotal Row Spacing**: Rebalanced the discount row grid so meters, knobs, toggles, and inline subtotals distribute horizontally without leaving a large empty readout lane.
+- **Savings Ring**: Rebuilt the bottom-bar savings meter as a full circular tick ring with a centered `% saved` readout and ratio-driven active ticks.
+- **Version Display**: Updated the status bar version label to match the `1.12.4` PR.
+
 ## [1.12.3] — 2026-05-07
 
 ### Fixed

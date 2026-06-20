@@ -7,6 +7,7 @@ import {
 import type {
   BoxMode,
   CalcOptions,
+  AccountFeeMode,
   CustomerProfile,
   EmbeddedManifest,
   PreparedByProfile,
@@ -39,6 +40,10 @@ type QuotePayloadOptions = {
 
 function isBoxMode(value: unknown): value is BoxMode {
   return value === 'none' || value === 'buy' || value === 'rent';
+}
+
+function isAccountFeeMode(value: unknown): value is AccountFeeMode {
+  return value === 'standard' || value === 'standalone';
 }
 
 function isBillingCycle(value: unknown): value is CalcOptions['billingCycle'] {
@@ -83,9 +88,11 @@ function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string,
   const discountEnabled = (calcOptions?.discountEnabled as Partial<CalcOptions['discountEnabled']> | undefined) || {};
   return {
     boxMode: isBoxMode(calcOptions?.boxMode) ? calcOptions.boxMode : 'none',
+    accountFeeMode: isAccountFeeMode(calcOptions?.accountFeeMode) ? calcOptions.accountFeeMode : 'standard',
     billingCycle: isBillingCycle(calcOptions?.billingCycle) ? calcOptions.billingCycle : 'y',
     globalBoxCount: Math.max(1, Number(calcOptions?.globalBoxCount) || 1),
     hasAccountFee: calcOptions?.hasAccountFee !== false,
+    hasWebsiteFee: calcOptions?.hasWebsiteFee === true,
     hasQTG: calcOptions?.hasQTG !== false,
     hasQLQ: calcOptions?.hasQLQ !== false,
     globalDiscounts: {

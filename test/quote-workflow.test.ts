@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import ExcelJS from 'exceljs';
 import { PDFDocument } from 'pdf-lib';
 import {
   buildQuoteIdentity,
@@ -32,9 +33,11 @@ function makeSnapshot(overrides: Record<string, unknown> = {}) {
       baseSalary: 2340000,
       vatRate: 0.1,
       boxMode: 'none',
+      accountFeeMode: 'standard',
       billingCycle: 'y',
       globalBoxCount: 1,
       hasAccountFee: true,
+      hasWebsiteFee: false,
       hasQTG: true,
       hasQLQ: true,
       globalDiscounts: { account: 0, box: 0, qtg: 0, qlq: 0 },
@@ -195,6 +198,57 @@ test('excel export embeds a full manifest for lossless workbook import', async (
   assert.equal(extracted.manifest.customer.companyName, 'Công ty Excel');
   assert.equal(extracted.manifest.preparedBy.email, 'bd@example.com');
   assert.equal(extracted.manifest.stores[0]?.name, 'Chi nhánh 1');
+});
+
+test('excel export includes visible platform and equipment rows', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xms-excel-platform-'));
+  const filePath = path.join(tmpDir, 'quote-platform.xlsx');
+  const snapshot = makeSnapshot({
+    calcOptions: {
+      baseSalary: 2340000,
+      vatRate: 0.08,
+      boxMode: 'rent',
+      accountFeeMode: 'standalone',
+      billingCycle: 'y',
+      globalBoxCount: 2,
+      hasAccountFee: true,
+      hasWebsiteFee: true,
+      hasQTG: false,
+      hasQLQ: false,
+      globalDiscounts: { account: 10, box: 50, qtg: 0, qlq: 0 },
+      discountEnabled: { account: true, box: true, qtg: false, qlq: false }
+    }
+  });
+  const payload = buildQuotePayload(
+    snapshot,
+    { companyName: 'Công ty Platform' },
+    { name: 'BD Platform' },
+    {
+      quoteDateInput: new Date('2026-05-12T00:00:00.000Z'),
+      quoteIdentity: buildQuoteIdentity('XMS-260512-001', 0)
+    }
+  );
+  const manifest = buildEmbeddedManifest(payload, {
+    appVersion: '1.13.0',
+    exportedAt: '2026-05-12T10:00:00.000Z'
+  });
+
+  await exportExcel({
+    app: { getPath: () => tmpDir },
+    dialog: { showSaveDialog: async () => ({ filePath }) },
+    payload,
+    manifest
+  });
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(filePath);
+  const worksheet = workbook.getWorksheet('Báo Giá');
+  assert.ok(worksheet);
+  const visibleValues = JSON.stringify(worksheet.getSheetValues());
+  assert.match(visibleValues, /HẠNG MỤC NỀN TẢNG & THIẾT BỊ/);
+  assert.match(visibleValues, /Phí sử dụng Website/);
+  assert.match(visibleValues, /Box phát nhạc - Thuê/);
+  assert.match(visibleValues, /Tổng thanh toán sau VAT/);
 });
 
 test('draft file preserves the complete editable quote snapshot', async () => {
