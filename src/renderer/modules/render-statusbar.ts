@@ -3,7 +3,7 @@ import type { RevisionStatus } from '../../shared/types';
 import { cycleDisplayAmount, cycleLabel } from './billing-cycle';
 import { formatVND } from './format';
 
-const APP_VERSION = '1.14.1';
+const APP_VERSION = '1.15.0';
 
 type StatusView = {
   label: string;

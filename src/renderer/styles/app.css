@@ -527,6 +527,28 @@
   letter-spacing: -0.01em;
 }
 
+.csection__heading {
+  display: flex;
+  align-items: center;
+  gap: var(--s-5);
+  flex: 1;
+  min-width: 0;
+}
+
+.csection__heading .csection__title {
+  flex: none;
+}
+
+.csection__mode {
+  height: 22px;
+}
+
+.csection__mode .x-seg__btn {
+  min-width: 42px;
+  padding: 0 var(--s-4);
+  font-size: 9px;
+}
+
 .csection__total {
   font-family: var(--font-display);
   font-variant-numeric: tabular-nums;

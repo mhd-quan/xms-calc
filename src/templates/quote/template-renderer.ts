@@ -111,7 +111,7 @@ function buildPricingRows(payload: QuotePayload): string {
       index: index++,
       group: true,
       title: 'Chi phí bản quyền',
-      detail: 'Tổng phí bản quyền sử dụng âm nhạc tại địa điểm kinh doanh',
+      detail: `Tổng phí bản quyền sử dụng âm nhạc tại địa điểm kinh doanh · Phương án ${payload.copyright.label}`,
       scope,
       unit: duration,
       amount: payload.totals.subtotalQLQ + payload.totals.subtotalQTG,
@@ -121,7 +121,7 @@ function buildPricingRows(payload: QuotePayload): string {
       addRow(rows, {
         index: '',
         title: 'Quyền liên quan',
-        detail: 'Quyền liên quan bản ghi, bản thu âm do NCT Media cung cấp',
+        detail: payload.copyright.qlqExportDescription,
         scope,
         unit: duration,
         amount: payload.totals.subtotalQLQ,
@@ -132,7 +132,7 @@ function buildPricingRows(payload: QuotePayload): string {
       addRow(rows, {
         index: '',
         title: 'Quyền tác giả',
-        detail: 'Phí quyền tác giả âm nhạc, áp dụng khi khách hàng yêu cầu tính kèm trong báo giá',
+        detail: payload.copyright.qtgExportDescription,
         scope,
         unit: duration,
         amount: payload.totals.subtotalQTG,

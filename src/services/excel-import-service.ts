@@ -2,7 +2,8 @@ import ExcelJS from 'exceljs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { BUSINESS_TYPES } from '../shared/calculator';
+import { BUSINESS_TYPES, DEFAULT_BASE_SALARY } from '../shared/calculator';
+import { normalizeCopyrightMode } from '../shared/copyright';
 import type { EmbeddedManifest } from '../shared/types';
 import { EXCEL_MANIFEST_CELL, EXCEL_MANIFEST_SHEET } from './excel-exporter';
 import { validateManifestSchema } from './pdf-import-service';
@@ -38,11 +39,16 @@ export async function extractManifestFromExcelFile(
   }
 
   // Khôi phục Base Salary
-  let baseSalary = 2340000;
+  let baseSalary = DEFAULT_BASE_SALARY;
   const baseSalaryCell = ws.getCell('I4').value;
   if (baseSalaryCell != null && !isNaN(Number(baseSalaryCell))) {
     baseSalary = Number(baseSalaryCell);
   }
+
+  const qtgHeader = cellText(ws.getCell('L6').value).toUpperCase();
+  const copyrightMode = normalizeCopyrightMode(
+    qtgHeader.includes('NCT') || qtgHeader.includes('QSC') ? 'qsc' : 'qlq'
+  );
 
   // Khôi phục Danh sách Cửa hàng
   const stores = [];
@@ -131,6 +137,7 @@ export async function extractManifestFromExcelFile(
     preparedBy: normalizePreparedBy({}),
     calcOptions: normalizeCalcOptions({
       baseSalary,
+      copyrightMode,
       hasAccountFee: false, // Export Excel không có phí duy trì
       hasWebsiteFee: false,
       hasQTG: true,

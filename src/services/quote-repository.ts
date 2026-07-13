@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { buildQuoteIdentity, computeNextRevisionNumber, formatDisplayQuoteNumber } from './quote-identity-service';
+import { DEFAULT_BASE_SALARY } from '../shared/calculator';
+import { DEFAULT_COPYRIGHT_MODE } from '../shared/copyright';
 
 import type {
   CalcOptions,
@@ -166,12 +168,13 @@ export class QuoteRepository {
         phone: ''
       }),
       calcOptions: safeParseJson<CalcOptions>(row.calc_options_json, {
-        baseSalary: 2340000,
+        baseSalary: DEFAULT_BASE_SALARY,
         vatRate: 0,
         boxMode: 'none',
         accountFeeMode: 'standard',
         platformFeeMode: 'website',
         billingCycle: 'y',
+        copyrightMode: DEFAULT_COPYRIGHT_MODE,
         globalBoxCount: 1,
         globalPlatformStoreCount: 1,
         hasAccountFee: false,

@@ -394,10 +394,18 @@
 
           <!-- SECTION 03 — COPYRIGHT -->
           <section class="csection" id="section03">
-            <div class="csection__head" data-section="03"
-              data-info="Section 03 · Bản quyền|Quyền tác giả + quyền liên quan.|—">
+            <div class="csection__head" id="section03Head" data-section="03"
+              data-info="Section 03 · Bản quyền|QLQ · Quyền tác giả VCPMC + Quyền liên quan NCT.|—">
               <span class="csection__idx">03</span>
-              <span class="csection__title">Bản quyền</span>
+              <span class="csection__heading">
+                <span class="csection__title">Bản quyền</span>
+                <span class="x-seg csection__mode" id="copyrightModeSeg" role="group" aria-label="Phương án bản quyền">
+                  <button type="button" class="x-seg__btn is-active" data-copyright-mode="qlq" aria-pressed="true"
+                    data-info="QLQ|Quyền tác giả qua VCPMC và Quyền liên quan qua NCT.|—">QLQ</button>
+                  <button type="button" class="x-seg__btn" data-copyright-mode="qsc" aria-pressed="false"
+                    data-info="QSC|Quyền tác giả và Quyền liên quan đều do NCT cung cấp.|—">QSC</button>
+                </span>
+              </span>
               <span class="eyebrow">Compliance</span>
               <span class="csection__total tnum" id="copyrightSectionTotal">0</span>
             </div>
@@ -410,7 +418,7 @@
                   <div class="x-row__info">
                     <div class="x-row__name">Quyền Tác giả</div>
                     <div class="x-row__desc">
-                      <span>VCPMC</span><span class="dot">·</span>
+                      <span id="qtgProvider">VCPMC</span><span class="dot">·</span>
                       <span>Hệ số <span class="tnum" id="qtgCoef">1.75</span></span><span class="dot">·</span>
                       <span class="tnum" id="qtgDur">12.0m</span>
                     </div>
@@ -568,7 +576,7 @@
       <div class="x-statusbar__cell tnum" id="statusBranchSummary">1 BRANCH · 1 LINE</div>
       <div class="x-statusbar__cell" id="statusCycle">CYCLE · YEARLY</div>
       <div class="x-statusbar__cell x-statusbar__cell--metric tnum" id="statusBranchCost">PER BRANCH · 0 ₫</div>
-      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.14.1</div>
+      <div class="x-statusbar__cell" id="statusVersion" style="margin-left:auto; border-left:none;">XMS v1.15.0</div>
     </div>
   </div>
 

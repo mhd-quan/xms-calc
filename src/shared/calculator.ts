@@ -8,7 +8,7 @@ export const BUSINESS_TYPES: Record<string, { label: string; short: string }> = 
   supermarket: { label: 'Siêu thị', short: 'SUPERMARKET' }
 } as const;
 
-export const DEFAULT_BASE_SALARY = 2340000;
+export const DEFAULT_BASE_SALARY = 2530000;
 export const ACCOUNT_FEE_YEARLY = 600000;
 export const ACCOUNT_FEE_STANDALONE_YEARLY = 1500000;
 export const WEBSITE_PLATFORM_FEE_ONCE = 600000;

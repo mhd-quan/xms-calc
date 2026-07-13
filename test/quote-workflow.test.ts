@@ -19,6 +19,7 @@ import {
 import { exportExcel } from '../src/services/excel-exporter';
 import { extractManifestFromExcelFile } from '../src/services/excel-import-service';
 import { extractManifestFromDraftFile, saveDraftFile } from '../src/services/draft-file-service';
+import { DEFAULT_BASE_SALARY } from '../src/shared/calculator';
 import {
   buildImportPreview,
   embedManifestInPdf,
@@ -30,12 +31,13 @@ function makeSnapshot(overrides: Record<string, unknown> = {}) {
     customer: { companyName: 'Công ty Test' },
     preparedBy: { name: 'BD User' },
     calcOptions: {
-      baseSalary: 2340000,
+      baseSalary: DEFAULT_BASE_SALARY,
       vatRate: 0.1,
       boxMode: 'none',
       accountFeeMode: 'standard',
       platformFeeMode: 'website',
       billingCycle: 'y',
+      copyrightMode: 'qlq',
       globalBoxCount: 1,
       globalPlatformStoreCount: 1,
       hasAccountFee: true,
@@ -247,17 +249,60 @@ test('excel export embeds a full manifest for lossless workbook import', async (
   assert.equal(extracted.manifest.stores[0]?.name, 'Chi nhánh 1');
 });
 
+test('QSC workbook and manifest identify NCT for both copyright columns', async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xms-excel-qsc-'));
+  const filePath = path.join(tmpDir, 'quote-qsc.xlsx');
+  const snapshot = makeSnapshot();
+  snapshot.calcOptions.copyrightMode = 'qsc';
+  const payload = buildQuotePayload(
+    snapshot,
+    { companyName: 'Công ty QSC' },
+    { name: 'BD QSC' },
+    {
+      quoteDateInput: new Date('2026-07-13T00:00:00.000Z'),
+      quoteIdentity: buildQuoteIdentity('XMS-260713-001', 0)
+    }
+  );
+  const manifest = buildEmbeddedManifest(payload, {
+    appVersion: '1.15.0',
+    exportedAt: '2026-07-13T10:00:00.000Z'
+  });
+
+  assert.equal(payload.copyright.qtgProvider, 'NCT');
+  assert.match(payload.copyright.qtgExportDescription, /NCT Media/);
+
+  await exportExcel({
+    app: { getPath: () => tmpDir },
+    dialog: { showSaveDialog: async () => ({ filePath }) },
+    payload,
+    manifest
+  });
+
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.readFile(filePath);
+  const worksheet = workbook.getWorksheet('Báo Giá');
+  assert.ok(worksheet);
+  assert.equal(cellText(worksheet.getCell('L6').value), 'QUYỀN TÁC GIẢ\n(NCT · QSC)');
+  assert.equal(cellText(worksheet.getCell('M6').value), 'QUYỀN LIÊN QUAN\n(NCT · QSC)');
+  assert.doesNotMatch(JSON.stringify(worksheet.getSheetValues()), /VCPMC/);
+
+  const extracted = await extractManifestFromExcelFile(filePath);
+  assert.equal(extracted.manifest.calcOptions.copyrightMode, 'qsc');
+  assert.equal(extracted.manifest.calcOptions.baseSalary, DEFAULT_BASE_SALARY);
+});
+
 test('excel export includes visible platform and equipment rows', async () => {
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'xms-excel-platform-'));
   const filePath = path.join(tmpDir, 'quote-platform.xlsx');
   const snapshot = makeSnapshot({
     calcOptions: {
-      baseSalary: 2340000,
+      baseSalary: DEFAULT_BASE_SALARY,
       vatRate: 0.08,
       boxMode: 'rent',
       accountFeeMode: 'standalone',
       platformFeeMode: 'pc_app',
       billingCycle: 'y',
+      copyrightMode: 'qlq',
       globalBoxCount: 2,
       globalPlatformStoreCount: 2,
       hasAccountFee: true,
@@ -331,12 +376,13 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
   const filePath = path.join(tmpDir, 'quote-mixed-business.xlsx');
   const snapshot = makeSnapshot({
     calcOptions: {
-      baseSalary: 2340000,
+      baseSalary: DEFAULT_BASE_SALARY,
       vatRate: 0,
       boxMode: 'buy',
       accountFeeMode: 'standard',
       platformFeeMode: 'website',
       billingCycle: 'y',
+      copyrightMode: 'qlq',
       globalBoxCount: 1,
       globalPlatformStoreCount: 1,
       hasAccountFee: true,
@@ -366,11 +412,11 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
     }
   );
   const manifest = buildEmbeddedManifest(payload, {
-    appVersion: '1.14.1',
+    appVersion: '1.15.0',
     exportedAt: '2026-06-05T10:00:00.000Z'
   });
 
-  assert.equal(Math.round(payload.totals.grand), 138635120);
+  assert.equal(Math.round(payload.totals.grand), 148414040);
 
   await exportExcel({
     app: { getPath: () => tmpDir },
@@ -396,7 +442,7 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
   const indochineAnnual = worksheet.getCell(`K${indochineRow}`).value;
   assert.ok(indochineAnnual && typeof indochineAnnual === 'object' && 'formula' in indochineAnnual);
   assert.match(String(indochineAnnual.formula), /MIN\(SUM\(H\d+:J\d+\),8\*\$I\$4\)/);
-  assert.equal(Math.round(Number(indochineAnnual.result)), 18720000);
+  assert.equal(Math.round(Number(indochineAnnual.result)), 20240000);
   assert.equal(solidFillColor(worksheet.getCell(`C${indochineRow}`)), 'FFFFFFFF');
   assert.equal(solidFillColor(worksheet.getCell(`K${indochineRow}`)), 'FFFFFFFF');
 
@@ -405,13 +451,13 @@ test('excel export keeps mixed business pricing capped and visible totals aligne
     'Tổng giá trị phải thanh toán Phí Bản Quyền (chưa bao gồm VAT):',
     'A'
   );
-  assert.equal(Math.round(Number(cellResult(worksheet.getCell(`N${copyrightNetRow}`).value))), 120435120);
+  assert.equal(Math.round(Number(cellResult(worksheet.getCell(`N${copyrightNetRow}`).value))), 130214040);
 
   const subtotalRow = findRowByText(worksheet, 'Tổng giá trị báo giá trước VAT:', 'A');
   assert.match(cellFormula(worksheet.getCell(`M${subtotalRow}`).value), /^N\d+\+M\d+$/);
 
   const grandRow = findRowByText(worksheet, 'Tổng thanh toán sau VAT:', 'A');
-  assert.equal(Math.round(Number(cellResult(worksheet.getCell(`M${grandRow}`).value))), 138635120);
+  assert.equal(Math.round(Number(cellResult(worksheet.getCell(`M${grandRow}`).value))), 148414040);
   assert.match(cellFormula(worksheet.getCell(`M${grandRow}`).value), /^M\d+\+M\d+$/);
   assert.equal(solidFillColor(worksheet.getCell(`M${grandRow}`)), 'FFFFE8B5');
 });

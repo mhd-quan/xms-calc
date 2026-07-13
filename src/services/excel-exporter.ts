@@ -319,8 +319,8 @@ export async function exportExcel({
     ws.getCell(`I${row6}`).value = hlbl.i6;
     ws.getCell(`J${row6}`).value = hlbl.j6;
 
-    ws.mergeCells(`L${row6}:L${row7}`); ws.getCell(`L${row6}`).value = 'QUYỀN TÁC GIẢ (VCPMC)';
-    ws.mergeCells(`M${row6}:M${row7}`); ws.getCell(`M${row6}`).value = 'QUYỀN LIÊN QUAN\n(NCT)';
+    ws.mergeCells(`L${row6}:L${row7}`); ws.getCell(`L${row6}`).value = payload.copyright.qtgWorkbookHeader;
+    ws.mergeCells(`M${row6}:M${row7}`); ws.getCell(`M${row6}`).value = payload.copyright.qlqWorkbookHeader;
 
     ws.getCell(`H${row7}`).value = hlbl.h7;
     ws.getCell(`I${row7}`).value = hlbl.i7;
