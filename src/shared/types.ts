@@ -11,6 +11,7 @@ export type BoxMode = 'none' | 'buy' | 'rent';
 export type BillingCycle = 'm' | 'q' | 'y';
 export type AccountFeeMode = 'standard' | 'standalone';
 export type PlatformFeeMode = 'website' | 'pc_app';
+export type CopyrightMode = 'qlq' | 'qsc';
 
 export type RevisionStatus = 'draft' | 'imported' | 'exported';
 
@@ -50,6 +51,7 @@ export interface CalcOptions {
   accountFeeMode: AccountFeeMode;
   platformFeeMode: PlatformFeeMode;
   billingCycle: BillingCycle;
+  copyrightMode: CopyrightMode;
   globalBoxCount: number;
   globalPlatformStoreCount: number;
   hasAccountFee: boolean;
@@ -214,6 +216,7 @@ export interface QuotePayload extends QuoteSnapshot {
   schemaVersion: string;
   quoteIdentity: QuoteIdentity;
   meta: QuoteMeta;
+  copyright: CopyrightPresentation;
   computedStores: Array<
     Omit<Store, 'area'> & {
       area: number;
@@ -240,4 +243,18 @@ export interface QuotePayload extends QuoteSnapshot {
   >;
   globals: CalcOptions;
   totals: Totals;
+}
+
+export interface CopyrightPresentation {
+  mode: CopyrightMode;
+  label: 'QLQ' | 'QSC';
+  sectionDescription: string;
+  qtgProvider: 'VCPMC' | 'NCT';
+  qlqProvider: 'NCT';
+  qtgUiDescription: string;
+  qlqUiDescription: string;
+  qtgExportDescription: string;
+  qlqExportDescription: string;
+  qtgWorkbookHeader: string;
+  qlqWorkbookHeader: string;
 }

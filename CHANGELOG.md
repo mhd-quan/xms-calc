@@ -5,6 +5,17 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ---
 
+## [1.15.0] — 2026-07-13
+
+### Added
+- **Copyright Modes**: Added a Section 03 QLQ/QSC selector that is saved per quote revision and restored through draft, PDF, and workbook imports.
+- **QSC Presentation**: Added NCT-owned author-right and related-right wording throughout the interface, quotation PDF, and visible workbook right columns when QSC is selected.
+
+### Changed
+- **Base Salary**: Updated the default statutory base salary used by new quotations and legacy workbook fallbacks from 2.340.000 VND to 2.530.000 VND.
+- **Export Consistency**: Centralized copyright provider labels and descriptions so the interface, PDF payload, and workbook columns use the selected QLQ/QSC structure consistently.
+- **Version Display**: Updated package and status bar version labels to `1.15.0`.
+
 ## [1.14.1] — 2026-06-10
 
 ### Changed

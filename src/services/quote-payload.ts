@@ -1,4 +1,5 @@
-import { BUSINESS_TYPES, calculateTotals } from '../shared/calculator';
+import { BUSINESS_TYPES, DEFAULT_BASE_SALARY, calculateTotals } from '../shared/calculator';
+import { getCopyrightPresentation, normalizeCopyrightMode } from '../shared/copyright';
 import {
   EMBEDDED_PAYLOAD_SCHEMA_VERSION,
   buildQuoteIdentity
@@ -96,6 +97,7 @@ function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string,
     accountFeeMode: isAccountFeeMode(calcOptions?.accountFeeMode) ? calcOptions.accountFeeMode : 'standard',
     platformFeeMode: isPlatformFeeMode(calcOptions?.platformFeeMode) ? calcOptions.platformFeeMode : 'website',
     billingCycle: isBillingCycle(calcOptions?.billingCycle) ? calcOptions.billingCycle : 'y',
+    copyrightMode: normalizeCopyrightMode(calcOptions?.copyrightMode),
     globalBoxCount: Math.max(1, Number(calcOptions?.globalBoxCount) || 1),
     globalPlatformStoreCount: Math.max(1, Number(calcOptions?.globalPlatformStoreCount) || 1),
     hasAccountFee: calcOptions?.hasAccountFee !== false,
@@ -116,7 +118,7 @@ function normalizeCalcOptions(calcOptions: Partial<CalcOptions> | Record<string,
       qtg: discountEnabled.qtg === true,
       qlq: discountEnabled.qlq === true
     },
-    baseSalary: Number(calcOptions?.baseSalary) || 2340000,
+    baseSalary: Number(calcOptions?.baseSalary) || DEFAULT_BASE_SALARY,
     vatRate: Number(calcOptions?.vatRate) || 0
   };
 }
@@ -154,6 +156,7 @@ function buildQuotePayload(
   return {
     schemaVersion: EMBEDDED_PAYLOAD_SCHEMA_VERSION,
     quoteIdentity,
+    copyright: getCopyrightPresentation(calcOptions.copyrightMode),
     meta: {
       quoteDate: quoteDate.toISOString(),
       quoteNumber: quoteIdentity.displayQuoteNumber,

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  DEFAULT_BASE_SALARY,
   calculateCoef,
   calculateCoefComponents,
   calculateDurationMonths,
@@ -9,6 +10,7 @@ import {
   calculateStoreBreakdown,
   calculateTotals
 } from '../src/shared/calculator';
+import { getCopyrightPresentation } from '../src/shared/copyright';
 import {
   buildDraftSnapshotFromManifest,
   buildEmbeddedManifest,
@@ -26,12 +28,13 @@ const moneyEqual = (actual: number, expected: number) => {
 };
 
 const baseOptions: CalcOptions = {
-  baseSalary: 2340000,
+  baseSalary: DEFAULT_BASE_SALARY,
   vatRate: 0.1,
   boxMode: 'none',
   accountFeeMode: 'standard',
   platformFeeMode: 'website',
   billingCycle: 'y',
+  copyrightMode: 'qlq',
   globalBoxCount: 1,
   globalPlatformStoreCount: 1,
   hasAccountFee: true,
@@ -87,8 +90,8 @@ test('store breakdown respects QTG and QLQ toggles', () => {
   const noQLQ = calculateStoreBreakdown(cafeStore, { ...baseOptions, hasQLQ: false });
   const noQTG = calculateStoreBreakdown(cafeStore, { ...baseOptions, hasQTG: false });
 
-  moneyEqual(active.qtgAmount, 6435000);
-  moneyEqual(active.qlqAmount, 6435000);
+  moneyEqual(active.qtgAmount, 6957500);
+  moneyEqual(active.qlqAmount, 6957500);
   moneyEqual(noQLQ.qlqAmount, 0);
   moneyEqual(noQLQ.total, active.total - active.qlqAmount);
   moneyEqual(noQTG.qtgAmount, 0);
@@ -209,19 +212,35 @@ test('discount toggles preserve values but control whether they apply', () => {
     discountEnabled: { ...baseOptions.discountEnabled, qtg: false }
   });
 
-  moneyEqual(withDiscount.qtgAmount, 3217500);
-  moneyEqual(disabledDiscount.qtgAmount, 6435000);
+  moneyEqual(withDiscount.qtgAmount, 3478750);
+  moneyEqual(disabledDiscount.qtgAmount, 6957500);
 });
 
 test('missing discount toggles default to off', () => {
   const defaultDisabled = calculateStoreBreakdown(cafeStore, {
-    baseSalary: 2340000,
+    baseSalary: DEFAULT_BASE_SALARY,
     accountFeeMode: 'standard',
     hasWebsiteFee: false,
     globalDiscounts: { qtg: 50 }
   });
 
-  moneyEqual(defaultDisabled.qtgAmount, 6435000);
+  moneyEqual(defaultDisabled.qtgAmount, 6957500);
+});
+
+test('uses the 2.530.000 VND statutory base salary by default', () => {
+  assert.equal(DEFAULT_BASE_SALARY, 2530000);
+  const breakdown = calculateStoreBreakdown(cafeStore);
+  moneyEqual(breakdown.yearly, 6957500);
+});
+
+test('copyright presentation switches QTG ownership from VCPMC to NCT in QSC mode', () => {
+  const qlq = getCopyrightPresentation('qlq');
+  const qsc = getCopyrightPresentation('qsc');
+
+  assert.equal(qlq.qtgProvider, 'VCPMC');
+  assert.equal(qsc.qtgProvider, 'NCT');
+  assert.match(qsc.qtgExportDescription, /NCT Media/);
+  assert.doesNotMatch(qsc.qtgWorkbookHeader, /VCPMC/);
 });
 
 test('buildQuotePayload creates export-safe metadata and enriched store rows', () => {
@@ -274,12 +293,14 @@ test('embedded manifest restores full editable draft snapshot', () => {
     appVersion: '1.6.5',
     exportedAt: '2026-04-23T10:00:00.000Z'
   });
+  delete (manifest.calcOptions as Partial<CalcOptions>).copyrightMode;
   const snapshot = buildDraftSnapshotFromManifest(manifest);
 
   assert.equal(manifest.schemaVersion, '1.6');
   assert.equal(snapshot.customer.companyName, 'Công ty B');
   assert.equal(snapshot.preparedBy.name, 'BD User');
   assert.equal(snapshot.calcOptions.vatRate, 0.08);
+  assert.equal(snapshot.calcOptions.copyrightMode, 'qlq');
   assert.equal(snapshot.stores[0]?.name, 'Chi nhánh 1');
 });
 

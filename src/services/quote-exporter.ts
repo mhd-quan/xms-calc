@@ -81,6 +81,9 @@ export function validateQuotePayload(payload: unknown): asserts payload is Quote
   if (!typedPayload.quoteIdentity || typeof typedPayload.quoteIdentity !== 'object') {
     throw new Error('Invalid quote payload: missing quote identity');
   }
+  if (!typedPayload.copyright || typeof typedPayload.copyright !== 'object') {
+    throw new Error('Invalid quote payload: missing copyright presentation');
+  }
 }
 
 function getDefaultPath(app: AppLike, payload: QuotePayload): string {

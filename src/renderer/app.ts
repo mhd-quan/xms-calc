@@ -14,6 +14,10 @@ import {
   calculateTotals
 } from '../shared/calculator';
 import {
+  DEFAULT_COPYRIGHT_MODE,
+  getCopyrightPresentation
+} from '../shared/copyright';
+import {
   normalizeCalcOptions,
   normalizePreparedBy,
   normalizeProfile,
@@ -40,6 +44,7 @@ import { renderWorkbench } from './modules/render-workbench';
 
 import type {
   CalcOptions,
+  CopyrightMode,
   CustomerProfile,
   DiscountToggles,
   GlobalDiscounts,
@@ -113,6 +118,7 @@ function asErrorMessage(error: unknown, fallback: string): string {
 let baseSalary: number = DEFAULT_BASE_SALARY;
 let vatRate: number = 0;
 let billingCycle: CalcOptions['billingCycle'] = 'y';
+let copyrightMode: CopyrightMode = DEFAULT_COPYRIGHT_MODE;
 let stores: Store[] = [];
 let activeTabId: number | null = null;
 
@@ -277,6 +283,7 @@ function getCalcOptions(): CalcOptions {
     baseSalary,
     vatRate,
     billingCycle,
+    copyrightMode,
     boxMode,
     accountFeeMode,
     platformFeeMode,
@@ -307,6 +314,7 @@ function buildInitialDraftSnapshot(): QuoteSnapshot {
       baseSalary: DEFAULT_BASE_SALARY,
       vatRate: 0,
       billingCycle: 'y',
+      copyrightMode: DEFAULT_COPYRIGHT_MODE,
       boxMode: 'none',
       accountFeeMode: 'standard',
       platformFeeMode: 'website',
@@ -453,6 +461,7 @@ function hydrateFromSnapshot(snapshot: QuoteSnapshot): void {
   baseSalary = calcOptions.baseSalary;
   vatRate = calcOptions.vatRate;
   billingCycle = calcOptions.billingCycle;
+  copyrightMode = calcOptions.copyrightMode;
   boxMode = calcOptions.boxMode;
   accountFeeMode = calcOptions.accountFeeMode;
   platformFeeMode = calcOptions.platformFeeMode;
@@ -1115,6 +1124,34 @@ function renderMain(snapshot: RenderSnapshot): void {
   const breakdown = snapshot.activeBreakdown;
   const duration = breakdown?.duration ?? calculateDurationMonths(store.startDate, store.endDate);
   const coef = breakdown?.coef ?? calculateCoef(store.type, area);
+  const copyright = getCopyrightPresentation(copyrightMode);
+
+  document.querySelectorAll<HTMLButtonElement>('#copyrightModeSeg .x-seg__btn').forEach((button) => {
+    const isActive = button.dataset.copyrightMode === copyrightMode;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-pressed', String(isActive));
+  });
+  document.getElementById('section03Head')?.setAttribute(
+    'data-info',
+    `Section 03 · Bản quyền|${copyright.sectionDescription}|—`
+  );
+  document.getElementById('qtgProvider').textContent = copyright.qtgProvider;
+  document.getElementById('qtgToggle').setAttribute(
+    'data-info',
+    `Quyền Tác giả|${copyright.qtgUiDescription}|—`
+  );
+  document.getElementById('discountQTGApply').setAttribute(
+    'data-info',
+    `Chiết khấu QTG|Bật/tắt chiết khấu quyền tác giả ${copyright.qtgProvider}.|—`
+  );
+  document.getElementById('qlqToggle').setAttribute(
+    'data-info',
+    `Quyền Liên quan|${copyright.qlqUiDescription}|—`
+  );
+  document.getElementById('discountQLQApply').setAttribute(
+    'data-info',
+    `Chiết khấu QLQ|Bật/tắt chiết khấu quyền liên quan ${copyright.qlqProvider}${copyrightMode === 'qsc' ? ' theo phương án QSC' : ''}.|—`
+  );
 
   document.querySelectorAll('#cycleSeg .x-seg__btn').forEach((button) => {
     button.classList.toggle('is-active', button instanceof HTMLElement && button.dataset.cycle === billingCycle);
@@ -1605,6 +1642,16 @@ function bindEvents() {
     hasQLQ = !hasQLQ;
     normalizeAccountFeeMode();
     commitQuoteMutation();
+  });
+
+  document.getElementById('copyrightModeSeg').addEventListener('click', (event) => {
+    event.stopPropagation();
+    const button = closestFromEvent<HTMLButtonElement>(event, '.x-seg__btn');
+    const nextMode = button?.dataset.copyrightMode;
+    if (nextMode !== 'qlq' && nextMode !== 'qsc') return;
+    if (nextMode === copyrightMode) return;
+    copyrightMode = nextMode;
+    commitQuoteMutation('main');
   });
 
   document.getElementById('accountFeeModeSeg').addEventListener('click', (event) => {
